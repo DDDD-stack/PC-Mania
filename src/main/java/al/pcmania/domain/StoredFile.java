@@ -1,6 +1,8 @@
 package al.pcmania.domain;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,9 +25,15 @@ public class StoredFile {
     private Integer widthPx;
     private Integer heightPx;
     private String label;
-    /** Lazy: listing files in the admin screen must not drag a 34 MB APK into memory. */
-    @Lob
-    @Basic(fetch = FetchType.LAZY)
+    /**
+     * Not @Lob: on Postgres that maps to a large object (an OID), not to bytea, and the insert
+     * fails. Plain bytes bind correctly to bytea and to LONGBLOB alike.
+     *
+     * Field-level lazy loading would need Hibernate bytecode enhancement, which is not enabled,
+     * so this is kept out of memory by never loading the entity - read through the projections
+     * on StoredFileRepository instead.
+     */
+    @JdbcTypeCode(SqlTypes.LONGVARBINARY)
     private byte[] data;
     private LocalDateTime createdAt;
 }
