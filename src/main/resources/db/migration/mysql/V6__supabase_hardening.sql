@@ -1,0 +1,5 @@
+-- Intentionally empty on MySQL.
+--
+-- The Postgres copy of this migration switches on row level security and revokes the PostgREST
+-- roles, which only exist on Supabase. There is nothing equivalent to do here, but the file is
+-- kept so that a version number means the same thing in both vendors' folders.

@@ -1,6 +1,7 @@
 package al.pcmania.service;
 
-import al.pcmania.config.AppProperties;
+import al.pcmania.repo.StoredFileRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
@@ -11,20 +12,23 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Stores uploads as three JPEG variants under {uploadDir}/{thumb|medium|full}/{uuid}.jpg,
- * served at /img/p/{size}/{filename}.
+ * Turns an upload into three JPEG variants and hands them to {@link FileStorage},
+ * which serves them at /img/p/{size}/{filename}.
  */
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class ImageStorage {
 
@@ -34,16 +38,15 @@ public class ImageStorage {
         Size(int px) { this.px = px; }
     }
 
-    private final Path root;
-
-    public ImageStorage(AppProperties props) throws IOException {
-        root = Path.of(props.uploadDir()).toAbsolutePath().normalize();
-        for (Size s : Size.values()) Files.createDirectories(root.resolve(s.name()));
-        log.info("Image storage at {}", root);
-    }
+    private final FileStorage storage;
 
     public static String url(Size size, String filename) {
         return "/img/p/" + size.name() + "/" + filename;
+    }
+
+    /** Storage key for a variant. Deliberately mirrors {@link #url} without the /img/p prefix. */
+    public static String key(Size size, String filename) {
+        return "img/" + size.name() + "/" + filename;
     }
 
     /** Validates, resizes and stores an upload; returns the stored filename. */
@@ -56,12 +59,14 @@ public class ImageStorage {
             String filename = UUID.randomUUID().toString().replace("-", "") + ".jpg";
             for (Size s : Size.values()) {
                 int target = Math.min(s.px, maxSide); // never upscale
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
                 Thumbnails.of(tmp.toFile())
                         .size(target, target)
                         .addFilter(ImageStorage::flattenOnWhite)
                         .outputFormat("jpg")
                         .outputQuality(s == Size.thumb ? 0.8 : 0.85)
-                        .toFile(root.resolve(s.name()).resolve(filename).toFile());
+                        .toOutputStream(out);
+                storage.put(key(s, filename), "image/jpeg", out.toByteArray(), null);
             }
             return filename;
         } catch (IOException e) {
@@ -73,46 +78,33 @@ public class ImageStorage {
 
     public String copy(String filename) {
         String copy = UUID.randomUUID().toString().replace("-", "") + ".jpg";
-        try {
-            for (Size s : Size.values()) {
-                Path src = root.resolve(s.name()).resolve(filename);
-                if (Files.exists(src)) Files.copy(src, root.resolve(s.name()).resolve(copy));
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        for (Size s : Size.values()) {
+            storage.content(key(s, filename))
+                    .ifPresent(c -> storage.put(key(s, copy), c.getContentType(), c.getData(), null));
         }
         return copy;
     }
 
     public void delete(String filename) {
         for (Size s : Size.values()) {
-            try {
-                Files.deleteIfExists(root.resolve(s.name()).resolve(filename));
-            } catch (IOException e) {
-                log.warn("Could not delete {}/{}: {}", s, filename, e.getMessage());
-            }
+            storage.delete(key(s, filename));
+            dimensionCache.remove(s + "/" + filename);
         }
+    }
+
+    public Optional<StoredFileRepository.Content> content(Size size, String filename) {
+        return storage.content(key(size, filename));
     }
 
     private final Map<String, int[]> dimensionCache = new ConcurrentHashMap<>();
 
-    /** Width/height of a stored variant, read from the file header (cached). Null if missing. */
+    /** Width/height of a stored variant, recorded when it was uploaded (cached). Null if missing. */
     public int[] dimensions(Size size, String filename) {
-        return dimensionCache.computeIfAbsent(size + "/" + filename, k -> {
-            try (ImageInputStream in = ImageIO.createImageInputStream(root.resolve(size.name()).resolve(filename).toFile())) {
-                Iterator<ImageReader> readers = in == null ? null : ImageIO.getImageReaders(in);
-                if (readers == null || !readers.hasNext()) return null;
-                ImageReader reader = readers.next();
-                try {
-                    reader.setInput(in);
-                    return new int[]{reader.getWidth(0), reader.getHeight(0)};
-                } finally {
-                    reader.dispose();
-                }
-            } catch (IOException e) {
-                return null;
-            }
-        });
+        return dimensionCache.computeIfAbsent(size + "/" + filename, k ->
+                storage.dimensions(key(size, filename))
+                        .filter(d -> d.getWidthPx() != null && d.getHeightPx() != null)
+                        .map(d -> new int[]{d.getWidthPx(), d.getHeightPx()})
+                        .orElse(null));
     }
 
     private static int maxSide(Path file) throws IOException {

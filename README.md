@@ -46,7 +46,7 @@ variable the hosted deployment uses).
 | `DB_SCHEMA` | `pcmania` | Schema Flyway creates and uses. On Postgres this keeps the tables out of `public`, which is the schema Supabase exposes publicly |
 | `DB_POOL_SIZE` | `5` | Maximum JDBC connections |
 | `BASE_URL` | `http://localhost:8070` | **Public https URL.** Used for canonical links, Open Graph images and the sitemap — Facebook previews break if this is wrong |
-| `UPLOAD_DIR` | `./uploads` | Image storage (`thumb/`, `medium/`, `full/`). Back this up |
+| `UPLOAD_DIR` | `./uploads` | Only read at startup, to import photos written to disk by older versions. Uploads now go to the database |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / *(blank)* | Used only when no admin exists. Blank password → a random one is printed to the log once |
 | `NOTIFY_EMAIL` | *(blank)* | Operator address for new orders / build requests |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP. Without `MAIL_HOST` notifications are only written to the log |
@@ -75,10 +75,13 @@ Two things Render does not provide:
   while the pooler answers on IPv4 - and set `DB_URL` / `DB_USER` / `DB_PASSWORD`. Flyway creates
   the schema on first start. Migrations live under `db/migration/{vendor}`, so the same build
   still runs against the local MySQL database; `spring.flyway.locations` picks the folder from
-  the JDBC URL.
-- **No persistent filesystem** unless the instance is paid and has a disk attached. `UPLOAD_DIR`
-  defaults to `/var/data/uploads` in the image, which is where `render.yaml` mounts a disk once
-  the commented `disk:` block is enabled. Without a disk, every deploy deletes the product photos.
+  the JDBC URL. The Postgres URL must carry **`currentSchema=pcmania`** as well as `DB_SCHEMA`:
+  Flyway is told the schema by configuration, but Hibernate issues unqualified SQL and will not
+  find the tables without it.
+- **No persistent filesystem.** Nothing is written to disk any more: product photos and the
+  uploaded Android build live in the `stored_file` table, so a deploy cannot lose them and the
+  free plan needs no paid disk. Photos are served from `/img/p/**` with a one-year immutable
+  cache and an ETag, so a repeat view is answered without touching the database.
 
 Set `BASE_URL` to the address Render assigns (`https://<name>.onrender.com`). It is what the
 sitemap, canonical links, Facebook previews **and the photo URLs the phone app loads** are built
@@ -161,5 +164,11 @@ Failed logins share the web admin's 5-attempt lockout.
 customers leave a name and phone, stored in `upcoming_interest`, and the operator calls them. A repeated phone number
 for the same item is ignored rather than duplicated, and the same honeypot plus per-IP hourly limit as the other
 public forms applies. Deleting a teaser deletes its waiting list.
+
+**Installing the app.** The built APK is uploaded at `/admin/app` and downloaded from the same
+page, so a new version reaches the phone by opening the site on it and signing in as admin -
+no cable. One slot: uploading replaces the previous build. The file is stored in `stored_file`
+like the photos, the download sits behind `/admin/**` so only a signed-in operator can fetch
+it, and it is sent with `Cache-Control: no-store` so the phone never gets a stale build.
 
 **Abuse protection.** Public forms have a honeypot field and a per-IP limit (5 orders / 5 build requests per hour). Admin login locks an IP for 15 minutes after 5 failures.

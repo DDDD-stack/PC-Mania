@@ -19,10 +19,8 @@ WORKDIR /app
 # *.jar matches only the boot jar; Maven also leaves a pcmania-1.0.0.jar.original beside it.
 COPY --from=build /build/target/*.jar app.jar
 
-# Uploaded photos. On Render this path is where a persistent disk gets mounted;
-# without a disk the container filesystem is wiped on every deploy.
-ENV UPLOAD_DIR=/var/data/uploads
-RUN mkdir -p /var/data/uploads && chown -R app:app /var/data
+# Uploaded photos and the Android build are kept in the database, not on disk, because
+# the container filesystem is rebuilt on every deploy. No volume is needed.
 USER app
 
 # Render injects PORT; application.yml reads it (server.port: ${PORT:8070}).

@@ -28,8 +28,9 @@ spring:
     cache: ${THYMELEAF_CACHE:true}
   servlet:
     multipart:
-      max-file-size: 15MB
-      max-request-size: 80MB
+      # The Android build is uploaded through this form too, and it is tens of megabytes.
+      max-file-size: ${MAX_UPLOAD_SIZE:60MB}
+      max-request-size: ${MAX_REQUEST_SIZE:120MB}
   mail:
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}

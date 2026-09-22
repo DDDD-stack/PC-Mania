@@ -21,8 +21,10 @@ services:
         sync: false
       # Supabase Postgres. Use the *pooler* connection string from Supabase > Project Settings >
       # Database, Session mode - the direct database host is IPv6-only, the pooler answers on IPv4:
-      #   jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+      #   jdbc:postgresql://aws-1-<region>.pooler.supabase.com:5432/postgres?sslmode=require&currentSchema=pcmania
       # DB_USER is postgres.<project-ref>; DB_PASSWORD is the database password.
+      # currentSchema is required: Flyway is told the schema by DB_SCHEMA, but Hibernate issues
+      # unqualified SQL and will not find the tables without it.
       - key: DB_URL
         sync: false
       - key: DB_USER
@@ -66,9 +68,5 @@ services:
       - key: MAIL_PASSWORD
         sync: false
 
-    # Photos. A disk needs a paid instance; uncomment this and change plan to "starter"
-    # to keep uploads across deploys. UPLOAD_DIR already points at /var/data/uploads.
-    # disk:
-    #   name: uploads
-    #   mountPath: /var/data
-    #   sizeGB: 1
+    # No disk is needed: product photos and the uploaded Android build are stored in the
+    # database (stored_file), so they survive a deploy on the free plan too.
