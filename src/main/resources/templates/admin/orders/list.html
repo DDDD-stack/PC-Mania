@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Porositë')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('orders')}"></nav>
+<main class="container-fluid py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+    <h1 class="h4 mb-3">Porositë</h1>
+
+    <ul class="nav nav-pills flex-nowrap overflow-auto mb-3 small">
+        <li class="nav-item"><a class="nav-link text-nowrap" th:classappend="${status == null} ? active" href="/admin/orders">Të gjitha</a></li>
+        <li class="nav-item" th:each="s : ${statuses}">
+            <a class="nav-link text-nowrap" th:classappend="${s == status} ? active" th:href="@{/admin/orders(status=${s})}">
+                <span th:text="${s.label}"></span> <span class="badge text-bg-secondary" th:text="${counts.get(s)}"></span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white">
+            <thead class="table-light">
+            <tr><th>Nr.</th><th>Data</th><th>Klienti</th><th>Qyteti</th><th>Produktet</th><th class="text-end">Totali</th><th>Statusi</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="o : ${page.content}" style="cursor:pointer" th:onclick="|location.href='/admin/orders/${o.id}'|">
+                <td><a class="fw-semibold font-monospace text-decoration-none" th:href="@{/admin/orders/{id}(id=${o.id})}" th:text="${o.orderNumber}"></a></td>
+                <td class="text-nowrap small" th:text="${@fmt.dateTime(o.createdAt)}"></td>
+                <td><div th:text="${o.customerName}"></div><div class="small text-body-secondary" th:text="${o.customerPhone}"></div></td>
+                <td th:text="${o.city}"></td>
+                <td class="small"><div th:each="i : ${o.items}" th:text="${i.quantity} + ' × ' + ${i.titleSnapshot}"></div></td>
+                <td class="text-end text-nowrap fw-semibold" th:text="${@fmt.price(o.totalLek)}"></td>
+                <td><span class="badge" th:classappend="'status-' + ${o.status}" th:text="${o.status.label}"></span></td>
+            </tr>
+            <tr th:if="${page.empty}"><td colspan="7" class="text-center text-body-secondary py-4">Nuk ka porosi.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:if="${page.totalPages > 1}">
+        <ul class="pagination pagination-sm">
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? active">
+                <a class="page-link" th:href="@{/admin/orders(status=${status}, page=${i})}" th:text="${i + 1}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

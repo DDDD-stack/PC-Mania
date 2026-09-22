@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Së shpejti')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('upcoming')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex align-items-center mb-1">
+        <h1 class="h4 mb-0 me-auto">Së shpejti</h1>
+        <a class="btn btn-primary" href="/admin/upcoming/new"><i class="bi bi-plus-lg"></i> Shto</a>
+    </div>
+    <p class="text-body-secondary small">
+        Artikuj që kanë për të ardhur. Klientët nuk mund t'i porosisin – lënë vetëm numrin dhe ju i telefononi kur të vijnë.<br>
+        <strong>I fshehur</strong>: nuk duket askund. <strong>I dukshëm</strong>: shfaqet te <code>/se-shpejti</code> dhe në kryefaqe.
+        <strong>Ka ardhur</strong>: mbetet në faqe me shenjën "Ka ardhur" derisa ta fshini.
+    </p>
+
+    <p th:if="${items.empty}" class="text-body-secondary">Ende asgjë në listë.</p>
+
+    <div class="table-responsive" th:unless="${items.empty}">
+        <table class="table align-middle bg-white">
+            <thead class="table-light">
+            <tr>
+                <th style="width:70px">Rendi</th>
+                <th>Artikulli</th>
+                <th>Pritet</th>
+                <th class="text-center">Në pritje</th>
+                <th class="text-center" style="width:120px">Statusi</th>
+                <th style="width:90px"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="u : ${items}">
+                <td class="text-body-secondary" th:text="${u.sortOrder}"></td>
+                <td>
+                    <a class="fw-semibold text-decoration-none" th:href="@{/admin/upcoming/{id}(id=${u.id})}" th:text="${u.title}"></a>
+                    <div class="small text-body-secondary" th:if="${u.teaser}" th:text="${u.teaser}"></div>
+                </td>
+                <td class="small">
+                    <span th:if="${u.expectedLabel}" th:text="${u.expectedLabel}"></span>
+                    <span th:if="${u.expectedPriceLek != null}" class="text-body-secondary"
+                          th:text="' · rreth ' + ${@fmt.price(u.expectedPriceLek)}"></span>
+                </td>
+                <td class="text-center">
+                    <span class="badge rounded-pill"
+                          th:classappend="${interest.get(u.id) != null && interest.get(u.id) > 0} ? 'text-bg-warning' : 'text-bg-light'"
+                          th:text="${interest.get(u.id) != null} ? ${interest.get(u.id)} : 0"></span>
+                </td>
+                <td class="text-center">
+                    <span class="badge"
+                          th:classappend="${u.status.name() == 'VISIBLE'} ? 'text-bg-success' : (${u.status.name() == 'ARRIVED'} ? 'text-bg-primary' : 'text-bg-secondary')"
+                          th:text="${u.status.label}"></span>
+                </td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-link" th:href="@{/admin/upcoming/{id}(id=${u.id})}" title="Ndrysho"><i class="bi bi-pencil"></i></a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

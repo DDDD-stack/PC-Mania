@@ -1,0 +1,74 @@
+# Render blueprint. Either commit this and use "New > Blueprint", or create the service
+# by hand in the dashboard with runtime = Docker and set the same variables there.
+#
+# Secrets are marked "sync: false": Render asks for them once and stores them itself,
+# so no password ends up in the repository.
+services:
+  - type: web
+    name: pcmania
+    runtime: docker
+    # Frankfurt is the closest region to Albania.
+    region: frankfurt
+    # free = sleeps after 15 minutes of no traffic (the next visitor waits ~50s) and has
+    # no disk, so uploaded photos are lost on every deploy. "starter" allows a disk.
+    plan: free
+    healthCheckPath: /
+    envVars:
+      # --- required -------------------------------------------------------
+      # The public https address Render gives the service. Canonical links, the sitemap,
+      # Facebook preview images and the photo URLs the phone app loads all come from this.
+      - key: BASE_URL
+        sync: false
+      # Supabase Postgres. Use the *pooler* connection string from Supabase > Project Settings >
+      # Database, Session mode - the direct database host is IPv6-only, the pooler answers on IPv4:
+      #   jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+      # DB_USER is postgres.<project-ref>; DB_PASSWORD is the database password.
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Tables are created in this schema instead of "public". Supabase only exposes "public"
+      # through its PostgREST API, so nothing here is reachable with the anon key.
+      # See db/migration/postgresql/V6__supabase_hardening.sql.
+      - key: DB_SCHEMA
+        value: pcmania
+      # Only used the first time, when the database has no admin yet.
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # The admin session cookie now crosses the public internet, so keep it https-only.
+      - key: COOKIE_SECURE
+        value: "true"
+
+      # --- shop details ---------------------------------------------------
+      - key: WHATSAPP_NUMBER
+        sync: false
+      - key: PHONE_DISPLAY
+        sync: false
+      - key: CONTACT_EMAIL
+        sync: false
+      - key: FACEBOOK_URL
+        sync: false
+      - key: COURIER_SHIPPING_LEK
+        value: "500"
+
+      # --- optional: order notification e-mail ------------------------------
+      # Without MAIL_HOST new orders are only written to the log.
+      - key: NOTIFY_EMAIL
+        sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+    # Photos. A disk needs a paid instance; uncomment this and change plan to "starter"
+    # to keep uploads across deploys. UPLOAD_DIR already points at /var/data/uploads.
+    # disk:
+    #   name: uploads
+    #   mountPath: /var/data
+    #   sizeGB: 1

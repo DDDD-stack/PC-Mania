@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Kërkesat PC')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('builds')}"></nav>
+<main class="container-fluid py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+    <h1 class="h4 mb-3">Kërkesat për PC me porosi</h1>
+
+    <ul class="nav nav-pills flex-nowrap overflow-auto mb-3 small">
+        <li class="nav-item"><a class="nav-link text-nowrap" th:classappend="${status == null} ? active" href="/admin/builds">Të gjitha</a></li>
+        <li class="nav-item" th:each="s : ${statuses}">
+            <a class="nav-link text-nowrap" th:classappend="${s == status} ? active" th:href="@{/admin/builds(status=${s})}">
+                <span th:text="${s.label}"></span> <span class="badge text-bg-secondary" th:text="${counts.get(s)}"></span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white">
+            <thead class="table-light">
+            <tr><th>Data</th><th>Klienti</th><th class="text-end">Buxheti</th><th>Përdorimi</th><th class="text-end">Oferta</th><th>Statusi</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="b : ${page.content}">
+                <td class="text-nowrap small"><a th:href="@{/admin/builds/{id}(id=${b.id})}" th:text="${@fmt.dateTime(b.createdAt)}"></a></td>
+                <td><a class="text-decoration-none fw-semibold" th:href="@{/admin/builds/{id}(id=${b.id})}" th:text="${b.customerName}"></a><div class="small text-body-secondary" th:text="${b.customerPhone}"></div></td>
+                <td class="text-end text-nowrap" th:text="${@fmt.price(b.budgetLek)}"></td>
+                <td th:text="${b.useCase.label}"></td>
+                <td class="text-end text-nowrap" th:text="${b.quotedTotalLek != null} ? ${@fmt.price(b.quotedTotalLek)} : '—'"></td>
+                <td><span class="badge" th:classappend="'status-' + ${b.status}" th:text="${b.status.label}"></span></td>
+            </tr>
+            <tr th:if="${page.empty}"><td colspan="6" class="text-center text-body-secondary py-4">Nuk ka kërkesa.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:if="${page.totalPages > 1}">
+        <ul class="pagination pagination-sm">
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? active">
+                <a class="page-link" th:href="@{/admin/builds(status=${status}, page=${i})}" th:text="${i + 1}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

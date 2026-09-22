@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${order.orderNumber})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('orders')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a href="/admin/orders" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0 font-monospace" th:text="${order.orderNumber}"></h1>
+        <span class="badge fs-6" th:classappend="'status-' + ${order.status}" th:text="${order.status.label}"></span>
+        <span class="text-body-secondary small ms-auto" th:text="${@fmt.dateTime(order.createdAt)}"></span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Produktet</strong></div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead class="table-light"><tr><th>Produkti</th><th class="text-center">Sasia</th><th class="text-end">Çmimi</th><th class="text-end">Kostoja</th><th class="text-end">Fitimi</th></tr></thead>
+                        <tbody>
+                        <tr th:each="i : ${order.items}">
+                            <td>
+                                <a th:if="${i.product}" th:href="@{/admin/products/{id}(id=${i.product.id})}" th:text="${i.titleSnapshot}"></a>
+                                <span th:unless="${i.product}" th:text="${i.titleSnapshot}"></span>
+                            </td>
+                            <td class="text-center" th:text="${i.quantity}"></td>
+                            <td class="text-end text-nowrap" th:text="${@fmt.price(i.priceLekSnapshot)}"></td>
+                            <td class="text-end text-nowrap text-body-secondary" th:text="${@fmt.price(i.costLekSnapshot)}"></td>
+                            <td class="text-end text-nowrap" th:text="${@fmt.price((i.priceLekSnapshot - i.costLekSnapshot) * i.quantity)}"></td>
+                        </tr>
+                        </tbody>
+                        <tfoot>
+                        <tr><td colspan="4" class="text-end">Nëntotali</td><td class="text-end text-nowrap" th:text="${@fmt.price(order.subtotalLek)}"></td></tr>
+                        <tr><td colspan="4" class="text-end">Transporti</td><td class="text-end text-nowrap" th:text="${@fmt.price(order.shippingLek)}"></td></tr>
+                        <tr class="fw-bold"><td colspan="4" class="text-end">Totali</td><td class="text-end text-nowrap" th:text="${@fmt.price(order.totalLek)}"></td></tr>
+                        <tr class="text-success"><td colspan="4" class="text-end">Fitimi nga produktet</td><td class="text-end text-nowrap" th:text="${@fmt.price(profit)}"></td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-3" th:if="${order.customerNotes}">
+                <div class="card-header"><strong>Shënime nga klienti</strong></div>
+                <div class="card-body" style="white-space: pre-line" th:text="${order.customerNotes}"></div>
+            </div>
+
+            <form class="card mb-3" th:action="@{/admin/orders/{id}/notes(id=${order.id})}" method="post">
+                <div class="card-header"><strong>Shënime të brendshme</strong></div>
+                <div class="card-body">
+                    <textarea class="form-control mb-2" name="adminNotes" rows="3" th:text="${order.adminNotes}"></textarea>
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Ruaj shënimet</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Klienti</strong></div>
+                <div class="card-body">
+                    <div class="fw-semibold" th:text="${order.customerName}"></div>
+                    <div><a th:href="'tel:' + ${order.customerPhone}" th:text="${order.customerPhone}"></a></div>
+                    <div th:if="${order.customerEmail}"><a th:href="'mailto:' + ${order.customerEmail}" th:text="${order.customerEmail}"></a></div>
+                    <hr>
+                    <div><span class="text-body-secondary">Qyteti:</span> <span th:text="${order.city}"></span></div>
+                    <div th:if="${order.address}"><span class="text-body-secondary">Adresa:</span> <span th:text="${order.address}"></span></div>
+                    <div><span class="text-body-secondary">Dorëzimi:</span> <span th:text="${order.deliveryMethod.label}"></span></div>
+                    <div><span class="text-body-secondary">Pagesa:</span> <span th:text="${order.paymentMethod.label}"></span></div>
+                    <div th:if="${order.deliveredAt}"><span class="text-body-secondary">Dorëzuar:</span> <span th:text="${@fmt.dateTime(order.deliveredAt)}"></span></div>
+                    <div class="d-flex gap-2 mt-3" th:if="${order.customerPhone != '-'}">
+                        <a class="btn btn-sm btn-outline-dark" th:href="'tel:' + ${order.customerPhone}"><i class="bi bi-telephone"></i> Telefono</a>
+                        <a class="btn btn-sm btn-success" th:if="${customerWhatsapp}" th:href="${customerWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3" th:unless="${order.allowedTransitions().isEmpty()}">
+                <div class="card-header"><strong>Ndrysho statusin</strong></div>
+                <div class="card-body d-grid gap-2">
+                    <form th:each="s : ${transitions}"
+                          th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post"
+                          th:data-confirm="${s.name() == 'CANCELLED'} ? 'Të anulohet porosia? Stoku do të rikthehet.' : null">
+                        <input type="hidden" name="status" th:value="${s}">
+                        <button class="btn w-100" type="submit"
+                                th:classappend="${s.name() == 'CANCELLED'} ? 'btn-outline-danger' : 'btn-primary'"
+                                th:text="'→ ' + ${s.label}"></button>
+                    </form>
+                    <div class="form-text">Anulimi rikthen stokun. "E dorëzuar" e shënon produktin si të shitur dhe hyn në raportet e fitimit.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

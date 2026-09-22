@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-4">
+    <h1 class="h3 fw-bold mb-3">Kushtet e përdorimit</h1>
+    <div class="prose">
+        <h2>1. Porositë</h2>
+        <p>Porosia e dërguar nga faqja është një kërkesë blerjeje. Ajo konsiderohet e konfirmuar vetëm pasi t'ju kontaktojmë në numrin e telefonit të dhënë. Rezervojmë të drejtën të anulojmë një porosi nëse produkti nuk është më i disponueshëm ose të dhënat e kontaktit janë të pasakta.</p>
+
+        <h2>2. Çmimet</h2>
+        <p>Të gjitha çmimet shprehen në Lekë (ALL). Kostoja e transportit, kur aplikohet, shfaqet para dërgimit të porosisë. Çmimi i vlefshëm është ai në momentin e dërgimit të porosisë.</p>
+
+        <h2>3. Gjendja e produkteve</h2>
+        <ul>
+            <li><strong>E re</strong> – produkt i ri, në paketimin origjinal të pahapur.</li>
+            <li><strong>Open box</strong> – paketimi është hapur (p.sh. për test ose fotografim), produkti është i papërdorur ose i përdorur minimalisht.</li>
+            <li><strong>E përdorur</strong> – produkt i përdorur më parë, i testuar dhe funksional. Shenjat kozmetike përshkruhen në faqen e produktit.</li>
+        </ul>
+
+        <h2>4. Garancia</h2>
+        <p>Kohëzgjatja e garancisë shënohet në faqen e çdo produkti. Garancia mbulon defektet funksionale që nuk janë shkaktuar nga përdorimi i gabuar, dëmtimi fizik, lëngjet, modifikimet (p.sh. BIOS i ndryshuar) ose overclocking-u. Për të përdorur garancinë, na kontaktoni me numrin e porosisë.</p>
+
+        <h2>5. Kthimet</h2>
+        <p>Nëse produkti nuk përputhet me përshkrimin, na kontaktoni brenda 3 ditëve nga marrja. Për blerjet në distancë, konsumatori gëzon të drejtat e parashikuara nga legjislacioni shqiptar për mbrojtjen e konsumatorit. Produkti duhet të kthehet në të njëjtën gjendje, me të gjithë aksesorët dhe paketimin.</p>
+
+        <h2>6. Të dhënat personale</h2>
+        <p>Emrin, telefonin, qytetin dhe adresën i përdorim vetëm për përpunimin dhe dorëzimin e porosisë ose për t'ju dërguar ofertën e kërkuar. Nuk i ndajmë me palë të treta, përveç korrierit kur zgjidhni dërgesë me korrier.</p>
+
+        <h2>7. Kontakt</h2>
+        <p class="mb-0">Për çdo pyetje rreth këtyre kushteve: <a th:href="'mailto:' + ${site.contactEmail}" th:text="${site.contactEmail}"></a>.</p>
+    </div>
+</main>
+</body>
+</html>

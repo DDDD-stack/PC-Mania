@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{::scripts})}">
+<body>
+<main class="container py-3">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h1 class="h2 fw-bold">PC me porosi</h1>
+            <p class="lead-sm">Nuk ke kohë të zgjedhësh pjesët një nga një? Na thuaj sa do të shpenzosh dhe për çfarë do ta përdorësh kompjuterin – ne merremi me pjesën tjetër.</p>
+            <ol class="steps mt-4">
+                <li><strong>Na dërgo kërkesën</strong><br><span class="text-body-secondary">Buxheti, përdorimi dhe çdo preferencë (p.sh. ngjyra e kasës, RGB, Wi‑Fi).</span></li>
+                <li><strong>Marrim pjesët dhe të dërgojmë ofertën</strong><br><span class="text-body-secondary">Zgjedhim kombinimin më të mirë për buxhetin, të reja ose të përdorura të testuara, dhe të telefonojmë me një total të qartë në Lekë.</span></li>
+                <li><strong>Montojmë dhe testojmë</strong><br><span class="text-body-secondary">Montim i pastër, kabllo të rregulluara, Windows/drivers dhe stress test para dorëzimit.</span></li>
+                <li><strong>Ta sjellim gati</strong><br><span class="text-body-secondary">Marrje në Tiranë ose dërgesë në gjithë Shqipërinë. Paguan në dorëzim.</span></li>
+            </ol>
+            <div class="alert alert-light border small">
+                <i class="bi bi-info-circle me-1"></i> Oferta është falas dhe pa detyrim. Nuk paguan asgjë derisa ta pranosh.
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div th:if="${submitted}" class="form-card text-center">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem"></i>
+                <h2 class="h4 fw-bold mt-2">Kërkesa u dërgua!</h2>
+                <p>Do t'ju kontaktojmë në <strong th:text="${submitted}"></strong> me një ofertë, zakonisht brenda 24 orëve.</p>
+                <a class="btn btn-whatsapp" th:href="${whatsappGeneral}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Na shkruani në WhatsApp</a>
+            </div>
+
+            <form th:unless="${submitted}" th:action="@{/pc-me-porosi}" th:object="${form}" method="post" class="form-card" novalidate data-loading>
+                <h2 class="h5 fw-bold mb-3">Kërko ofertë</h2>
+                <div th:if="${formError}" class="alert alert-danger" th:text="${formError}"></div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="budgetLek">Buxheti (Lekë) *</label>
+                    <input class="form-control form-control-lg" type="number" th:field="*{budgetLek}" th:errorclass="is-invalid" min="20000" step="5000" inputmode="numeric" placeholder="p.sh. 120000" required>
+                    <div class="invalid-feedback" th:errors="*{budgetLek}"></div>
+                    <div class="d-flex flex-wrap gap-1 mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary budget-chip" th:each="b : ${ {70000, 100000, 150000, 200000, 300000} }"
+                                th:attr="data-value=${b}" th:text="${@fmt.num(b)}"></button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Për çfarë do ta përdorësh? *</label>
+                    <div class="d-grid gap-2">
+                        <label class="choice-card py-2" th:each="u : ${useCases}">
+                            <input class="form-check-input" type="radio" th:field="*{useCase}" th:value="${u}">
+                            <span th:text="${u.label}"></span>
+                        </label>
+                    </div>
+                    <div class="invalid-feedback d-block" th:errors="*{useCase}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="notes">Shënime</label>
+                    <textarea class="form-control" th:field="*{notes}" rows="3" maxlength="2000"
+                              placeholder="p.sh. lojërat që luan, monitori që ke, nëse do edhe monitor/tastierë, preferenca për ngjyrën…"></textarea>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label" for="customerName">Emri *</label>
+                        <input class="form-control" th:field="*{customerName}" th:errorclass="is-invalid" autocomplete="name" required maxlength="120">
+                        <div class="invalid-feedback" th:errors="*{customerName}"></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="customerPhone">Telefoni *</label>
+                        <input class="form-control" th:field="*{customerPhone}" th:errorclass="is-invalid" type="tel" inputmode="tel" autocomplete="tel" placeholder="06X XXX XXXX" required maxlength="20">
+                        <div class="invalid-feedback" th:errors="*{customerPhone}"></div>
+                    </div>
+                </div>
+                <div class="hp-field" aria-hidden="true">
+                    <label for="website">Website</label>
+                    <input th:field="*{website}" tabindex="-1" autocomplete="off">
+                </div>
+
+                <button class="btn btn-accent btn-lg w-100" type="submit"><i class="bi bi-send me-2"></i>Dërgo kërkesën</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<th:block th:fragment="scripts">
+    <script>
+        document.querySelectorAll('.budget-chip').forEach(b => b.addEventListener('click', () => {
+            document.getElementById('budgetLek').value = b.dataset.value;
+        }));
+    </script>
+</th:block>
+</body>
+</html>

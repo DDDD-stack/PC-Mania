@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${u.id} == null ? 'Artikull i ri' : ${u.title})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('upcoming')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex align-items-center mb-3">
+        <h1 class="h4 mb-0 me-auto" th:text="${u.id} == null ? 'Artikull i ri' : ${u.title}">Artikull</h1>
+        <form th:if="${u.id != null}" th:action="@{/admin/upcoming/{id}/delete(id=${u.id})}" method="post" class="d-inline"
+              data-confirm="Të fshihet? Lista e personave në pritje fshihet bashkë me të.">
+            <button class="btn btn-outline-danger" type="submit"><i class="bi bi-trash"></i> Fshi</button>
+        </form>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <form th:action="${u.id} == null ? @{/admin/upcoming} : @{/admin/upcoming/{id}(id=${u.id})}"
+                  method="post" enctype="multipart/form-data" class="card card-body">
+                <div class="mb-3">
+                    <label class="form-label">Titulli *</label>
+                    <input class="form-control" name="title" th:value="${u.title}" required maxlength="200"
+                           placeholder="p.sh. RTX 4070 Super – 3 copë">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Përshkrim i shkurtër</label>
+                    <textarea class="form-control" name="teaser" rows="2" maxlength="500"
+                              th:text="${u.teaser}" placeholder="Një rresht që e bën interesant"></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label">Kategoria</label>
+                        <select class="form-select" name="categorySlug">
+                            <option value="">—</option>
+                            <option th:each="c : ${categories}" th:value="${c.slug}" th:text="${c.nameSq}"
+                                    th:selected="${c.slug == u.categorySlug}"></option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">Gjendja</label>
+                        <select class="form-select" name="condition">
+                            <option value="">—</option>
+                            <option th:each="c : ${conditions}" th:value="${c.name()}" th:text="${c.label}"
+                                    th:selected="${u.condition != null && c == u.condition}"></option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">Çmimi i pritshëm (Lekë)</label>
+                        <input class="form-control" name="expectedPriceLek" type="number" min="0"
+                               th:value="${u.expectedPriceLek}" placeholder="lëreni bosh nëse nuk e dini">
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">Kur pritet</label>
+                        <input class="form-control" name="expectedLabel" maxlength="80" th:value="${u.expectedLabel}"
+                               placeholder="p.sh. Brenda javës">
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">Statusi</label>
+                        <select class="form-select" name="status">
+                            <option th:each="s : ${statuses}" th:value="${s.name()}" th:text="${s.label}"
+                                    th:selected="${s == u.status}"></option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">Rendi</label>
+                        <input class="form-control" name="sortOrder" type="number" th:value="${u.id} == null ? null : ${u.sortOrder}"
+                               placeholder="më i vogël = më lart">
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <label class="form-label">Foto</label>
+                    <input class="form-control" type="file" name="image" accept="image/jpeg,image/png">
+                    <div class="form-text">Opsionale. Një foto – zëvendëson atë ekzistuese.</div>
+                    <img th:if="${u.imageFilename}" class="mt-2 rounded border" style="max-width:160px"
+                         th:src="${@img.thumb(u.imageFilename)}" alt="">
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <a href="/admin/upcoming" class="btn btn-outline-secondary">Anulo</a>
+                    <button class="btn btn-primary px-4" type="submit"><i class="bi bi-check-lg"></i> Ruaj</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-5" th:if="${u.id != null}">
+            <div class="card">
+                <div class="card-header"><strong>Kush pret</strong>
+                    <small class="text-body-secondary">— telefonojini kur të vijë</small></div>
+                <div class="card-body">
+                    <p th:if="${interests == null || interests.empty}" class="text-body-secondary small mb-0">
+                        Askush ende. Numrat shfaqen këtu kur dikush shtyp "Më njofto".
+                    </p>
+                    <div class="list-group list-group-flush" th:unless="${interests == null || interests.empty}">
+                        <div class="list-group-item px-0 d-flex align-items-center gap-2" th:each="i : ${interests}">
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" th:text="${i.customerName}"></div>
+                                <a class="small text-decoration-none" th:href="'tel:' + ${i.customerPhone}" th:text="${i.customerPhone}"></a>
+                                <span class="badge text-bg-success ms-1" th:if="${i.notified}">Njoftuar</span>
+                            </div>
+                            <form th:unless="${i.notified}" th:action="@{/admin/upcoming/interest/{iid}/notified(iid=${i.id})}" method="post">
+                                <input type="hidden" name="upcomingId" th:value="${u.id}">
+                                <button class="btn btn-sm btn-outline-success" type="submit" title="Shëno si të njoftuar">
+                                    <i class="bi bi-check2"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

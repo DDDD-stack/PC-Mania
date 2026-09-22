@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-4" style="max-width: 640px">
+    <div class="form-card text-center">
+        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem"></i>
+        <h1 class="h3 fw-bold mt-2">Faleminderit! Porosia u dërgua.</h1>
+        <p class="mb-1">Numri i porosisë:</p>
+        <p class="fs-3 fw-bold font-monospace mb-3" th:text="${orderNumber}">PM-2026-0001</p>
+        <p class="mb-1" th:text="${orderTitle}"></p>
+        <p class="fw-semibold">Totali: <span th:text="${@fmt.price(orderTotal)}"></span> <span class="text-body-secondary fw-normal" th:text="'(' + ${orderPayment.label} + ')'"></span></p>
+        <div class="alert alert-light border text-start">
+            <strong>Çfarë ndodh tani?</strong>
+            <ol class="mb-0 mt-2 ps-3">
+                <li>Produkti është rezervuar për ju.</li>
+                <li>Do t'ju telefonojmë në <strong th:text="${orderPhone}"></strong> për të konfirmuar porosinë.</li>
+                <li>Dërgojmë produktin ose lëmë takim në Tiranë.</li>
+            </ol>
+        </div>
+        <p class="small text-body-secondary">Ruani numrin e porosisë. Për çdo pyetje na shkruani në WhatsApp.</p>
+        <div class="d-grid d-sm-flex gap-2 justify-content-center">
+            <a class="btn btn-whatsapp" th:href="${whatsappGeneral}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a>
+            <a class="btn btn-outline-dark" href="/">Vazhdo te dyqani</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

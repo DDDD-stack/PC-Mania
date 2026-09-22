@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: pcmania
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/pcmania?useUnicode=true&characterEncoding=utf8}
+    username: ${DB_USER:pcmania}
+    password: ${DB_PASSWORD:pcmania}
+    hikari:
+      # Supabase allows a limited number of connections per project; a small pool is plenty
+      # for one instance and leaves room for migrations and the SQL editor.
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+  jpa:
+    open-in-view: true
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc.batch_size: 20
+  flyway:
+    # {vendor} resolves to "mysql" or "postgresql" from the JDBC URL, so one build runs
+    # against the local MySQL database and against Supabase without being rebuilt.
+    locations: classpath:db/migration/{vendor}
+    # On MySQL a schema is the database. On Postgres this keeps every table out of "public",
+    # which is the only schema Supabase exposes through its public PostgREST API.
+    schemas: ${DB_SCHEMA:pcmania}
+    enabled: true
+  thymeleaf:
+    cache: ${THYMELEAF_CACHE:true}
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 80MB
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USER:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 7d
+
+server:
+  port: ${PORT:8070}
+  forward-headers-strategy: native
+  compression:
+    enabled: true
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        # Behind Render's TLS the admin session cookie must not be allowed to travel in
+        # clear. Left off by default so plain-http local development keeps working.
+        secure: ${COOKIE_SECURE:false}
+        http-only: true
+        same-site: lax
+  error:
+    whitelabel:
+      enabled: false
+
+app:
+  # Public absolute URL, used for canonical links, Open Graph and the sitemap.
+  base-url: ${BASE_URL:http://localhost:8070}
+  site-name: PCMania
+  upload-dir: ${UPLOAD_DIR:./uploads}
+  # Operator contact details
+  notify-email: ${NOTIFY_EMAIL:}
+  mail-from: ${MAIL_FROM:no-reply@pcmania.al}
+  whatsapp-number: ${WHATSAPP_NUMBER:355690000000}
+  phone-display: ${PHONE_DISPLAY:069 000 0000}
+  contact-email: ${CONTACT_EMAIL:info@pcmania.al}
+  facebook-url: ${FACEBOOK_URL:https://www.facebook.com/}
+  courier-shipping-lek: ${COURIER_SHIPPING_LEK:500}
+  # Created on first start if no admin exists. If password is blank a random one is printed to the log.
+  admin:
+    username: ${ADMIN_USERNAME:admin}
+    password: ${ADMIN_PASSWORD:}

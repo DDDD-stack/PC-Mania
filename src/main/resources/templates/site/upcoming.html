@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{::scripts})}">
+<body>
+<main class="container py-3">
+    <h1 class="h2 fw-bold mb-1">Së shpejti</h1>
+    <p class="lead-sm mb-4">Këto po vijnë në stok. Lër numrin dhe të shkruajmë i pari kur të mbërrijnë – pa detyrim, pa paradhënie.</p>
+
+    <div th:if="${notified}" class="alert alert-success d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill"></i><span th:text="${notified}"></span>
+    </div>
+    <div th:if="${formError}" class="alert alert-danger" th:text="${formError}"></div>
+
+    <p th:if="${items.empty}" class="text-body-secondary">
+        Për momentin nuk ka artikuj në rrugë. <a href="/kategori/karta-grafike">Shiko çfarë kemi në stok</a>
+        ose na ndiqni në Facebook.
+    </p>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+        <div class="col reveal" th:each="u : ${items}">
+            <article class="upcoming-card h-100">
+                <div class="upcoming-thumb">
+                    <img th:if="${u.imageFilename}" data-fade th:src="${@img.medium(u.imageFilename)}"
+                         th:alt="${u.title}" width="400" height="300" loading="lazy" decoding="async">
+                    <div th:unless="${u.imageFilename}" class="upcoming-placeholder"><i class="bi bi-gpu-card"></i></div>
+                    <span class="badge upcoming-badge"
+                          th:classappend="${u.status.name() == 'ARRIVED'} ? 'bg-success' : 'bg-dark'"
+                          th:text="${u.status.name() == 'ARRIVED'} ? 'Ka ardhur' : 'Së shpejti'"></span>
+                </div>
+                <div class="upcoming-body">
+                    <h2 class="h6 fw-bold mb-1" th:text="${u.title}"></h2>
+                    <p class="small text-body-secondary mb-2" th:if="${u.teaser}" th:text="${u.teaser}"></p>
+                    <ul class="upcoming-meta">
+                        <li th:if="${u.condition}"><i class="bi bi-tag"></i> <span th:text="${u.condition.label}"></span></li>
+                        <li th:if="${u.expectedLabel}"><i class="bi bi-calendar-event"></i> <span th:text="${u.expectedLabel}"></span></li>
+                        <li th:if="${u.expectedPriceLek != null}">
+                            <i class="bi bi-cash"></i> <span th:text="'rreth ' + ${@fmt.price(u.expectedPriceLek)}"></span>
+                        </li>
+                    </ul>
+
+                    <!-- Arrived items link straight to the listing; the rest collect a phone number. -->
+                    <a th:if="${u.status.name() == 'ARRIVED' && u.product != null}" class="btn btn-warning w-100 fw-semibold"
+                       th:href="@{/produkt/{s}(s=${u.product.slug})}">Shiko produktin <i class="bi bi-arrow-right"></i></a>
+
+                    <div th:unless="${u.status.name() == 'ARRIVED' && u.product != null}">
+                        <button class="btn btn-outline-dark w-100 fw-semibold" type="button" data-bs-toggle="collapse"
+                                th:data-bs-target="'#njofto-' + ${u.id}" th:aria-controls="'njofto-' + ${u.id}">
+                            <i class="bi bi-bell me-1"></i> Më njofto kur të vijë
+                        </button>
+                        <div class="collapse mt-2" th:id="'njofto-' + ${u.id}"
+                             th:classappend="${openId != null && openId == u.id} ? 'show'">
+                            <form th:action="@{/se-shpejti/{id}/njofto(id=${u.id})}" th:object="${form}" method="post" class="vstack gap-2">
+                                <div class="hp-field" aria-hidden="true">
+                                    <input th:field="*{website}" tabindex="-1" autocomplete="off">
+                                </div>
+                                <div>
+                                    <input class="form-control form-control-sm" th:field="*{customerName}" placeholder="Emri" required>
+                                    <div class="small text-danger" th:if="${#fields.hasErrors('customerName')}" th:errors="*{customerName}"></div>
+                                </div>
+                                <div>
+                                    <input class="form-control form-control-sm" th:field="*{customerPhone}" placeholder="Telefoni" inputmode="tel" required>
+                                    <div class="small text-danger" th:if="${#fields.hasErrors('customerPhone')}" th:errors="*{customerPhone}"></div>
+                                </div>
+                                <button class="btn btn-sm btn-warning fw-semibold" type="submit">Njoftomë</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <p class="upcoming-waiting small mb-0" th:if="${interest.get(u.id) != null && interest.get(u.id) >= 3}">
+                        <i class="bi bi-people"></i>
+                        <span th:text="${interest.get(u.id)} + ' persona presin këtë'"></span>
+                    </p>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div class="alert alert-light border mt-4 small">
+        <i class="bi bi-info-circle me-1"></i>
+        Datat janë të përafërta – dërgesat vonojnë ndonjëherë. Nuk marrim paradhënie për artikujt që nuk kanë ardhur ende.
+    </div>
+</main>
+
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

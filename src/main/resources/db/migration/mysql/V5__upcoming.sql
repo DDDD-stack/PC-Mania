@@ -1,0 +1,31 @@
+-- "Së shpejti": stock the operator has bought or is about to receive but cannot sell yet.
+-- Customers can register interest with a phone number so the operator calls them when it lands.
+CREATE TABLE upcoming_product (
+    id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title               VARCHAR(200)  NOT NULL,
+    slug                VARCHAR(220)  NOT NULL UNIQUE,
+    teaser              VARCHAR(500)  NULL,
+    category_slug       VARCHAR(120)  NULL,
+    expected_price_lek  INT           NULL,
+    expected_label      VARCHAR(80)   NULL,
+    item_condition      VARCHAR(20)   NULL,
+    status              VARCHAR(20)   NOT NULL DEFAULT 'HIDDEN',
+    image_filename      VARCHAR(120)  NULL,
+    sort_order          INT           NOT NULL DEFAULT 0,
+    product_id          BIGINT        NULL,
+    created_at          DATETIME      NOT NULL,
+    CONSTRAINT fk_upcoming_product FOREIGN KEY (product_id) REFERENCES product (id) ON DELETE SET NULL,
+    INDEX idx_upcoming_status (status, sort_order)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE upcoming_interest (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    upcoming_id     BIGINT       NOT NULL,
+    customer_name   VARCHAR(120) NOT NULL,
+    customer_phone  VARCHAR(40)  NOT NULL,
+    notified        BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at      DATETIME     NOT NULL,
+    CONSTRAINT fk_interest_upcoming FOREIGN KEY (upcoming_id) REFERENCES upcoming_product (id) ON DELETE CASCADE,
+    CONSTRAINT uq_interest_phone UNIQUE (upcoming_id, customer_phone),
+    INDEX idx_interest_upcoming (upcoming_id, created_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;

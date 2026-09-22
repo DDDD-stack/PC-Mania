@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{::scripts})}">
+<body>
+<main class="container py-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-2">
+            <li class="breadcrumb-item"><a href="/">Kryefaqja</a></li>
+            <li class="breadcrumb-item active" aria-current="page" th:text="${category.nameSq}"></li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h1 class="h3 fw-bold mb-0 me-auto">
+            <span th:text="${category.nameSq}"></span>
+            <small class="text-body-secondary fs-6 fw-normal" th:text="'(' + ${page.totalElements} + ')'"></small>
+        </h1>
+    </div>
+
+    <div th:if="${category.outOfStock}" class="alert alert-warning d-flex flex-wrap align-items-center gap-2" role="alert">
+        <span><i class="bi bi-info-circle me-1"></i>Kjo kategori është aktualisht pa stok. Na shkruani dhe ju njoftojmë sapo të vijnë produkte të reja.</span>
+        <a class="btn btn-sm btn-whatsapp ms-auto" th:href="${whatsappGeneral}" target="_blank" rel="noopener">
+            <i class="bi bi-whatsapp me-1"></i>Pyet në WhatsApp</a>
+    </div>
+
+    <div class="row g-3">
+        <aside class="col-lg-3">
+            <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="filters" aria-labelledby="filtersLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="filtersLabel">Filtrat</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#filters" aria-label="Mbyll"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <form th:action="${path}" method="get" id="filterForm" class="filter-form w-100">
+                        <input type="hidden" name="rendit" th:if="${filter.sort.name() != 'TE_REJAT'}" th:value="${filter.sort.param}">
+
+                        <div class="filter-group">
+                            <div class="filter-title">Çmimi (Lekë)</div>
+                            <div class="d-flex gap-2">
+                                <input class="form-control form-control-sm" type="number" name="min" min="0" step="1000" inputmode="numeric" placeholder="Nga" th:value="${filter.min}">
+                                <input class="form-control form-control-sm" type="number" name="max" min="0" step="1000" inputmode="numeric" placeholder="Deri" th:value="${filter.max}">
+                            </div>
+                        </div>
+
+                        <div class="filter-group">
+                            <div class="filter-title">Gjendja</div>
+                            <div class="form-check" th:each="c : ${conditions}">
+                                <input class="form-check-input" type="checkbox" name="gjendja" th:value="${c}" th:id="'c-' + ${c}" th:checked="${filter.hasCondition(c)}">
+                                <label class="form-check-label" th:for="'c-' + ${c}" th:text="${c.label}"></label>
+                            </div>
+                        </div>
+
+                        <div class="filter-group" th:if="${facets.brands.size() > 1 || !filter.brands.isEmpty()}">
+                            <div class="filter-title">Marka</div>
+                            <div class="form-check" th:each="b : ${facets.brands}">
+                                <input class="form-check-input" type="checkbox" name="marka" th:value="${b.slug}" th:id="'b-' + ${b.slug}" th:checked="${filter.brands.contains(b.slug)}">
+                                <label class="form-check-label" th:for="'b-' + ${b.slug}" th:text="${b.name}"></label>
+                            </div>
+                        </div>
+
+                        <th:block th:each="entry, est : ${facets.specs}">
+                            <div class="filter-group" th:if="${entry.value.size() > 1 || filter.specs.containsKey(entry.key)}">
+                                <div class="filter-title" th:text="${entry.key}"></div>
+                                <div class="form-check" th:each="v, vst : ${entry.value}">
+                                    <input class="form-check-input" type="checkbox" name="spec" th:value="${entry.key} + ':' + ${v}"
+                                           th:id="'s-' + ${est.index} + '-' + ${vst.index}" th:checked="${filter.hasSpec(entry.key, v)}">
+                                    <label class="form-check-label" th:for="'s-' + ${est.index} + '-' + ${vst.index}" th:text="${v}"></label>
+                                </div>
+                            </div>
+                        </th:block>
+
+                        <div class="d-grid gap-2 filter-actions">
+                            <button class="btn btn-dark" type="submit">Apliko filtrat</button>
+                            <a th:if="${filter.hasFilters()}" class="btn btn-link btn-sm" th:href="${path}">Pastro filtrat</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </aside>
+
+        <section class="col-lg-9">
+            <div class="d-flex gap-2 mb-3">
+                <button class="btn btn-outline-dark d-lg-none flex-grow-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#filters" aria-controls="filters">
+                    <i class="bi bi-sliders me-1"></i>Filtrat
+                    <span th:if="${filter.activeCount() > 0}" class="badge text-bg-warning ms-1" th:text="${filter.activeCount()}"></span>
+                </button>
+                <select class="form-select w-auto flex-grow-1 flex-lg-grow-0 ms-lg-auto" id="sortSelect" aria-label="Rendit">
+                    <option th:each="s : ${sorts}" th:value="${s.param}" th:text="${s.label}" th:selected="${s == filter.sort}"></option>
+                </select>
+            </div>
+
+            <div class="row row-cols-2 row-cols-md-3 g-2 g-md-3" th:unless="${page.empty}" data-catalog-grid>
+                <th:block th:each="p : ${page.content}"><div th:replace="~{site/fragments :: card(${p})}"></div></th:block>
+            </div>
+
+            <div th:if="${page.empty}" class="empty-state">
+                <i class="bi bi-search"></i>
+                <p class="mb-2" th:text="${filter.hasFilters()} ? 'Asnjë produkt nuk përputhet me filtrat.' : 'Aktualisht nuk ka produkte në këtë kategori.'"></p>
+                <a th:if="${filter.hasFilters()}" class="btn btn-sm btn-outline-dark" th:href="${path}">Pastro filtrat</a>
+                <a th:unless="${filter.hasFilters()}" class="btn btn-sm btn-whatsapp" th:href="${whatsappGeneral}" target="_blank" rel="noopener">
+                    <i class="bi bi-whatsapp me-1"></i>Pyesni për disponueshmërinë</a>
+            </div>
+
+            <nav th:if="${page.totalPages > 1}" class="mt-4" aria-label="Faqet">
+                <ul class="pagination justify-content-center flex-wrap">
+                    <li class="page-item" th:classappend="${page.first} ? disabled">
+                        <a class="page-link" th:href="${filter.pageUrl(path, page.number)}" aria-label="Para"><i class="bi bi-chevron-left"></i></a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(1, page.totalPages)}"
+                        th:if="${i == 1 || i == page.totalPages || (i >= page.number && i <= page.number + 2)}"
+                        th:classappend="${i == page.number + 1} ? active">
+                        <a class="page-link" th:href="${filter.pageUrl(path, i)}" th:text="${i}"></a>
+                    </li>
+                    <li class="page-item" th:classappend="${page.last} ? disabled">
+                        <a class="page-link" th:href="${filter.pageUrl(path, page.number + 2)}" aria-label="Pas"><i class="bi bi-chevron-right"></i></a>
+                    </li>
+                </ul>
+            </nav>
+        </section>
+    </div>
+</main>
+
+<th:block th:fragment="scripts">
+    <script>
+        document.getElementById('sortSelect').addEventListener('change', e => {
+            const url = new URL(location.href);
+            url.searchParams.delete('faqe');
+            e.target.value === 'te-rejat' ? url.searchParams.delete('rendit') : url.searchParams.set('rendit', e.target.value);
+            location.href = url.toString();
+        });
+        // On desktop the sidebar is always visible: apply checkbox changes immediately.
+        const form = document.getElementById('filterForm');
+        form.addEventListener('change', e => {
+            if (window.matchMedia('(min-width: 992px)').matches && e.target.type === 'checkbox') form.requestSubmit();
+        });
+        // Don't send empty price fields.
+        form.addEventListener('submit', () => form.querySelectorAll('input[type=number]').forEach(i => i.disabled = !i.value));
+    </script>
+</th:block>
+</body>
+</html>

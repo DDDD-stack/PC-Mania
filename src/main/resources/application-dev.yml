@@ -1,0 +1,12 @@
+spring:
+  thymeleaf:
+    cache: false
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 0
+
+app:
+  admin:
+    password: admin123

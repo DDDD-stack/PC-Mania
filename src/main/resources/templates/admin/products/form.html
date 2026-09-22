@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${product == null} ? 'Produkt i ri' : ${product.title})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('products')}"></nav>
+<main class="container-xl py-3 pb-5">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a href="/admin/products" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0 me-auto" th:text="${product == null} ? 'Produkt i ri' : ${product.title}">Produkt</h1>
+        <th:block th:if="${product != null}">
+            <a th:if="${product.status.name() != 'DRAFT' && product.status.name() != 'HIDDEN'}" class="btn btn-sm btn-outline-primary"
+               th:href="@{/produkt/{s}(s=${product.slug})}" target="_blank"><i class="bi bi-eye"></i> Shiko</a>
+            <form th:action="@{/admin/products/{id}/duplicate(id=${product.id})}" method="post" class="d-inline">
+                <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-copy"></i> Dupliko</button>
+            </form>
+            <form th:action="@{/admin/products/{id}/delete(id=${product.id})}" method="post" class="d-inline"
+                  data-confirm="Të fshihet përfundimisht ky produkt?">
+                <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+            </form>
+        </th:block>
+    </div>
+
+    <form th:action="${product == null} ? @{/admin/products} : @{/admin/products/{id}(id=${product.id})}"
+          th:object="${form}" method="post" enctype="multipart/form-data" id="productForm">
+        <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger">Kontrolloni fushat e shënuara.</div>
+        <div class="row g-3">
+            <div class="col-lg-8">
+                <div class="card card-body mb-3">
+                    <div class="mb-3">
+                        <label class="form-label">Titulli *</label>
+                        <input class="form-control" th:field="*{title}" th:errorclass="is-invalid" required maxlength="200">
+                        <div class="invalid-feedback" th:errors="*{title}"></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label">Kategoria *</label>
+                            <select class="form-select" th:field="*{categorySlug}" th:errorclass="is-invalid">
+                                <option th:each="c : ${categories}" th:value="${c.slug}"
+                                        th:text="${c.nameSq} + (${c.visible} ? '' : ' (e fshehur)')"></option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Modeli</label>
+                            <input class="form-control" th:field="*{model}" maxlength="120">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Marka</label>
+                            <select class="form-select" th:field="*{brandId}">
+                                <option value="">—</option>
+                                <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">…ose markë e re</label>
+                            <input class="form-control" th:field="*{newBrand}" maxlength="80" placeholder="p.sh. XFX">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Përshkrim i shkurtër <small class="text-body-secondary">(shfaqet në karta dhe në Facebook)</small></label>
+                        <textarea class="form-control" th:field="*{shortDescription}" rows="2" maxlength="500"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Përshkrimi i plotë <small class="text-body-secondary">(HTML bazë: &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;b&gt;, &lt;a&gt;)</small></label>
+                        <textarea class="form-control font-monospace small" th:field="*{fullDescription}" rows="6"></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">Shënime testimi <small class="text-body-secondary">(p.sh. temperaturat nën ngarkesë)</small></label>
+                        <textarea class="form-control" th:field="*{testNotes}" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header d-flex align-items-center">
+                        <strong class="me-auto">Specifikimet</strong>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="gpuPreset">Shabllon GPU</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="addSpec"><i class="bi bi-plus"></i> Rresht</button>
+                    </div>
+                    <div class="card-body">
+                        <datalist id="specKeyList"><option th:each="k : ${specKeySuggestions}" th:value="${k}"></option></datalist>
+                        <div id="specRows">
+                            <div class="spec-row input-group input-group-sm mb-2" th:each="k, st : *{specKeys}">
+                                <span class="input-group-text drag-handle"><i class="bi bi-grip-vertical"></i></span>
+                                <input class="form-control" name="specKeys" th:value="${k}" list="specKeyList" placeholder="Çelësi (p.sh. VRAM)">
+                                <input class="form-control" name="specValues" th:value="${form.specValues[st.index]}" placeholder="Vlera (p.sh. 12 GB)">
+                                <button class="btn btn-outline-danger spec-del" type="button"><i class="bi bi-x"></i></button>
+                            </div>
+                        </div>
+                        <template id="specRowTpl">
+                            <div class="spec-row input-group input-group-sm mb-2">
+                                <span class="input-group-text drag-handle"><i class="bi bi-grip-vertical"></i></span>
+                                <input class="form-control" name="specKeys" list="specKeyList" placeholder="Çelësi (p.sh. VRAM)">
+                                <input class="form-control" name="specValues" placeholder="Vlera (p.sh. 12 GB)">
+                                <button class="btn btn-outline-danger spec-del" type="button"><i class="bi bi-x"></i></button>
+                            </div>
+                        </template>
+                        <div class="form-text">Përdorni të njëjtët çelësa dhe të njëjtin format vlerash (p.sh. "12 GB") që filtrat të funksionojnë mirë.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card card-body mb-3">
+                    <div class="mb-3">
+                        <label class="form-label">Statusi</label>
+                        <select class="form-select" th:field="*{status}">
+                            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"></option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gjendja</label>
+                        <select class="form-select" th:field="*{condition}">
+                            <option th:each="c : ${conditions}" th:value="${c}" th:text="${c.label}"></option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Çmimi (Lekë) *</label>
+                            <input class="form-control" type="number" min="0" step="100" th:field="*{priceLek}" th:errorclass="is-invalid" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Kostoja (Lekë) *</label>
+                            <input class="form-control" type="number" min="0" step="100" th:field="*{costLek}" th:errorclass="is-invalid" required>
+                        </div>
+                        <div class="col-12 small" id="marginInfo"></div>
+                        <div class="col-6">
+                            <label class="form-label">Sasia</label>
+                            <input class="form-control" type="number" min="0" th:field="*{quantity}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Garancia (ditë)</label>
+                            <input class="form-control" type="number" min="0" th:field="*{warrantyDays}" placeholder="p.sh. 30">
+                        </div>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" th:field="*{miningFree}">
+                        <label class="form-check-label" th:for="${#ids.prev('miningFree')}">Pa minim</label>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" th:field="*{transportIncluded}">
+                        <label class="form-check-label" th:for="${#ids.prev('transportIncluded')}">Transporti falas</label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Data e listimit</label>
+                        <input class="form-control" type="date" th:field="*{listedAt}">
+                        <div class="form-text">Vendoset automatikisht kur produkti aktivizohet. Ndryshojeni vetëm për stok të vjetër.</div>
+                    </div>
+                    <div>
+                        <label class="form-label">Slug (URL)</label>
+                        <input class="form-control form-control-sm font-monospace" th:field="*{slug}" th:errorclass="is-invalid" placeholder="gjenerohet nga titulli">
+                        <div class="invalid-feedback" th:errors="*{slug}"></div>
+                        <div class="form-text" th:if="${product != null}">Mos e ndryshoni nëse linku është shpërndarë në Facebook.</div>
+                    </div>
+                </div>
+                <div th:if="${product != null && product.quantity > 0}" class="card mb-3">
+                    <div class="card-header"><strong>Shitje jashtë faqes</strong></div>
+                    <div class="card-body">
+                        <p class="small text-body-secondary">E shite në Facebook ose dorazi? Regjistroje këtu që të hyjë në raportet e fitimit dhe të kohës së shitjes.</p>
+                        <button class="btn btn-sm btn-outline-success w-100" type="button" data-bs-toggle="collapse" data-bs-target="#offlineSale">Regjistro shitjen</button>
+                        <div class="collapse mt-2" id="offlineSale">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small mb-0">Çmimi i shitjes</label>
+                                    <input class="form-control form-control-sm" type="number" min="0" step="100" name="priceLek" form="offlineSaleForm" th:value="${product.priceLek}" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-0">Sasia</label>
+                                    <input class="form-control form-control-sm" type="number" min="1" th:max="${product.quantity}" name="quantity" form="offlineSaleForm" value="1" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-0">Data</label>
+                                    <input class="form-control form-control-sm" type="date" name="date" form="offlineSaleForm" th:value="${#temporals.format(#temporals.createToday(), 'yyyy-MM-dd')}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-0">Blerësi</label>
+                                    <input class="form-control form-control-sm" name="buyer" form="offlineSaleForm" placeholder="opsional">
+                                </div>
+                                <div class="col-12">
+                                    <button class="btn btn-sm btn-success w-100" type="submit" form="offlineSaleForm">Ruaj shitjen</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${product != null}" class="card card-body mb-3 small text-body-secondary">
+                    <div>Krijuar: <span th:text="${@fmt.dateTime(product.createdAt)}"></span></div>
+                    <div th:if="${product.soldAt}">Shitur: <span th:text="${@fmt.dateTime(product.soldAt)}"></span></div>
+                    <div>Shikime: <span th:text="${product.viewCount}"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3" th:if="${product == null}">
+            <div class="card-header"><strong>Fotot</strong>
+                <small class="text-body-secondary">— e para është kryesore (përdoret në Facebook)</small></div>
+            <div class="card-body">
+                <label id="stageZone" class="dropzone">
+                    <input type="file" id="stageInput" name="newImages" accept="image/jpeg,image/png" multiple hidden>
+                    <i class="bi bi-cloud-arrow-up fs-2"></i>
+                    <div>Tërhiqni fotot këtu ose <u>zgjidhni</u></div>
+                    <div class="small text-body-secondary">JPG ose PNG, deri në 15 MB secila — ngarkohen bashkë me produktin</div>
+                </label>
+                <div id="stageGrid" class="image-grid mt-3"></div>
+                <p id="stageEmpty" class="text-body-secondary small mt-2 mb-0">Ende nuk ka foto të zgjedhura.</p>
+            </div>
+        </div>
+
+        <div class="save-bar">
+            <div class="container-xl d-flex gap-2 justify-content-end">
+                <a href="/admin/products" class="btn btn-outline-secondary">Anulo</a>
+                <button class="btn btn-primary px-4" type="submit"><i class="bi bi-check-lg"></i> Ruaj</button>
+            </div>
+        </div>
+    </form>
+
+    <form th:if="${product != null}" id="offlineSaleForm" th:action="@{/admin/products/{id}/offline-sale(id=${product.id})}" method="post"
+          data-confirm="Të regjistrohet shitja? Stoku do të zbritet."></form>
+
+    <div class="card mb-5" th:if="${product != null}">
+        <div class="card-header"><strong>Fotot</strong> <small class="text-body-secondary">— tërhiqini për t'i renditur; e para është kryesore (përdoret në Facebook)</small></div>
+        <div class="card-body">
+            <label id="dropzone" class="dropzone" th:data-url="@{/admin/products/{id}/images(id=${product.id})}">
+                <input type="file" id="fileInput" accept="image/jpeg,image/png" multiple hidden>
+                <i class="bi bi-cloud-arrow-up fs-2"></i>
+                <div>Tërhiqni fotot këtu ose <u>zgjidhni</u></div>
+                <div class="small text-body-secondary">JPG ose PNG, deri në 15 MB secila</div>
+                <div class="progress mt-2 d-none" id="uploadProgress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%">Po ngarkohet…</div></div>
+            </label>
+            <div th:fragment="images" id="imagesBox" th:data-order-url="@{/admin/products/{id}/images/order(id=${product.id})}">
+                <div th:if="${imageError}" class="alert alert-danger mt-2 mb-0" th:text="${imageError}"></div>
+                <div id="imageGrid" class="image-grid mt-3">
+                    <div class="image-tile" th:each="img, st : ${product.images}" th:data-id="${img.id}">
+                        <img th:src="${@img.thumb(img.filename)}" alt="">
+                        <span class="badge text-bg-warning primary-badge">Kryesore</span>
+                        <button type="button" class="btn btn-sm btn-danger img-del" title="Fshi"
+                                th:data-url="@{/admin/products/{id}/images/{i}/delete(id=${product.id}, i=${img.id})}"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+                <p th:if="${product.images.empty}" class="text-body-secondary small mt-2 mb-0">Ende nuk ka foto.</p>
+            </div>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="/js/admin-product.js"></script>
+</body>
+</html>

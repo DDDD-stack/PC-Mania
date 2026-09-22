@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main>
+    <section class="hero">
+        <div class="container py-4 py-md-5">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="hero-title">Karta grafike të testuara, me çmime të ndershme.</h1>
+                    <p class="hero-lead">Pjesë kompjuteri të reja dhe të përdorura në Tiranë. Çdo kartë testohet nën ngarkesë para shitjes. Pagesë në dorëzim në gjithë Shqipërinë.</p>
+                    <div class="d-grid d-sm-flex gap-2">
+                        <a class="btn btn-accent btn-lg" href="/kategori/karta-grafike"><i class="bi bi-gpu-card me-2"></i>Shiko kartat grafike</a>
+                        <a class="btn btn-outline-light btn-lg" href="/pc-me-porosi"><i class="bi bi-tools me-2"></i>Ndërto PC-në tënde</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="trust-strip">
+        <div class="container">
+            <div class="row row-cols-2 row-cols-md-4 g-2 py-3 small">
+                <div class="col"><i class="bi bi-speedometer2"></i> Testuar nën ngarkesë</div>
+                <div class="col"><i class="bi bi-shield-check"></i> Garanci në çdo produkt</div>
+                <div class="col"><i class="bi bi-cash-coin"></i> Pagesë në dorëzim</div>
+                <div class="col"><i class="bi bi-truck"></i> Transport në gjithë vendin</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mt-4">
+        <div class="d-flex align-items-baseline mb-3">
+            <h2 class="section-title me-auto">Të ardhurat e fundit</h2>
+            <a class="small" href="/kategori/karta-grafike">Shiko të gjitha <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-2 g-md-3" th:unless="${newest.empty}">
+            <th:block th:each="p : ${newest}"><div th:replace="~{site/fragments :: card(${p})}"></div></th:block>
+        </div>
+        <p th:if="${newest.empty}" class="text-body-secondary">Së shpejti produkte të reja. Na ndiqni në Facebook!</p>
+    </section>
+
+    <section class="container mt-5" th:unless="${upcoming.empty}">
+        <div class="d-flex align-items-baseline mb-3">
+            <h2 class="section-title me-auto">Së shpejti</h2>
+            <a class="small" href="/se-shpejti">Të gjitha <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="upcoming-strip">
+            <article class="upcoming-card" th:each="u : ${upcoming}">
+                <div class="upcoming-thumb">
+                    <img th:if="${u.imageFilename}" data-fade th:src="${@img.medium(u.imageFilename)}"
+                         th:alt="${u.title}" width="300" height="225" loading="lazy" decoding="async">
+                    <div th:unless="${u.imageFilename}" class="upcoming-placeholder"><i class="bi bi-gpu-card"></i></div>
+                    <span class="badge upcoming-badge bg-dark">Së shpejti</span>
+                </div>
+                <div class="upcoming-body">
+                    <h3 class="h6 fw-bold mb-1" th:text="${u.title}"></h3>
+                    <p class="small text-body-secondary mb-2" th:if="${u.expectedLabel}" th:text="${u.expectedLabel}"></p>
+                    <a class="btn btn-sm btn-outline-dark w-100 fw-semibold" href="/se-shpejti">
+                        <i class="bi bi-bell me-1"></i> Më njofto
+                    </a>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="container mt-5">
+        <h2 class="section-title mb-3">Kategoritë</h2>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-2 g-md-3">
+            <div class="col reveal" th:each="t : ${tiles}">
+                <a class="category-tile" th:classappend="${t.empty} ? 'is-empty'" th:href="@{/kategori/{s}(s=${t.category.slug})}">
+                    <i class="bi" th:classappend="${t.category.iconClass}"></i>
+                    <span class="name" th:text="${t.category.nameSq}"></span>
+                    <span th:if="${t.empty}" class="count out-of-stock">Pa stok</span>
+                    <span th:unless="${t.empty}" class="count" th:text="${t.count == 1} ? '1 produkt' : ${t.count} + ' produkte'"></span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mt-5">
+        <div class="build-cta">
+            <div class="row align-items-center g-3">
+                <div class="col-md-8">
+                    <h2 class="h3 fw-bold mb-2">Dëshiron një PC të plotë?</h2>
+                    <p class="mb-0">Na thuaj buxhetin dhe për çfarë do ta përdorësh. Ne zgjedhim pjesët, të dërgojmë ofertën, e montojmë dhe ta sjellim gati për përdorim.</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a class="btn btn-accent btn-lg w-100 w-md-auto" href="/pc-me-porosi">Kërko ofertë falas</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>

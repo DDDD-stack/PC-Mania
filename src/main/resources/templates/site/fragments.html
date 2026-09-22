@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--/* Product card for grids. Expects a ProductCard (never the entity). */-->
+<div th:fragment="card(p)" class="col reveal">
+    <a class="product-card" th:href="@{/produkt/{s}(s=${p.slug})}">
+        <div class="product-thumb">
+            <img data-fade th:src="${@img.medium(p.imageFilename)}" th:srcset="${@img.srcset(p.imageFilename)}"
+                 sizes="(min-width: 1200px) 270px, (min-width: 768px) 33vw, 50vw"
+                 th:alt="${p.title}" width="400" height="400" loading="lazy" decoding="async">
+            <span class="badge cond-badge" th:classappend="'cond-' + ${p.condition}" th:text="${p.condition.label}"></span>
+        </div>
+        <div class="product-body">
+            <div class="product-brand" th:if="${p.brandName}" th:text="${p.brandName}"></div>
+            <h3 class="product-title" th:text="${p.title}"></h3>
+            <div class="product-meta">
+                <span th:if="${p.miningFree}" title="Pa minim"><i class="bi bi-shield-check"></i></span>
+                <span th:if="${p.warrantyDays != null && p.warrantyDays > 0}" th:text="${@fmt.warranty(p.warrantyDays)}"></span>
+            </div>
+            <div class="product-price" th:text="${@fmt.price(p.priceLek)}"></div>
+        </div>
+    </a>
+</div>
+
+</body>
+</html>

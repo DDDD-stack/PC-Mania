@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{::scripts})}">
+<body>
+<main class="container py-3 product-page">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-2">
+            <li class="breadcrumb-item"><a href="/">Kryefaqja</a></li>
+            <li class="breadcrumb-item" th:if="${category}"><a th:href="@{/kategori/{s}(s=${category.slug})}" th:text="${category.nameSq}"></a></li>
+            <li class="breadcrumb-item active text-truncate" aria-current="page" th:text="${p.title}"></li>
+        </ol>
+    </nav>
+
+    <div th:if="${notice}" class="alert alert-warning" role="alert" th:text="${notice}"></div>
+
+    <div class="row g-3 g-lg-4">
+        <div class="col-lg-7">
+            <div id="gallery" class="carousel slide gallery" data-bs-touch="true" data-bs-interval="false">
+                <div class="carousel-inner">
+                    <div class="carousel-item" th:each="img, st : ${p.images}" th:classappend="${st.first} ? active">
+                        <a th:href="${@img.full(img)}" target="_blank" rel="noopener">
+                            <img data-fade th:src="${@img.medium(img)}" th:srcset="${@img.srcset(img)}"
+                                 sizes="(min-width: 992px) 700px, 100vw"
+                                 th:alt="${p.title} + ' – foto ' + ${st.count}" width="800" height="800"
+                                 th:attr="loading=${st.first} ? 'eager' : 'lazy', fetchpriority=${st.first} ? 'high' : 'auto'" decoding="async">
+                        </a>
+                    </div>
+                    <div class="carousel-item active" th:if="${p.images.empty}">
+                        <img th:src="${@img.medium(null)}" th:alt="${p.title}" width="800" height="800">
+                    </div>
+                </div>
+                <th:block th:if="${p.images.size() > 1}">
+                    <button class="carousel-control-prev" type="button" data-bs-target="#gallery" data-bs-slide="prev" aria-label="Foto e mëparshme">
+                        <span class="carousel-control-prev-icon"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#gallery" data-bs-slide="next" aria-label="Foto tjetër">
+                        <span class="carousel-control-next-icon"></span>
+                    </button>
+                    <span class="gallery-counter"><span id="galleryIndex">1</span>/<span th:text="${p.images.size()}"></span></span>
+                </th:block>
+            </div>
+            <div class="gallery-thumbs" th:if="${p.images.size() > 1}">
+                <button type="button" th:each="img, st : ${p.images}" data-bs-target="#gallery" th:attr="data-bs-slide-to=${st.index}, aria-label='Foto ' + ${st.count}"
+                        th:classappend="${st.first} ? active">
+                    <img th:src="${@img.thumb(img)}" alt="" width="72" height="72" loading="lazy">
+                </button>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="product-brand" th:if="${p.brandName}" th:text="${p.brandName}"></div>
+            <h1 class="product-h1" th:text="${p.title}"></h1>
+
+            <div class="d-flex flex-wrap gap-1 mb-3">
+                <span class="badge cond-badge static" th:classappend="'cond-' + ${p.condition}" th:text="${p.condition.label}"></span>
+                <span class="badge text-bg-light border" th:if="${@fmt.warranty(p.warrantyDays)}"><i class="bi bi-shield-check me-1"></i><span th:text="${@fmt.warranty(p.warrantyDays)}"></span></span>
+                <span class="badge text-bg-success" th:if="${p.miningFree}"><i class="bi bi-check2-circle me-1"></i>Pa minim</span>
+                <span class="badge text-bg-info" th:if="${p.transportIncluded}"><i class="bi bi-truck me-1"></i>Transport falas</span>
+            </div>
+
+            <div class="price-box">
+                <div class="price" th:text="${@fmt.price(p.priceLek)}"></div>
+                <div class="availability">
+                    <span th:if="${p.available}" class="text-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span th:text="${p.quantity > 1} ? ${p.quantity} + ' copë në stok' : 'Në stok'"></span>
+                    </span>
+                    <span th:if="${p.status.name() == 'ACTIVE' && !p.available}" class="text-danger"><i class="bi bi-x-circle-fill"></i> Nuk ka stok</span>
+                    <span th:if="${p.status.name() == 'RESERVED'}" class="text-warning-emphasis"><i class="bi bi-clock-fill"></i> E rezervuar</span>
+                    <span th:if="${p.status.name() == 'SOLD'}" class="text-danger"><i class="bi bi-x-circle-fill"></i> E shitur</span>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 my-3">
+                <a th:if="${p.available}" class="btn btn-accent btn-lg" th:href="@{/porosit/{s}(s=${p.slug})}"><i class="bi bi-bag-check me-2"></i>Porosit</a>
+                <a class="btn btn-whatsapp btn-lg" th:href="${whatsappLink}" target="_blank" rel="noopener">
+                    <i class="bi bi-whatsapp me-2"></i><span th:text="${p.available} ? 'Pyet në WhatsApp' : 'Pyet për një të ngjashme'"></span>
+                </a>
+            </div>
+
+            <p class="lead-sm" th:if="${p.shortDescription}" th:text="${p.shortDescription}"></p>
+
+            <ul class="list-unstyled small perks">
+                <li><i class="bi bi-cash-coin"></i> Pagesë në dorëzim – paguani kur e merrni</li>
+                <li><i class="bi bi-truck"></i> <span th:text="${p.transportIncluded} ? 'Transport falas në gjithë Shqipërinë' : 'Marrje në Tiranë ose korrier në gjithë Shqipërinë'"></span></li>
+                <li><i class="bi bi-arrow-repeat"></i> <a href="/kushtet-e-perdorimit">Garancia dhe kthimet</a></li>
+            </ul>
+
+            <div class="test-notes" th:if="${p.testNotes}">
+                <div class="fw-semibold mb-1"><i class="bi bi-speedometer2 me-1"></i>Rezultatet e testit</div>
+                <div class="pre-line" th:text="${p.testNotes}"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-lg-7 order-lg-2" th:if="${p.fullDescription}">
+            <h2 class="section-title">Përshkrimi</h2>
+            <div class="description" th:utext="${p.fullDescription}"></div>
+        </div>
+        <div class="col-lg-5 order-lg-1" th:unless="${p.specs.empty}">
+            <h2 class="section-title">Specifikimet</h2>
+            <table class="table table-sm spec-table">
+                <tbody>
+                <tr th:if="${p.brandName}"><th>Marka</th><td th:text="${p.brandName}"></td></tr>
+                <tr th:if="${p.model}"><th>Modeli</th><td th:text="${p.model}"></td></tr>
+                <tr th:each="s : ${p.specs}"><th th:text="${s.key}"></th><td th:text="${s.value}"></td></tr>
+                <tr><th>Gjendja</th><td th:text="${p.condition.label}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="share mt-3 d-flex flex-wrap gap-2 align-items-center">
+        <span class="small text-body-secondary me-1">Shpërndaje:</span>
+        <a class="btn btn-sm btn-outline-primary" th:href="'https://www.facebook.com/sharer/sharer.php?u=' + ${#uris.escapeQueryParam(shareUrl)}" target="_blank" rel="noopener">
+            <i class="bi bi-facebook"></i> Facebook</a>
+        <button class="btn btn-sm btn-outline-secondary" type="button" id="copyLink" th:attr="data-url=${shareUrl}"><i class="bi bi-link-45deg"></i> Kopjo linkun</button>
+    </div>
+
+    <section class="mt-5" th:unless="${related.empty}">
+        <h2 class="section-title mb-3">Produkte të ngjashme</h2>
+        <div class="row row-cols-2 row-cols-md-4 g-2 g-md-3">
+            <th:block th:each="r : ${related}"><div th:replace="~{site/fragments :: card(${r})}"></div></th:block>
+        </div>
+    </section>
+
+    <div class="buy-bar d-lg-none">
+        <div class="buy-bar-price" th:text="${@fmt.price(p.priceLek)}"></div>
+        <a class="btn btn-whatsapp" th:href="${whatsappLink}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+        <a th:if="${p.available}" class="btn btn-accent flex-grow-1" th:href="@{/porosit/{s}(s=${p.slug})}">Porosit</a>
+        <span th:unless="${p.available}" class="btn btn-secondary disabled flex-grow-1" th:text="${p.status.name() == 'SOLD'} ? 'E shitur' : 'E rezervuar'"></span>
+    </div>
+</main>
+
+<th:block th:fragment="scripts">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gallery = document.getElementById('gallery');
+            const thumbs = document.querySelectorAll('.gallery-thumbs button');
+            gallery.addEventListener('slid.bs.carousel', e => {
+                thumbs.forEach((t, i) => t.classList.toggle('active', i === e.to));
+                const idx = document.getElementById('galleryIndex');
+                if (idx) idx.textContent = e.to + 1;
+            });
+        });
+        document.getElementById('copyLink').addEventListener('click', async e => {
+            const btn = e.currentTarget, url = btn.dataset.url;
+            try {
+                if (navigator.share) await navigator.share({title: document.title, url});
+                else { await navigator.clipboard.writeText(url); btn.innerHTML = '<i class="bi bi-check2"></i> U kopjua'; }
+            } catch (ignored) {}
+        });
+    </script>
+</th:block>
+</body>
+</html>

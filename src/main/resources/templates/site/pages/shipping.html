@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-4">
+    <h1 class="h3 fw-bold mb-3">Transporti dhe pagesa</h1>
+    <div class="prose">
+        <h2>Transporti</h2>
+        <ul>
+            <li><strong>Marrje në Tiranë – falas.</strong> Pasi të konfirmojmë porosinë në telefon, lëmë një takim për marrjen e produktit. Mund ta shihni dhe ta kontrolloni para se të paguani.</li>
+            <li><strong>Me korrier në gjithë Shqipërinë</strong> – zakonisht 1–3 ditë pune. Kostoja e transportit është <strong th:text="${@fmt.price(site.courierShippingLek)}"></strong>, përveç produkteve të shënuara me "Transport falas".</li>
+        </ul>
+        <p>Produktet paketohen me kujdes (kartat grafike në kutinë origjinale kur ekziston, ose me ambalazh mbrojtës antistatik).</p>
+
+        <h2>Pagesa</h2>
+        <ul>
+            <li><strong>Para në dorë në dorëzim</strong> – paguani korrierit ose në takim kur e merrni produktin.</li>
+            <li><strong>Transfertë bankare</strong> – ju dërgojmë të dhënat bankare pas konfirmimit të porosisë.</li>
+        </ul>
+        <p>Nuk kërkojmë asnjë pagesë paraprake për porositë standarde. Të gjitha çmimet janë në Lekë (ALL).</p>
+
+        <h2>Si funksionon porosia</h2>
+        <ol class="mb-0">
+            <li>Shtypni "Porosit" te produkti dhe plotësoni emrin, telefonin dhe qytetin.</li>
+            <li>Produkti rezervohet për ju dhe ju telefonojmë për konfirmim.</li>
+            <li>Dërgojmë produktin ose lëmë takim në Tiranë.</li>
+        </ol>
+    </div>
+</main>
+</body>
+</html>

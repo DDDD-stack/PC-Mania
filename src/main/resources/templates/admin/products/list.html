@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Produktet')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('products')}"></nav>
+<main class="container-fluid py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h1 class="h4 mb-0 me-auto">Produktet <small class="text-body-secondary" th:text="${page.totalElements}"></small></h1>
+        <a class="btn btn-primary" href="/admin/products/new"><i class="bi bi-plus-lg"></i> Produkt i ri</a>
+    </div>
+
+    <form class="row g-2 mb-3" method="get">
+        <div class="col-12 col-md-4"><input class="form-control" name="q" th:value="${q}" placeholder="Kërko sipas titullit"></div>
+        <div class="col-6 col-md-3">
+            <select class="form-select" name="status">
+                <option value="">Të gjitha statuset</option>
+                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}" th:selected="${s == status}"></option>
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <select class="form-select" name="category">
+                <option value="">Të gjitha kategoritë</option>
+                <option th:each="c : ${categories}" th:value="${c.slug}" th:selected="${c.slug == category}"
+                        th:text="${c.nameSq} + (${c.visible} ? '' : ' (e fshehur)')"></option>
+            </select>
+        </div>
+        <div class="col-12 col-md-2"><button class="btn btn-outline-secondary w-100" type="submit"><i class="bi bi-funnel"></i> Filtro</button></div>
+    </form>
+
+    <form th:action="@{/admin/products/bulk-status}" method="post" id="bulkForm">
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+            <span class="small text-body-secondary">Të zgjedhurat:</span>
+            <select class="form-select form-select-sm w-auto" name="status">
+                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"></option>
+            </select>
+            <button class="btn btn-sm btn-outline-dark" type="submit">Ndrysho statusin</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle bg-white">
+                <thead class="table-light">
+                <tr>
+                    <th><input class="form-check-input" type="checkbox" id="checkAll"></th>
+                    <th></th>
+                    <th>Titulli</th>
+                    <th class="text-end">Çmimi</th>
+                    <th class="text-end">Kostoja</th>
+                    <th class="text-center">Sasia</th>
+                    <th>Statusi</th>
+                    <th class="text-end">Ditë</th>
+                    <th class="text-end">Shikime</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${page.content}">
+                    <td><input class="form-check-input row-check" type="checkbox" name="ids" th:value="${p.id}"></td>
+                    <td style="width:56px">
+                        <img th:if="${p.primaryImage}" th:src="${@img.thumb(p.primaryImage.filename)}"
+                             class="rounded border" width="48" height="48" style="object-fit:cover" alt="" loading="lazy">
+                        <div th:unless="${p.primaryImage}" class="bg-light border rounded text-center text-body-tertiary" style="width:48px;height:48px;line-height:48px"><i class="bi bi-image"></i></div>
+                    </td>
+                    <td>
+                        <a class="fw-semibold text-decoration-none" th:href="@{/admin/products/{id}(id=${p.id})}" th:text="${p.title}"></a>
+                        <div class="small text-body-secondary"><span th:text="${p.condition.label}"></span> · <span th:text="${p.categorySlug}"></span></div>
+                    </td>
+                    <td class="text-end text-nowrap" th:text="${@fmt.price(p.priceLek)}"></td>
+                    <td class="text-end text-nowrap text-body-secondary" th:text="${@fmt.price(p.costLek)}"></td>
+                    <td class="text-center" th:text="${p.quantity}"></td>
+                    <td><span class="badge" th:classappend="'status-' + ${p.status}" th:text="${p.status.label}"></span></td>
+                    <td class="text-end" th:text="${p.listedAt != null && p.status.name() != 'SOLD'} ? ${@fmt.daysSince(p.listedAt)} : ''"></td>
+                    <td class="text-end" th:text="${p.viewCount}"></td>
+                    <td class="text-end text-nowrap">
+                        <a th:if="${p.status.name() != 'DRAFT' && p.status.name() != 'HIDDEN'}" class="btn btn-sm btn-link" th:href="@{/produkt/{s}(s=${p.slug})}" target="_blank" title="Shiko"><i class="bi bi-eye"></i></a>
+                        <button class="btn btn-sm btn-link" type="submit" th:formaction="@{/admin/products/{id}/duplicate(id=${p.id})}" title="Dupliko"><i class="bi bi-copy"></i></button>
+                    </td>
+                </tr>
+                <tr th:if="${page.empty}"><td colspan="10" class="text-center text-body-secondary py-4">Nuk u gjet asnjë produkt.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <nav th:if="${page.totalPages > 1}">
+        <ul class="pagination pagination-sm">
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? active">
+                <a class="page-link" th:href="@{/admin/products(q=${q}, status=${status}, category=${category}, page=${i})}" th:text="${i + 1}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+<script>
+    document.getElementById('checkAll').addEventListener('change', e =>
+        document.querySelectorAll('.row-check').forEach(c => c.checked = e.target.checked));
+</script>
+</body>
+</html>

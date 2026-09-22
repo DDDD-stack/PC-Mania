@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{::scripts})}">
+<body>
+<main class="container py-3" style="max-width: 760px">
+    <a class="small text-decoration-none" th:href="@{/produkt/{s}(s=${p.slug})}"><i class="bi bi-arrow-left"></i> Kthehu te produkti</a>
+    <h1 class="h3 fw-bold mt-2 mb-3">Porosit</h1>
+
+    <form th:action="@{/porosit/{s}(s=${p.slug})}" th:object="${form}" method="post" id="checkoutForm" novalidate data-loading>
+        <div th:if="${formError}" class="alert alert-danger" th:text="${formError}"></div>
+        <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger">Ju lutem plotësoni saktë fushat e shënuara.</div>
+
+        <div class="form-card mb-3 order-summary">
+            <div class="d-flex gap-3 align-items-center">
+                <img th:src="${@img.thumb(p.primaryImage)}" th:alt="${p.title}">
+                <div class="flex-grow-1">
+                    <div class="fw-semibold lh-sm" th:text="${p.title}"></div>
+                    <div class="small text-body-secondary" th:text="${p.condition.label}"></div>
+                </div>
+                <div class="fw-bold text-nowrap" th:text="${@fmt.price(p.priceLek)}"></div>
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-3" th:if="${p.quantity > 1}">
+                <label class="form-label mb-0" for="quantity">Sasia</label>
+                <select class="form-select w-auto" th:field="*{quantity}" th:errorclass="is-invalid">
+                    <option th:each="i : ${#numbers.sequence(1, p.quantity > 10 ? 10 : p.quantity)}" th:value="${i}" th:text="${i}"></option>
+                </select>
+                <div class="invalid-feedback d-block" th:errors="*{quantity}"></div>
+            </div>
+            <input th:if="${p.quantity <= 1}" type="hidden" name="quantity" value="1">
+        </div>
+
+        <div class="form-card mb-3">
+            <h2 class="h6 fw-bold mb-3">1. Dorëzimi</h2>
+            <div class="d-grid gap-2">
+                <label class="choice-card">
+                    <input class="form-check-input" type="radio" th:field="*{deliveryMethod}" value="COURIER" th:attr="data-shipping=${courierShipping}">
+                    <strong>Me korrier</strong> – në gjithë Shqipërinë
+                    <span class="float-end fw-semibold" th:text="${courierShipping == 0} ? 'Falas' : ${@fmt.price(courierShipping)}"></span>
+                    <div class="small text-body-secondary ms-4">Zakonisht 1–3 ditë pune</div>
+                </label>
+                <label class="choice-card">
+                    <input class="form-check-input" type="radio" th:field="*{deliveryMethod}" value="PICKUP_TIRANA" data-shipping="0">
+                    <strong>Marrje në Tiranë</strong>
+                    <span class="float-end fw-semibold">Falas</span>
+                    <div class="small text-body-secondary ms-4">Lëmë takim pasi t'ju telefonojmë</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-card mb-3">
+            <h2 class="h6 fw-bold mb-3">2. Të dhënat tuaja</h2>
+            <div class="mb-3">
+                <label class="form-label" for="customerName">Emri dhe mbiemri *</label>
+                <input class="form-control" th:field="*{customerName}" th:errorclass="is-invalid" autocomplete="name" required maxlength="120">
+                <div class="invalid-feedback" th:errors="*{customerName}"></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="customerPhone">Telefoni *</label>
+                <input class="form-control" th:field="*{customerPhone}" th:errorclass="is-invalid" type="tel" inputmode="tel" autocomplete="tel" placeholder="06X XXX XXXX" required maxlength="20">
+                <div class="invalid-feedback" th:errors="*{customerPhone}"></div>
+                <div class="form-text">Do t'ju telefonojmë për të konfirmuar porosinë.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="city">Qyteti *</label>
+                <input class="form-control" th:field="*{city}" th:errorclass="is-invalid" list="cityList" autocomplete="address-level2" required maxlength="80">
+                <datalist id="cityList"><option th:each="c : ${cities}" th:value="${c}"></option></datalist>
+                <div class="invalid-feedback" th:errors="*{city}"></div>
+            </div>
+            <div class="mb-3" id="addressGroup">
+                <label class="form-label" for="address">Adresa <span class="text-body-secondary small">(për korrierin)</span></label>
+                <input class="form-control" th:field="*{address}" th:errorclass="is-invalid" autocomplete="street-address" maxlength="255" placeholder="Rruga, pallati, pika referimi">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="customerEmail">Email <span class="text-body-secondary small">(opsional)</span></label>
+                <input class="form-control" th:field="*{customerEmail}" th:errorclass="is-invalid" type="email" inputmode="email" autocomplete="email" maxlength="160">
+                <div class="invalid-feedback" th:errors="*{customerEmail}"></div>
+            </div>
+            <div>
+                <label class="form-label" for="notes">Shënime <span class="text-body-secondary small">(opsional)</span></label>
+                <textarea class="form-control" th:field="*{notes}" rows="2" maxlength="1000" placeholder="p.sh. orari kur jeni të lirë"></textarea>
+            </div>
+            <div class="hp-field" aria-hidden="true">
+                <label for="website">Website</label>
+                <input th:field="*{website}" tabindex="-1" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="form-card mb-3">
+            <h2 class="h6 fw-bold mb-3">3. Pagesa</h2>
+            <div class="d-grid gap-2">
+                <label class="choice-card">
+                    <input class="form-check-input" type="radio" th:field="*{paymentMethod}" value="CASH_ON_DELIVERY">
+                    <strong>Para në dorë në dorëzim</strong>
+                    <div class="small text-body-secondary ms-4">Paguani kur e merrni produktin</div>
+                </label>
+                <label class="choice-card">
+                    <input class="form-check-input" type="radio" th:field="*{paymentMethod}" value="BANK_TRANSFER">
+                    <strong>Transfertë bankare</strong>
+                    <div class="small text-body-secondary ms-4">Ju dërgojmë të dhënat pas konfirmimit</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="form-card mb-3" id="totals" th:attr="data-price=${p.priceLek}">
+            <div class="d-flex justify-content-between"><span>Produkti</span><span id="subtotal" th:text="${@fmt.price(p.priceLek * form.quantity)}"></span></div>
+            <div class="d-flex justify-content-between"><span>Transporti</span><span id="shipping"></span></div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between fs-5 fw-bold"><span>Totali</span><span id="total"></span></div>
+        </div>
+
+        <button class="btn btn-accent btn-lg w-100" type="submit" id="submitBtn"><i class="bi bi-bag-check me-2"></i>Dërgo porosinë</button>
+        <p class="small text-body-secondary text-center mt-2 mb-0">Nuk paguani asgjë tani. Duke dërguar porosinë pranoni <a href="/kushtet-e-perdorimit" target="_blank">kushtet e përdorimit</a>.</p>
+    </form>
+</main>
+
+<th:block th:fragment="scripts">
+    <script>
+        (() => {
+            const form = document.getElementById('checkoutForm');
+            const price = +document.getElementById('totals').dataset.price;
+            const fmt = n => n === 0 ? 'Falas' : n.toLocaleString('de-DE') + ' Lekë';
+            const qtyEl = form.querySelector('[name=quantity]');
+            const update = () => {
+                const qty = +(qtyEl.value || 1);
+                const delivery = form.querySelector('[name=deliveryMethod]:checked');
+                const shipping = delivery ? +delivery.dataset.shipping : 0;
+                document.getElementById('subtotal').textContent = fmt(price * qty);
+                document.getElementById('shipping').textContent = fmt(shipping);
+                document.getElementById('total').textContent = (price * qty + shipping).toLocaleString('de-DE') + ' Lekë';
+                document.getElementById('addressGroup').hidden = delivery && delivery.value === 'PICKUP_TIRANA';
+            };
+            form.addEventListener('change', update);
+            update();
+        })();
+    </script>
+</th:block>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Paneli')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('dashboard')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 mb-3" th:if="${d.newOrders > 0 || d.openOrders > 0 || d.newBuildRequests > 0}">
+        <a th:if="${d.newOrders > 0}" class="btn btn-danger" href="/admin/orders?status=NEW">
+            <i class="bi bi-bag-plus"></i> <span th:text="${d.newOrders}"></span> porosi të reja</a>
+        <a th:if="${d.openOrders > 0}" class="btn btn-outline-dark" href="/admin/orders">
+            <i class="bi bi-truck"></i> <span th:text="${d.openOrders}"></span> në proces</a>
+        <a th:if="${d.newBuildRequests > 0}" class="btn btn-warning" href="/admin/builds?status=NEW">
+            <i class="bi bi-tools"></i> <span th:text="${d.newBuildRequests}"></span> kërkesa PC</a>
+    </div>
+
+    <!-- KPI tiles -->
+    <div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-2 mb-4">
+        <div class="col"><div class="card card-body h-100">
+            <div class="kpi-label">Stoku (copë)</div>
+            <div class="kpi" th:text="${d.stockUnits}"></div>
+            <div class="small text-body-secondary" th:if="${d.reservedUnits > 0}" th:text="'+ ' + ${d.reservedUnits} + ' në porosi të hapura'"></div>
+        </div></div>
+        <div class="col"><div class="card card-body h-100">
+            <div class="kpi-label">Vlera e stokut (kosto)</div>
+            <div class="kpi" th:text="${@fmt.price(d.stockCost)}"></div>
+            <div class="small text-body-secondary" th:if="${d.reservedCost > 0}" th:text="'+ ' + ${@fmt.price(d.reservedCost)} + ' e rezervuar'"></div>
+        </div></div>
+        <div class="col"><div class="card card-body h-100">
+            <div class="kpi-label">Fitimi këtë muaj</div>
+            <div class="kpi" th:text="${@fmt.price(d.month.profit)}"></div>
+            <div class="small text-body-secondary" th:text="${d.month.units} + ' copë · ' + ${@fmt.price(d.month.revenue)}"></div>
+        </div></div>
+        <div class="col"><div class="card card-body h-100">
+            <div class="kpi-label">Fitimi gjithsej</div>
+            <div class="kpi" th:text="${@fmt.price(d.allTime.profit)}"></div>
+            <div class="small text-body-secondary" th:text="${d.allTime.units} + ' copë · ' + ${@fmt.price(d.allTime.revenue)}"></div>
+        </div></div>
+        <div class="col"><div class="card card-body h-100">
+            <div class="kpi-label">Marzhi mesatar</div>
+            <div class="kpi" th:text="${d.allTime.marginPct != null} ? ${@fmt.pct(d.allTime.marginPct)} : '—'"></div>
+            <div class="small text-body-secondary" th:text="${d.month.marginPct != null} ? 'Këtë muaj: ' + ${@fmt.pct(d.month.marginPct)} : 'mbi të ardhurat'"></div>
+        </div></div>
+        <div class="col"><div class="card card-body h-100">
+            <div class="kpi-label">Ditë deri në shitje</div>
+            <div class="kpi" th:text="${d.allTime.avgDaysToSell != null} ? ${#numbers.formatDecimal(d.allTime.avgDaysToSell, 1, 1, 'COMMA')} : '—'"></div>
+            <div class="small text-body-secondary">mesatarisht për copë</div>
+        </div></div>
+    </div>
+
+    <!-- Price bands: the core question -->
+    <div class="card mb-4">
+        <div class="card-header d-flex flex-wrap align-items-center gap-2">
+            <strong class="me-auto">Sipas brezit të çmimit</strong>
+            <span class="small text-body-secondary" th:if="${d.fastestBand}">
+                <i class="bi bi-lightning-charge-fill"></i> Qarkullon më shpejt: <strong th:text="${d.fastestBand.label}"></strong>
+            </span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0 band-table">
+                <thead class="table-light">
+                <tr>
+                    <th>Brezi (Lekë)</th>
+                    <th class="text-end">Shitur</th>
+                    <th class="text-end">Të ardhura</th>
+                    <th style="min-width:210px">Fitimi</th>
+                    <th class="text-end">Marzhi</th>
+                    <th style="min-width:190px">Ditë deri në shitje</th>
+                    <th class="text-end">Në stok</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="b : ${d.bands}">
+                    <td class="text-nowrap fw-semibold">
+                        <span th:text="${b.band.label}"></span>
+                        <span th:if="${d.fastestBand == b.band}" class="badge text-bg-light border ms-1" title="Brezi me mesataren më të ulët të ditëve deri në shitje">
+                            <i class="bi bi-lightning-charge-fill"></i> më i shpejti</span>
+                    </td>
+                    <td class="text-end" th:text="${b.unitsSold}"></td>
+                    <td class="text-end text-nowrap" th:text="${@fmt.price(b.revenue)}"></td>
+                    <td>
+                        <div class="bar-cell" th:title="'Fitimi: ' + ${@fmt.price(b.profit)}">
+                            <span class="bar" th:style="'width:' + (${d.maxBandProfit > 0 && b.profit > 0} ? ${b.profit * 60 / d.maxBandProfit} : 0) + '%'"></span>
+                            <span class="bar-value" th:text="${@fmt.price(b.profit)}"></span>
+                        </div>
+                    </td>
+                    <td class="text-end" th:text="${b.avgMarginPct != null} ? ${@fmt.pct(b.avgMarginPct)} : '—'"></td>
+                    <td>
+                        <div class="bar-cell" th:if="${b.avgDaysToSell != null}" th:title="'Mesatarisht ' + ${#numbers.formatDecimal(b.avgDaysToSell, 1, 1, 'COMMA')} + ' ditë'">
+                            <span class="bar" th:style="'width:' + (${d.maxBandDays > 0} ? ${b.avgDaysToSell * 60 / d.maxBandDays} : 0) + '%'"></span>
+                            <span class="bar-value" th:text="${#numbers.formatDecimal(b.avgDaysToSell, 1, 1, 'COMMA')} + ' ditë'"></span>
+                        </div>
+                        <span th:unless="${b.avgDaysToSell != null}" class="text-body-secondary">—</span>
+                    </td>
+                    <td class="text-end text-nowrap">
+                        <span th:text="${b.unitsInStock}"></span>
+                        <div class="small text-body-secondary" th:if="${b.stockCost > 0}" th:text="${@fmt.price(b.stockCost)}"></div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer small text-body-secondary">
+            Brezi përcaktohet nga çmimi i shitjes për copë. Ditët llogariten nga data e listimit deri në dorëzim. "Në stok" = produkte aktive me kosto.
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Aging -->
+        <div class="col-xl-5">
+            <div class="card h-100">
+                <div class="card-header"><strong>Stoku sipas vjetërsisë</strong> <small class="text-body-secondary">(aktivë, më të vjetrit lart)</small></div>
+                <div class="table-responsive" style="max-height: 520px">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                        <tr><th>Produkti</th><th class="text-end">Ditë</th><th class="text-end">Çmimi</th><th class="text-end">Shikime</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="a : ${d.aging}">
+                            <td>
+                                <a class="text-decoration-none" th:href="@{/admin/products/{id}(id=${a.product.id})}" th:text="${a.product.title}"></a>
+                                <div class="small text-body-secondary" th:text="${a.product.quantity} + ' copë · kosto ' + ${@fmt.price(a.product.costLek)}"></div>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <span class="fw-semibold" th:text="${a.days}"></span>
+                                <div th:if="${a.days >= 60}" class="small text-danger"><i class="bi bi-exclamation-triangle-fill"></i> 60+</div>
+                                <div th:if="${a.days >= 30 && a.days < 60}" class="small text-warning-emphasis"><i class="bi bi-hourglass-split"></i> 30+</div>
+                            </td>
+                            <td class="text-end text-nowrap" th:text="${@fmt.price(a.product.priceLek)}"></td>
+                            <td class="text-end" th:text="${a.product.viewCount}"></td>
+                        </tr>
+                        <tr th:if="${d.aging.empty}"><td colspan="4" class="text-center text-body-secondary py-3">Nuk ka produkte aktive.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sold items -->
+        <div class="col-xl-7">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center">
+                    <strong class="me-auto">Shitjet</strong>
+                    <a th:if="${!allSales && d.sold.size() > 25}" class="small" href="/admin?allSales=true" th:text="'Shfaq të gjitha (' + ${d.sold.size()} + ')'"></a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead class="table-light">
+                        <tr><th>Data</th><th>Produkti</th><th class="text-end">Kosto</th><th class="text-end">Çmimi</th><th class="text-end">Fitimi</th><th class="text-end">Marzhi</th><th class="text-end">Ditë</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="s, st : ${d.sold}" th:if="${allSales || st.index < 25}">
+                            <td class="text-nowrap small" th:text="${@fmt.date(s.soldAt)}"></td>
+                            <td>
+                                <a class="text-decoration-none" th:href="@{/admin/orders/{id}(id=${s.orderId})}" th:text="${s.title}"></a>
+                                <span class="small text-body-secondary" th:if="${s.quantity > 1}" th:text="' × ' + ${s.quantity}"></span>
+                            </td>
+                            <td class="text-end text-nowrap text-body-secondary" th:text="${@fmt.num(s.unitCost)}"></td>
+                            <td class="text-end text-nowrap" th:text="${@fmt.num(s.unitPrice)}"></td>
+                            <td class="text-end text-nowrap fw-semibold" th:classappend="${s.profit < 0} ? text-danger" th:text="${@fmt.num(s.profit)}"></td>
+                            <td class="text-end" th:text="${@fmt.pct(s.marginPct)}"></td>
+                            <td class="text-end" th:text="${s.daysToSell != null} ? ${s.daysToSell} : '—'"></td>
+                        </tr>
+                        <tr th:if="${d.sold.empty}"><td colspan="7" class="text-center text-body-secondary py-3">Ende nuk ka shitje të dorëzuara.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer small text-body-secondary">Shumat në Lekë. Përfshihen vetëm porositë "E dorëzuar" (edhe shitjet jashtë faqes).</div>
+            </div>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

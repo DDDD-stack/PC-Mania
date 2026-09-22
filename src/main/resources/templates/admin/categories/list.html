@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Kategoritë')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('categories')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <h1 class="h4 mb-1">Kategoritë</h1>
+    <p class="text-body-secondary small">
+        <strong>E dukshme</strong>: kategoria shfaqet në menu, në kryefaqe dhe në sitemap. Kur fiket, fshihet plotësisht dhe adresa <code>/kategori/…</code> jep 404.<br>
+        <strong>Pa stok</strong>: kategoria mbetet e dukshme, por shënohet "Pa stok" dhe faqja e saj tregon një njoftim. Kategoritë pa produkte aktive shënohen automatikisht.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table align-middle bg-white">
+            <thead class="table-light">
+            <tr>
+                <th style="width:60px">Rendi</th>
+                <th>Kategoria</th>
+                <th class="text-center">Produkte</th>
+                <th class="text-center" style="width:110px">E dukshme</th>
+                <th class="text-center" style="width:110px">Pa stok</th>
+                <th style="width:150px"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${categories}" th:classappend="${!c.visible} ? 'opacity-50'">
+                <td class="text-body-secondary" th:text="${c.sortOrder}"></td>
+                <td>
+                    <i class="bi me-1" th:classappend="${c.iconClass}"></i>
+                    <span class="fw-semibold" th:text="${c.nameSq}"></span>
+                    <a class="small text-decoration-none ms-1" th:href="@{/kategori/{s}(s=${c.slug})}" target="_blank"
+                       th:text="'/kategori/' + ${c.slug}"></a>
+                </td>
+                <td class="text-center">
+                    <span th:with="n=${counts.containsKey(c.slug)} ? ${counts.get(c.slug)[1]} : 0"
+                          class="badge" th:classappend="${n > 0} ? 'text-bg-success' : 'text-bg-secondary'" th:text="${n} + ' aktive'"></span>
+                    <div class="small text-body-secondary" th:with="t=${counts.containsKey(c.slug)} ? ${counts.get(c.slug)[0]} : 0"
+                         th:if="${t > 0}" th:text="${t} + ' gjithsej'"></div>
+                </td>
+                <td class="text-center">
+                    <form th:action="@{/admin/categories/{id}/visible(id=${c.id})}" method="post">
+                        <input type="hidden" name="value" th:value="${!c.visible}">
+                        <input class="form-check-input js-toggle" type="checkbox" role="switch" th:checked="${c.visible}"
+                               th:aria-label="'Shfaq ' + ${c.nameSq}">
+                    </form>
+                </td>
+                <td class="text-center">
+                    <form th:action="@{/admin/categories/{id}/out-of-stock(id=${c.id})}" method="post">
+                        <input type="hidden" name="value" th:value="${!c.outOfStock}">
+                        <input class="form-check-input js-toggle" type="checkbox" role="switch" th:checked="${c.outOfStock}"
+                               th:disabled="${!c.visible}" th:aria-label="'Shëno pa stok ' + ${c.nameSq}">
+                    </form>
+                </td>
+                <td class="text-end text-nowrap">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            th:data-bs-target="'#edit-' + ${c.id}"><i class="bi bi-pencil"></i></button>
+                    <form class="d-inline" th:action="@{/admin/categories/{id}/delete(id=${c.id})}" method="post"
+                          th:data-confirm="'Të fshihet kategoria ' + ${c.nameSq} + '?'">
+                        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:each="c : ${categories}" class="collapse" th:id="'edit-' + ${c.id}">
+                <td colspan="6" class="bg-body-tertiary">
+                    <form class="row g-2 align-items-end" th:action="@{/admin/categories/{id}(id=${c.id})}" method="post">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-0">Emri</label>
+                            <input class="form-control form-control-sm" name="nameSq" th:value="${c.nameSq}" required maxlength="100">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-0">Ikona (Bootstrap Icons)</label>
+                            <input class="form-control form-control-sm" name="iconClass" th:value="${c.iconClass}" placeholder="bi-gpu-card">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-0">Rendi</label>
+                            <input class="form-control form-control-sm" type="number" name="sortOrder" th:value="${c.sortOrder}">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-sm btn-primary w-100" type="submit">Ruaj</button>
+                        </div>
+                        <div class="col-12 form-text">
+                            Adresa <code th:text="'/kategori/' + ${c.slug}"></code> nuk ndryshohet, që linqet e shpërndara të mos prishen.
+                        </div>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><strong>Shto kategori</strong></div>
+        <form class="card-body row g-2 align-items-end" th:action="@{/admin/categories}" method="post">
+            <div class="col-md-4">
+                <label class="form-label small mb-0">Emri *</label>
+                <input class="form-control" name="nameSq" required maxlength="100" placeholder="p.sh. Tastiera">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-0">Adresa (slug)</label>
+                <input class="form-control" name="slug" placeholder="gjenerohet nga emri">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-0">Ikona</label>
+                <input class="form-control" name="iconClass" placeholder="bi-keyboard">
+            </div>
+            <div class="col-md-1">
+                <label class="form-label small mb-0">Rendi</label>
+                <input class="form-control" type="number" name="sortOrder" placeholder="fundi">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit"><i class="bi bi-plus-lg"></i> Shto</button>
+            </div>
+            <div class="col-12 form-text">
+                Emrat e ikonave gjenden te <a href="https://icons.getbootstrap.com/" target="_blank" rel="noopener">Bootstrap Icons</a> (p.sh. <code>bi-keyboard</code>, <code>bi-mouse</code>).
+                Kategoria e re shfaqet menjëherë në faqe; fikeni "E dukshme" nëse ende nuk keni produkte.
+            </div>
+        </form>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+<script>
+    document.querySelectorAll('.js-toggle').forEach(el =>
+        el.addEventListener('change', () => el.closest('form').requestSubmit()));
+</script>
+</body>
+</html>

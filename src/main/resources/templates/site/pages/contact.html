@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-4">
+    <h1 class="h3 fw-bold mb-3">Kontakt</h1>
+    <div class="prose">
+        <p>Mënyra më e shpejtë për të na kontaktuar është WhatsApp. Përgjigjemi zakonisht brenda pak orëve.</p>
+        <div class="d-grid d-sm-flex gap-2 mb-4">
+            <a class="btn btn-whatsapp btn-lg" th:href="${whatsappGeneral}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-2"></i>WhatsApp</a>
+            <a class="btn btn-outline-dark btn-lg" th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}"><i class="bi bi-telephone me-2"></i><span th:text="${site.phoneDisplay}"></span></a>
+        </div>
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Telefon</dt>
+            <dd class="col-sm-9"><a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a></dd>
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9"><a th:href="'mailto:' + ${site.contactEmail}" th:text="${site.contactEmail}"></a></dd>
+            <dt class="col-sm-3">Facebook</dt>
+            <dd class="col-sm-9"><a th:href="${site.facebookUrl}" target="_blank" rel="noopener">Faqja jonë në Facebook</a></dd>
+            <dt class="col-sm-3">Vendndodhja</dt>
+            <dd class="col-sm-9">Tiranë. Marrja e produkteve bëhet me takim paraprak.</dd>
+        </dl>
+    </div>
+</main>
+</body>
+</html>
