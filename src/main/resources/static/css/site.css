@@ -26,6 +26,9 @@ body { background: var(--bs-body-bg); -webkit-tap-highlight-color: transparent; 
 .site-header { background: var(--pm-dark); }
 .site-header .navbar { padding-top: calc(.4rem + env(safe-area-inset-top, 0px)); padding-bottom: .4rem; }
 .site-header .navbar-brand { font-size: 1.35rem; letter-spacing: -.02em; }
+/* Logo: the chip mark beside the wordmark. The mark is decorative (empty alt); the text is the name. */
+.brand { display: inline-flex; align-items: center; gap: .5rem; }
+.brand-mark { flex: none; display: block; }
 .header-links a { color: rgba(255,255,255,.8); text-decoration: none; font-size: .9rem; white-space: nowrap; }
 .header-links a:hover { color: #fff; }
 .site-footer { background: var(--pm-dark); color: rgba(255,255,255,.8); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -89,7 +92,9 @@ body { background: var(--bs-body-bg); -webkit-tap-highlight-color: transparent; 
 .product-page { padding-bottom: 5.5rem !important; }
 @media (min-width: 992px) { .product-page { padding-bottom: 1rem !important; } }
 .gallery { background: #fff; border: 1px solid #e5e7eb; border-radius: .75rem; overflow: hidden; }
-.gallery .carousel-item img { width: 100%; aspect-ratio: 1; object-fit: contain; background: #fff; }
+/* height:auto matters: the height="800" attribute otherwise wins over aspect-ratio, and on a phone the
+   photo sat in an 800px-tall box that pushed the price and the order button below the first screen. */
+.gallery .carousel-item img { width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; background: #fff; }
 .gallery .carousel-control-prev-icon, .gallery .carousel-control-next-icon { background-color: rgba(15,23,42,.55); border-radius: 50%; background-size: 55%; width: 2.25rem; height: 2.25rem; }
 .gallery-counter { position: absolute; right: .6rem; bottom: .6rem; background: rgba(15,23,42,.7); color: #fff; font-size: .75rem; padding: .1rem .5rem; border-radius: 1rem; }
 .gallery-thumbs { display: flex; gap: .4rem; overflow-x: auto; padding: .5rem 0; scrollbar-width: thin; }

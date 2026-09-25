@@ -41,6 +41,13 @@ spring:
       mail.smtp.starttls.enable: true
   web:
     resources:
+      # Links written as @{/css/site.css} come out as /css/site-<content hash>.css, so a deploy that
+      # changes a stylesheet or script reaches every visitor at once instead of after the cache expires.
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
       cache:
         cachecontrol:
           max-age: 7d

@@ -3,7 +3,7 @@
 <head th:replace="~{admin/fragments :: head('Hyrje')}"></head>
 <body class="bg-body-tertiary">
 <main class="container py-5" style="max-width: 380px">
-    <h1 class="h4 text-center mb-4 fw-bold">PC<span class="text-warning">Mania</span> admin</h1>
+    <h1 class="h4 text-center mb-4 fw-bold"><img class="d-block mx-auto mb-2" th:src="@{/favicon.svg}" alt="" width="56" height="56">PC<span class="text-warning">Mania</span> admin</h1>
     <div th:if="${param.error}" class="alert alert-danger">Emri ose fjalëkalimi është i gabuar.</div>
     <div th:if="${param.locked}" class="alert alert-danger">Shumë tentativa të dështuara. Provoni pas 15 minutash.</div>
     <div th:if="${param.logout}" class="alert alert-success">Dolët nga llogaria.</div>
