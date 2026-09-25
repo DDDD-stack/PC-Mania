@@ -57,12 +57,19 @@ public class ImageStorage {
             file.transferTo(tmp);
             int maxSide = maxSide(tmp);
             String filename = UUID.randomUUID().toString().replace("-", "") + ".jpg";
+            // The original - often a 12-50 megapixel phone photo - is decoded once, into the largest
+            // variant, and the smaller ones are scaled from that. Decoding it per variant tripled the
+            // work, which on the hosted service's fraction of a CPU made every upload crawl. Reading from
+            // the file (not a BufferedImage) is also what keeps Thumbnailator honouring EXIF rotation.
+            BufferedImage largest = Thumbnails.of(tmp.toFile())
+                    .size(Math.min(Size.full.px, maxSide), Math.min(Size.full.px, maxSide)) // never upscale
+                    .addFilter(ImageStorage::flattenOnWhite)
+                    .asBufferedImage();
             for (Size s : Size.values()) {
-                int target = Math.min(s.px, maxSide); // never upscale
+                int target = Math.min(s.px, maxSide);
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                Thumbnails.of(tmp.toFile())
+                Thumbnails.of(largest)
                         .size(target, target)
-                        .addFilter(ImageStorage::flattenOnWhite)
                         .outputFormat("jpg")
                         .outputQuality(s == Size.thumb ? 0.8 : 0.85)
                         .toOutputStream(out);

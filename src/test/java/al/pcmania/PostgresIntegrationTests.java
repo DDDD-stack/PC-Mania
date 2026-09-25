@@ -11,6 +11,7 @@ import al.pcmania.repo.CategoryRepository;
 import al.pcmania.repo.OrderRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.CategoryAdminService;
+import al.pcmania.service.ImageStorage;
 import al.pcmania.service.OrderService;
 import al.pcmania.web.site.CheckoutForm;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
@@ -23,11 +24,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Year;
 import java.util.UUID;
@@ -66,6 +74,7 @@ class PostgresIntegrationTests {
     @Autowired CategoryAdminService categoryAdmin;
     @Autowired TransactionTemplate tx;
     @Autowired EntityManagerFactory emf;
+    @Autowired ImageStorage images;
 
     private Statistics stats;
 
@@ -164,6 +173,40 @@ class PostgresIntegrationTests {
         mvc.perform(get(path)).andExpect(status().isOk());
         long first = stats.getPrepareStatementCount();
         assertTrue(first <= 7, "queries for a product page: " + first);
+    }
+
+    @Test
+    void uploadsAreStoredInThreeSizesWithoutUpscaling() throws Exception {
+        String big = images.store(png(3000, 2000, true));
+        assertEquals(1600, width(big, ImageStorage.Size.full));
+        assertEquals(800, width(big, ImageStorage.Size.medium));
+        assertEquals(400, width(big, ImageStorage.Size.thumb));
+        // JPEG has no transparency: the transparent PNG must come out white, not black.
+        BufferedImage thumb = ImageIO.read(new ByteArrayInputStream(images.content(ImageStorage.Size.thumb, big).orElseThrow().getData()));
+        assertTrue((thumb.getRGB(2, 2) & 0xffffff) > 0xf0f0f0, "corner should be white");
+
+        String small = images.store(png(300, 200, false));
+        for (ImageStorage.Size size : ImageStorage.Size.values()) assertEquals(300, width(small, size));
+
+        mvc.perform(get(ImageStorage.url(ImageStorage.Size.medium, big)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "image/jpeg"));
+    }
+
+    private int width(String filename, ImageStorage.Size size) throws IOException {
+        byte[] data = images.content(size, filename).orElseThrow().getData();
+        return ImageIO.read(new ByteArrayInputStream(data)).getWidth();
+    }
+
+    private static MockMultipartFile png(int w, int h, boolean transparentCorner) throws IOException {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setColor(new Color(40, 44, 52));
+        g.fillRect(transparentCorner ? w / 4 : 0, transparentCorner ? h / 4 : 0, w, h);
+        g.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(img, "png", out);
+        return new MockMultipartFile("files", "photo.png", "image/png", out.toByteArray());
     }
 
     /** A repeat view of a photo is answered from the ETag alone: that is what keeps it off the connection pool. */
