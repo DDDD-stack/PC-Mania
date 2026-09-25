@@ -52,9 +52,9 @@ public class CatalogService {
         return categories().stream().map(c -> new CategoryTile(c, counts.getOrDefault(c.getSlug(), 0L))).toList();
     }
 
-    /** Public lookup: hidden categories are treated as non-existent. */
+    /** Public lookup: hidden categories are treated as non-existent. Served from the cached list, not a query. */
     public Optional<Category> category(String slug) {
-        return categories.findBySlug(slug).filter(Category::isVisible);
+        return categories().stream().filter(c -> c.getSlug().equals(slug)).findFirst();
     }
 
     public List<ProductCard> newest(int limit) {

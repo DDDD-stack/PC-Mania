@@ -1,4 +1,4 @@
-package al.pcmania.web.site;
+package al.pcmania.web.resource;
 
 import al.pcmania.repo.StoredFileRepository;
 import al.pcmania.service.ImageStorage;

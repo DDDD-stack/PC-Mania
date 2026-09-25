@@ -1,5 +1,6 @@
 package al.pcmania.service;
 
+import al.pcmania.config.CacheConfig;
 import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.UpcomingStatus;
 import al.pcmania.domain.UpcomingInterest;
@@ -7,6 +8,7 @@ import al.pcmania.domain.UpcomingProduct;
 import al.pcmania.repo.UpcomingInterestRepository;
 import al.pcmania.repo.UpcomingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -76,6 +78,7 @@ public class UpcomingService {
 
     // ---- Writing ----
 
+    @CacheEvict(cacheNames = CacheConfig.UPCOMING_COUNTS, allEntries = true)
     @Transactional
     public UpcomingProduct save(Long id, String title, String teaser, String categorySlug, Integer expectedPriceLek,
                                 String expectedLabel, Condition condition, UpcomingStatus status, Integer sortOrder) {
@@ -97,6 +100,7 @@ public class UpcomingService {
         return repo.save(u);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.UPCOMING_COUNTS, allEntries = true)
     @Transactional
     public UpcomingProduct setStatus(Long id, UpcomingStatus status) {
         UpcomingProduct u = get(id);
@@ -113,6 +117,7 @@ public class UpcomingService {
         return u;
     }
 
+    @CacheEvict(cacheNames = CacheConfig.UPCOMING_COUNTS, allEntries = true)
     @Transactional
     public void delete(Long id) {
         UpcomingProduct u = get(id);

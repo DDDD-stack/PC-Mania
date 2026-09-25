@@ -1,4 +1,4 @@
-package al.pcmania.web.site;
+package al.pcmania.web.resource;
 
 import al.pcmania.domain.Category;
 import al.pcmania.domain.Enums.UpcomingStatus;

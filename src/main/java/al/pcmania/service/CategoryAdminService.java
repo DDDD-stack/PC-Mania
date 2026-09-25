@@ -1,10 +1,12 @@
 package al.pcmania.service;
 
+import al.pcmania.config.CacheConfig;
 import al.pcmania.domain.Category;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.repo.CategoryRepository;
 import al.pcmania.repo.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -34,6 +36,7 @@ public class CategoryAdminService {
                 slug -> new long[]{total.getOrDefault(slug, 0L), active.getOrDefault(slug, 0L)}));
     }
 
+    @CacheEvict(cacheNames = CacheConfig.CATEGORIES, allEntries = true)
     @Transactional
     public Category create(String nameSq, String slug, String iconClass, Integer sortOrder) {
         Category c = new Category();
@@ -45,6 +48,7 @@ public class CategoryAdminService {
         return categories.save(c);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.CATEGORIES, allEntries = true)
     @Transactional
     public void update(Long id, String nameSq, String iconClass, Integer sortOrder) {
         Category c = get(id);
@@ -53,6 +57,7 @@ public class CategoryAdminService {
         if (sortOrder != null) c.setSortOrder(sortOrder);
     }
 
+    @CacheEvict(cacheNames = CacheConfig.CATEGORIES, allEntries = true)
     @Transactional
     public Category setVisible(Long id, boolean visible) {
         Category c = get(id);
@@ -60,6 +65,7 @@ public class CategoryAdminService {
         return c;
     }
 
+    @CacheEvict(cacheNames = CacheConfig.CATEGORIES, allEntries = true)
     @Transactional
     public Category setOutOfStock(Long id, boolean outOfStock) {
         Category c = get(id);
@@ -68,6 +74,7 @@ public class CategoryAdminService {
     }
 
     /** Categories are only removable while empty; otherwise the products would lose their category. */
+    @CacheEvict(cacheNames = CacheConfig.CATEGORIES, allEntries = true)
     @Transactional
     public boolean delete(Long id) {
         Category c = get(id);

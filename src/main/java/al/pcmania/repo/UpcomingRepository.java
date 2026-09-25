@@ -1,7 +1,9 @@
 package al.pcmania.repo;
 
+import al.pcmania.config.CacheConfig;
 import al.pcmania.domain.Enums.UpcomingStatus;
 import al.pcmania.domain.UpcomingProduct;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,6 +25,8 @@ public interface UpcomingRepository extends JpaRepository<UpcomingProduct, Long>
 
     boolean existsBySlug(String slug);
 
+    /** Cached: every public page asks whether to show the "Së shpejti" link; see CacheConfig. */
+    @Cacheable(CacheConfig.UPCOMING_COUNTS)
     long countByStatus(UpcomingStatus status);
 
     /** Interest counts for a set of teasers, so a list page needs one extra query rather than one per row. */
