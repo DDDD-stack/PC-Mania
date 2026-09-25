@@ -9,10 +9,11 @@ services:
     runtime: docker
     # Frankfurt is the closest region to Albania.
     region: frankfurt
-    # free = sleeps after 15 minutes of no traffic (the next visitor waits ~50s) and has
-    # no disk, so uploaded photos are lost on every deploy. "starter" allows a disk.
+    # free = sleeps after 15 minutes of no traffic, and the next visitor waits while it starts.
+    # It has no disk either, which no longer matters: photos and the app build live in the database.
     plan: free
-    healthCheckPath: /
+    # Answers without touching the database (HealthController); "/" rendered the home page per poll.
+    healthCheckPath: /healthz
     envVars:
       # --- required -------------------------------------------------------
       # The public https address Render gives the service. Canonical links, the sitemap,

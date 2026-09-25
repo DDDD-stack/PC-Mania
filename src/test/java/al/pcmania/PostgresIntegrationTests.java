@@ -1,5 +1,6 @@
 package al.pcmania;
 
+import al.pcmania.domain.Category;
 import al.pcmania.domain.Enums.DeliveryMethod;
 import al.pcmania.domain.Enums.OrderStatus;
 import al.pcmania.domain.Enums.PaymentMethod;
@@ -171,8 +172,9 @@ class PostgresIntegrationTests {
         mvc.perform(get(path)).andExpect(status().isOk());
         stats.clear();
         mvc.perform(get(path)).andExpect(status().isOk());
-        long first = stats.getPrepareStatementCount();
-        assertTrue(first <= 7, "queries for a product page: " + first);
+        assertEquals(0, stats.getEntityStatistics(Category.class.getName()).getLoadCount(), "categories loaded");
+        long queries = stats.getPrepareStatementCount();
+        assertTrue(queries <= 6, "queries for a product page: " + queries);
     }
 
     @Test
@@ -215,6 +217,12 @@ class PostgresIntegrationTests {
         mvc.perform(get("/img/p/thumb/abc.jpg").header("If-None-Match", "\"abc.jpg\""))
                 .andExpect(status().isNotModified());
         assertEquals(0, stats.getPrepareStatementCount(), "queries run for a 304 photo response");
+    }
+
+    @Test
+    void healthCheckAnswersWithoutTheDatabase() throws Exception {
+        mvc.perform(get("/healthz")).andExpect(status().isOk()).andExpect(content().string("ok"));
+        assertEquals(0, stats.getPrepareStatementCount(), "queries run for a health check");
     }
 
     private Product product(int quantity) {
