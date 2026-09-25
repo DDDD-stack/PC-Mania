@@ -1,0 +1,17 @@
+# Without this, cloning on a machine with different settings can show every file as
+# modified, because Git rewrites line endings on checkout. Normalising in the repository
+# keeps the two machines in step.
+* text=auto eol=lf
+
+# Windows batch files are only reliable with CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# The Maven wrapper is a shell script and must stay LF even when checked out on Windows.
+mvnw text eol=lf
+
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
