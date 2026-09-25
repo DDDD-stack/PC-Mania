@@ -104,6 +104,10 @@ variable the hosted deployment uses).
 ## Deployment notes
 
 - Run behind nginx/Caddy with TLS. `server.forward-headers-strategy=native` trusts `X-Forwarded-*` only from private-network proxies, which keeps rate limiting and login lockout keyed on the real client IP.
+  After each start the log has one line beginning `Client address check`, written for the first
+  request that came through the proxy. It should show the visitor's own public address. If it shows
+  the proxy's instead, every visitor shares one rate limit and one login lockout: add the proxy's
+  address to `server.tomcat.remoteip.internal-proxies`.
 - Build: `./mvnw package` → `java -jar target/pcmania-1.0.0.jar` (this runs the tests first; add
   `-DskipTests` to skip them).
 - Health check: `/healthz` answers `ok` without rendering a page or touching the database.
