@@ -22,6 +22,23 @@ GRANT ALL ON pcmania.* TO 'pcmania'@'%';
 
 Flyway creates the schema and seeds categories, brands and three sample GPUs.
 
+## Working on another machine
+
+```bash
+git clone <repository-url> && cd PCMania
+./mvnw spring-boot:run
+```
+
+Only a JDK 21+ is needed. **No database has to be installed**: point `DB_URL`, `DB_USER`,
+`DB_PASSWORD` and `DB_SCHEMA` at the Supabase pooler (see Configuration below) and Flyway
+brings the schema up to date on first start. Product photos and the uploaded Android build
+come from the database too, so nothing has to be copied between machines by hand.
+
+`uploads/` is deliberately not in the repository. It is only read once at startup, to import
+photos left on disk by an older install, and is not needed on a fresh clone.
+
+Never commit the database password. It belongs in the environment, or in Render's variables.
+
 ## Testing from the phone
 
 `start-for-phone.cmd` (double-click) starts the same dev server but bound to the PC's address on the local
