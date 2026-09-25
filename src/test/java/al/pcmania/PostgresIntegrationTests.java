@@ -219,6 +219,19 @@ class PostgresIntegrationTests {
         assertEquals(0, stats.getPrepareStatementCount(), "queries run for a 304 photo response");
     }
 
+    /** Asset links carry a content hash, and both the hashed and the plain paths are served. */
+    @Test
+    void staticAssetsAreFingerprintedAndServed() throws Exception {
+        String html = mvc.perform(get("/")).andReturn().getResponse().getContentAsString();
+        java.util.regex.Matcher css = java.util.regex.Pattern.compile("/css/site-[0-9a-f]{32}[.]css").matcher(html);
+        assertTrue(css.find(), "stylesheet link should carry a content hash");
+        mvc.perform(get(css.group())).andExpect(status().isOk());
+        for (String path : new String[]{"/css/site.css", "/js/site.js", "/favicon.svg", "/favicon.ico",
+                "/apple-touch-icon.png", "/manifest.json", "/images/logo-mark.svg", "/images/og-default.png"}) {
+            mvc.perform(get(path)).andExpect(status().isOk());
+        }
+    }
+
     @Test
     void healthCheckAnswersWithoutTheDatabase() throws Exception {
         mvc.perform(get("/healthz")).andExpect(status().isOk()).andExpect(content().string("ok"));

@@ -41,6 +41,10 @@ spring:
       mail.smtp.starttls.enable: true
   web:
     resources:
+      # Everything static is under /static. The default also searches three other folders, and with
+      # the content strategy below every @{...} link on a page - product links included - is looked up
+      # in each of them.
+      static-locations: classpath:/static/
       # Links written as @{/css/site.css} come out as /css/site-<content hash>.css, so a deploy that
       # changes a stylesheet or script reaches every visitor at once instead of after the cache expires.
       chain:
