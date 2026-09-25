@@ -2,6 +2,8 @@
 -- every product card, product page and order lookup reads the whole child table to find a
 -- product's photos, specs or an order's lines - fine with a handful of rows, and slower with
 -- every listing added. The sort column is included where the query also orders by it.
+-- These are the foreign keys Supabase's performance advisor lists as "unindexed foreign keys".
+CREATE INDEX IF NOT EXISTS ix_product_brand    ON product (brand_id);
 CREATE INDEX IF NOT EXISTS ix_image_product    ON product_image (product_id, sort_order);
 CREATE INDEX IF NOT EXISTS ix_spec_product     ON product_spec (product_id, sort_order);
 CREATE INDEX IF NOT EXISTS ix_item_order       ON order_item (order_id);
