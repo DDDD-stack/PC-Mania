@@ -7,3 +7,4 @@ uploads/
 *.log
 .env
 .local-db/
+__pycache__/
