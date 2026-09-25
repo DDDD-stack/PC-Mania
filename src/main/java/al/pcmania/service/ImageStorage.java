@@ -4,10 +4,14 @@ import al.pcmania.repo.StoredFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
+import net.coobird.thumbnailator.util.exif.ExifFilterUtils;
+import net.coobird.thumbnailator.util.exif.ExifUtils;
+import net.coobird.thumbnailator.util.exif.Orientation;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -55,16 +59,16 @@ public class ImageStorage {
         try {
             tmp = Files.createTempFile("upload-", ".img");
             file.transferTo(tmp);
-            int maxSide = maxSide(tmp);
             String filename = UUID.randomUUID().toString().replace("-", "") + ".jpg";
-            // The original - often a 12-50 megapixel phone photo - is decoded once, into the largest
-            // variant, and the smaller ones are scaled from that. Decoding it per variant tripled the
-            // work, which on the hosted service's fraction of a CPU made every upload crawl. Reading from
-            // the file (not a BufferedImage) is also what keeps Thumbnailator honouring EXIF rotation.
-            BufferedImage largest = Thumbnails.of(tmp.toFile())
+            // The original is decoded once, into the largest variant, and the smaller ones are scaled
+            // from that. Decoding it per variant tripled the work, which on the hosted service's
+            // fraction of a CPU made every upload crawl.
+            BufferedImage decoded = decode(tmp);
+            int maxSide = Math.max(decoded.getWidth(), decoded.getHeight());
+            BufferedImage largest = Thumbnails.of(decoded)
                     .size(Math.min(Size.full.px, maxSide), Math.min(Size.full.px, maxSide)) // never upscale
-                    .addFilter(ImageStorage::flattenOnWhite)
                     .asBufferedImage();
+            decoded = null; // the full decode is the big allocation; let it go before encoding
             for (Size s : Size.values()) {
                 int target = Math.min(s.px, maxSide);
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -114,7 +118,19 @@ public class ImageStorage {
                         .orElse(null));
     }
 
-    private static int maxSide(Path file) throws IOException {
+    /**
+     * Longest side a photo is decoded at before resizing, at least. Anything twice this or larger is
+     * read with subsampling, which skips pixels while decoding instead of building the full image.
+     *
+     * Without it a 50-megapixel phone photo needs over 400 MB of heap to decode - more than the
+     * hosted instance has in total - and the upload fails. Only photos of 4800 px and up are
+     * affected, and they still arrive at 2400 px or more: 1.5 times the largest variant, so the
+     * final downscale has detail to average over. A 12 MP photo is decoded exactly as before.
+     */
+    static final int DECODE_MIN_SIDE = 2400;
+
+    /** Reads an upload into memory the right way up, subsampled if very large, flattened onto white. */
+    static BufferedImage decode(Path file) throws IOException {
         try (ImageInputStream in = ImageIO.createImageInputStream(file.toFile())) {
             Iterator<ImageReader> readers = in == null ? null : ImageIO.getImageReaders(in);
             if (readers == null || !readers.hasNext()) {
@@ -123,10 +139,31 @@ public class ImageStorage {
             ImageReader reader = readers.next();
             try {
                 reader.setInput(in);
-                return Math.max(reader.getWidth(0), reader.getHeight(0));
+                int longest = Math.max(reader.getWidth(0), reader.getHeight(0));
+                ImageReadParam param = reader.getDefaultReadParam();
+                int step = longest / DECODE_MIN_SIDE;
+                if (step > 1) param.setSourceSubsampling(step, step, 0, 0);
+                BufferedImage img = reader.read(0, param);
+                // Phones store portrait photos sideways plus an EXIF note saying how to turn them.
+                // Thumbnailator applies it when given the file; decoding here means applying it here.
+                Orientation orientation = exifOrientation(reader);
+                if (orientation != null && orientation != Orientation.TOP_LEFT) {
+                    img = ExifFilterUtils.getFilterForOrientation(orientation).apply(img);
+                }
+                return flattenOnWhite(img);
             } finally {
                 reader.dispose();
             }
+        }
+    }
+
+    /** EXIF orientation, or null. Unreadable metadata must not fail an upload whose pixels are fine. */
+    private static Orientation exifOrientation(ImageReader reader) {
+        try {
+            return ExifUtils.getExifOrientation(reader, 0);
+        } catch (IOException | RuntimeException e) {
+            log.debug("Could not read EXIF orientation: {}", e.getMessage());
+            return null;
         }
     }
 
