@@ -1,9 +1,38 @@
 # PCMania
 
 Online store for new and used PC components (Albanian market, prices in ALL) with a custom PC build quote service.
-Spring Boot 3.5 · Java 21 · MySQL 8 · Thymeleaf + Bootstrap 5 · Flyway.
+Spring Boot 3.5 · Java 21 · Postgres (Supabase) or MySQL 8 · Thymeleaf + Bootstrap 5 · Flyway.
 
 ## Running locally
+
+**Quickest, and safe:** only a JDK 21+ is needed.
+
+```bash
+./mvnw spring-boot:test-run
+```
+
+This starts the site against a private Postgres 17 (the same major version as Supabase) that Maven
+downloads, with its data in `.local-db/`. Nothing done there reaches the live shop, so this is the
+way to try out orders, photo uploads and admin changes. The dev profile is on, so the first start
+creates `admin` / `admin123`. Delete `.local-db/` to start again from the seed data.
+`DB_URL` and the other database variables are ignored in this mode.
+
+> `./mvnw spring-boot:run` uses whatever `DB_URL` points at. On a machine set up as described in
+> *Working on another machine* that is the **live Supabase database**: orders and edits made there
+> are real.
+
+### Tests
+
+```bash
+./mvnw test
+```
+
+`PostgresIntegrationTests` runs the whole application against a throwaway Postgres with every
+migration applied: checkout and order numbers, cancellations, offline sales, every public page,
+photo uploads, caching and authentication. SQL that only works on MySQL fails here rather than at a
+customer's checkout.
+
+### MySQL instead
 
 Requirements: JDK 21+, MySQL 8.
 
@@ -75,7 +104,9 @@ variable the hosted deployment uses).
 ## Deployment notes
 
 - Run behind nginx/Caddy with TLS. `server.forward-headers-strategy=native` trusts `X-Forwarded-*` only from private-network proxies, which keeps rate limiting and login lockout keyed on the real client IP.
-- Build: `./mvnw package` → `java -jar target/pcmania-1.0.0.jar`.
+- Build: `./mvnw package` → `java -jar target/pcmania-1.0.0.jar` (this runs the tests first; add
+  `-DskipTests` to skip them).
+- Health check: `/healthz` answers `ok` without rendering a page or touching the database.
 - After deploying, paste a product URL into the [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) to confirm the preview (and to refresh Facebook's cache after changing photos or price).
 - Submit `BASE_URL/sitemap.xml` in Google Search Console.
 
@@ -99,6 +130,16 @@ Two things Render does not provide:
   uploaded Android build live in the `stored_file` table, so a deploy cannot lose them and the
   free plan needs no paid disk. Photos are served from `/img/p/**` with a one-year immutable
   cache and an ETag, so a repeat view is answered without touching the database.
+
+The image starts faster than a plain `java -jar`: during the build the application is started once,
+without a database, so the JVM can record a class data sharing archive (see the `Dockerfile`). It
+took startup from 4.7 s to 3.3 s in testing, and on the free plan that time is spent while the first
+visitor after a sleep waits. If recording the archive ever fails, the build still succeeds and the
+service starts the ordinary way.
+
+Render's health check should be `/healthz` (the blueprint sets it). A service created by hand in
+the dashboard keeps whatever path it was given: `/` works too, but renders the home page on every
+poll.
 
 Set `BASE_URL` to the address Render assigns (`https://<name>.onrender.com`). It is what the
 sitemap, canonical links, Facebook previews **and the photo URLs the phone app loads** are built
@@ -164,7 +205,7 @@ Cancelling restores stock (RESERVED → ACTIVE). Delivering sets `deliveredAt` a
 
 **Cost privacy.** Public controllers only pass `ProductCard` / `ProductDetail` view records, which have no cost field. `Product` entities are only used in admin templates.
 
-**Mobile admin API.** The Android app (`Desktop\PCManiaApp`) uses `/api/v1`, secured with bearer tokens
+**Mobile admin API.** The Android app (its own repository, `PC-Mania-Mobile`) uses `/api/v1`, secured with bearer tokens
 (`POST /api/v1/auth/login` with the admin username/password). Tokens are stored hashed in `api_token`, expire after
 60 days without use and are revoked by `POST /api/v1/auth/logout`. Endpoints: `summary`, `orders?group=new|active|done`,
 `orders/{id}` (+ `/status`, `/notes`), `builds?group=new|active|done`, `builds/{id}` (PATCH status, quote, admin notes),
@@ -187,5 +228,14 @@ page, so a new version reaches the phone by opening the site on it and signing i
 no cable. One slot: uploading replaces the previous build. The file is stored in `stored_file`
 like the photos, the download sits behind `/admin/**` so only a signed-in operator can fetch
 it, and it is sent with `Cache-Control: no-store` so the phone never gets a stale build.
+
+**Logo and icons.** The chip mark is drawn by `tools/logo.py`, which writes the favicons, the Apple
+touch icon, the manifest icons and `images/logo-mark.svg` from one set of coordinates. Edit it and run
+`python tools/logo.py src/main/resources/static` (needs Pillow) rather than editing the files one by one.
+
+**Caching.** The visible categories and the "Së shpejti" counts, which every public page shows, are
+cached in memory (`CacheConfig`). The services that change them evict the cache after the
+transaction commits, so admin changes show on the next page view. The cache also expires after ten
+minutes, which covers rows edited directly in the Supabase SQL editor.
 
 **Abuse protection.** Public forms have a honeypot field and a per-IP limit (5 orders / 5 build requests per hour). Admin login locks an IP for 15 minutes after 5 failures.
