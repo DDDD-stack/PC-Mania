@@ -102,15 +102,28 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- A real, throwaway Postgres for the integration tests and for `spring-boot:test-run`,
-             so nothing local ever has to touch the live Supabase database. -->
-        <dependency>
-            <groupId>io.zonky.test</groupId>
-            <artifactId>embedded-postgres</artifactId>
-            <version>${embedded-postgres.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- A real, throwaway Postgres for the integration tests and for `spring-boot:test-run`, so
+             nothing local ever has to touch the live Supabase database. On by default; the Dockerfile
+             switches it off (-P '!local-db' -Dmaven.test.skip=true) so the image build does not download
+             Postgres binaries for four platforms that it never uses. -->
+        <profile>
+            <id>local-db</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>io.zonky.test</groupId>
+                    <artifactId>embedded-postgres</artifactId>
+                    <version>${embedded-postgres.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <dependencyManagement>
         <dependencies>
