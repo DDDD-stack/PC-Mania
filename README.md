@@ -93,6 +93,7 @@ variable the hosted deployment uses).
 | `DB_POOL_SIZE` | `5` | Maximum JDBC connections |
 | `BASE_URL` | `http://localhost:8070` | **Public https URL.** Used for canonical links, Open Graph images and the sitemap — Facebook previews break if this is wrong |
 | `UPLOAD_DIR` | `./uploads` | Only read at startup, to import photos written to disk by older versions. Uploads now go to the database |
+| `MOBILE_API_KEY` | *(blank)* | Key built into the phone app so it opens without signing in (32+ characters). Blank: the app must sign in |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / *(blank)* | Used only when no admin exists. Blank password → a random one is printed to the log once |
 | `NOTIFY_EMAIL` | *(blank)* | Operator address for new orders / build requests |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP. Without `MAIL_HOST` notifications are only written to the log |
@@ -219,6 +220,12 @@ DELETE on `{id}`), `upcoming/{id}/interest` and `upcoming/interest/{id}/notified
 Each list has a matching `/counts`. PATCH bodies are partial: a field left out keeps its stored value. Editing a
 product's title from the app deliberately leaves the slug alone, so links already shared on Facebook keep working.
 Failed logins share the web admin's 5-attempt lockout.
+
+The app built for the owner's phone does not sign in at all: it carries `MOBILE_API_KEY` (built in from
+the mobile repo's git-ignored `.env.local`) and the server treats that key like a signed-in admin on
+`/api/**` only, never on the web admin. The APK is downloadable only from `/admin/app`, behind the
+admin login. If a phone is lost, change `MOBILE_API_KEY` on Render and that copy stops working at once;
+then rebuild the app with the new key.
 
 **Së shpejti.** Stock that is bought or on its way but not sellable yet lives in `upcoming_product`, managed at
 `/admin/upcoming` or from the phone (Inventari › Së shpejti). A teaser is `HIDDEN` (invisible), `VISIBLE` (shown on

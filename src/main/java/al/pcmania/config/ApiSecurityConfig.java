@@ -33,7 +33,7 @@ public class ApiSecurityConfig {
 
     @Bean
     @Order(1)
-    SecurityFilterChain apiFilterChain(HttpSecurity http, ApiTokenService tokens) throws Exception {
+    SecurityFilterChain apiFilterChain(HttpSecurity http, ApiTokenService tokens, MobileAppKey appKey) throws Exception {
         return http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(a -> a
@@ -46,7 +46,7 @@ public class ApiSecurityConfig {
                 .cors(c -> c.configurationSource(corsSource()))
                 .formLogin(f -> f.disable())
                 .httpBasic(b -> b.disable())
-                .addFilterBefore(new BearerTokenFilter(tokens), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new BearerTokenFilter(tokens, appKey), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
                     res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     res.setCharacterEncoding("UTF-8");
@@ -70,9 +70,11 @@ public class ApiSecurityConfig {
 
     static class BearerTokenFilter extends OncePerRequestFilter {
         private final ApiTokenService tokens;
+        private final MobileAppKey appKey;
 
-        BearerTokenFilter(ApiTokenService tokens) {
+        BearerTokenFilter(ApiTokenService tokens, MobileAppKey appKey) {
             this.tokens = tokens;
+            this.appKey = appKey;
         }
 
         @Override
@@ -80,11 +82,19 @@ public class ApiSecurityConfig {
                 throws ServletException, IOException {
             String header = req.getHeader("Authorization");
             if (header != null && header.startsWith("Bearer ")) {
-                tokens.authenticate(header.substring(7).trim()).ifPresent(user ->
-                        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
-                                user.getUsername(), null, AuthorityUtils.createAuthorityList("ROLE_ADMIN"))));
+                String raw = header.substring(7).trim();
+                if (appKey.matches(raw)) {
+                    authenticate("phone-app");
+                } else {
+                    tokens.authenticate(raw).ifPresent(user -> authenticate(user.getUsername()));
+                }
             }
             chain.doFilter(req, res);
+        }
+
+        private static void authenticate(String name) {
+            SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                    name, null, AuthorityUtils.createAuthorityList("ROLE_ADMIN")));
         }
     }
 }

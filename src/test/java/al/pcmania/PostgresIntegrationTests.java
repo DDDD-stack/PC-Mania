@@ -50,9 +50,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Runs the application against a real Postgres - the database the live shop uses - with the Flyway
  * migrations applied from scratch. SQL that only works on MySQL fails here instead of at a customer's checkout.
  */
-@SpringBootTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
+@SpringBootTest(properties = {"spring.jpa.properties.hibernate.generate_statistics=true",
+        "app.mobile-api-key=" + PostgresIntegrationTests.APP_KEY})
 @AutoConfigureMockMvc
 class PostgresIntegrationTests {
+
+    static final String APP_KEY = "test-app-key-0123456789abcdef0123456789";
 
     private static final EmbeddedPostgres PG = LocalPostgres.startTemporary();
 
@@ -150,6 +153,21 @@ class PostgresIntegrationTests {
     void adminAndApiRequireAuthentication() throws Exception {
         mvc.perform(get("/admin")).andExpect(status().is3xxRedirection());
         mvc.perform(get("/api/v1/summary")).andExpect(status().isUnauthorized());
+    }
+
+    /** The phone app carries the key instead of signing in; it opens the API and nothing else. */
+    @Test
+    void theAppKeyOpensTheApiButNotTheWebAdmin() throws Exception {
+        mvc.perform(get("/api/v1/summary").header("Authorization", "Bearer " + APP_KEY))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/orders?group=new").header("Authorization", "Bearer " + APP_KEY))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/v1/summary").header("Authorization", "Bearer " + APP_KEY + "x"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/summary").header("Authorization", "Bearer " + APP_KEY.substring(1)))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/admin").header("Authorization", "Bearer " + APP_KEY))
+                .andExpect(status().is3xxRedirection());
     }
 
     /** The navigation is cached; an admin change must still show on the very next page view. */

@@ -42,6 +42,10 @@ services:
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
+      # The key built into the phone app, which then opens without a sign-in (MobileAppKey).
+      # Copy it from PC-Mania-Mobile/.env.local (EXPO_PUBLIC_API_KEY); the two must match.
+      - key: MOBILE_API_KEY
+        sync: false
       # The admin session cookie now crosses the public internet, so keep it https-only.
       - key: COOKIE_SECURE
         value: "true"

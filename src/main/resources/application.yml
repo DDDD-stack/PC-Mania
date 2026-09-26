@@ -91,3 +91,6 @@ app:
   admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:}
+  # The key built into the phone app, which then opens without a sign-in. At least 32 characters;
+  # blank switches it off and the app has to sign in with the admin username and password instead.
+  mobile-api-key: ${MOBILE_API_KEY:}

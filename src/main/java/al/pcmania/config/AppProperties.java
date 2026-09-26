@@ -14,7 +14,9 @@ public record AppProperties(
         String contactEmail,
         String facebookUrl,
         int courierShippingLek,
-        Admin admin) {
+        Admin admin,
+        /** Built into the phone app so it needs no sign-in; blank turns that off. See {@link MobileAppKey}. */
+        String mobileApiKey) {
 
     public record Admin(String username, String password) {}
 
