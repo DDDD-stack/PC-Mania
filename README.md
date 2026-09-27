@@ -149,7 +149,7 @@ poll.
 Set `BASE_URL` to the address Render assigns (`https://<name>.onrender.com`). It is what the
 sitemap, canonical links, Facebook previews **and the photo URLs the phone app loads** are built
 from, so the app shows no images until it is right. In the app's **Serveri** field type the host
-on its own (`pcmania.onrender.com`) - anything that is not an IP address is treated as https.
+on its own (`pc-mania.onrender.com`) - anything that is not an IP address is treated as https.
 
 On the free plan the service sleeps after 15 minutes and the next visitor waits about a minute.
 The app allows 30s for a call and 60s for login to cover that, but a customer arriving from a
