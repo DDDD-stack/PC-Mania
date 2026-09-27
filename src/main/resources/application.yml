@@ -82,9 +82,9 @@ app:
   # Operator contact details
   notify-email: ${NOTIFY_EMAIL:}
   mail-from: ${MAIL_FROM:no-reply@pcmania.al}
-  whatsapp-number: ${WHATSAPP_NUMBER:355690000000}
-  phone-display: ${PHONE_DISPLAY:069 000 0000}
-  contact-email: ${CONTACT_EMAIL:info@pcmania.al}
+  whatsapp-number: ${WHATSAPP_NUMBER:355688343551}
+  phone-display: ${PHONE_DISPLAY:+355 68 83 43 551}
+  contact-email: ${CONTACT_EMAIL:drobi840@gmail.com}
   facebook-url: ${FACEBOOK_URL:https://www.facebook.com/}
   courier-shipping-lek: ${COURIER_SHIPPING_LEK:500}
   # Created on first start if no admin exists. If password is blank a random one is printed to the log.

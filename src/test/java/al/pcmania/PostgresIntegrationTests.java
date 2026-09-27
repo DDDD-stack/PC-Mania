@@ -149,6 +149,17 @@ class PostgresIntegrationTests {
         mvc.perform(get("/kategori/procesore")).andExpect(status().isNotFound()); // hidden by V3
     }
 
+    /** The shop's real contact details, the defaults when Render does not override them. */
+    @Test
+    void contactPageShowsTheShopsDetails() throws Exception {
+        mvc.perform(get("/kontakt"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"tel:+355688343551\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("+355 68 83 43 551")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"mailto:drobi840@gmail.com\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("https://wa.me/355688343551?text=")));
+    }
+
     @Test
     void adminAndApiRequireAuthentication() throws Exception {
         mvc.perform(get("/admin")).andExpect(status().is3xxRedirection());

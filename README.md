@@ -97,8 +97,9 @@ variable the hosted deployment uses).
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / *(blank)* | Used only when no admin exists. Blank password → a random one is printed to the log once |
 | `NOTIFY_EMAIL` | *(blank)* | Operator address for new orders / build requests |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP. Without `MAIL_HOST` notifications are only written to the log |
-| `WHATSAPP_NUMBER` | `355690000000` | International format, digits only |
-| `PHONE_DISPLAY`, `CONTACT_EMAIL`, `FACEBOOK_URL` | | Shown in header/footer/contact page |
+| `WHATSAPP_NUMBER` | `355688343551` | International format, digits only |
+| `PHONE_DISPLAY` / `CONTACT_EMAIL` | `+355 68 83 43 551` / `drobi840@gmail.com` | Shown in header/footer/contact page and the store's structured data |
+| `FACEBOOK_URL` | `https://www.facebook.com/` | Shop's Facebook page |
 | `COURIER_SHIPPING_LEK` | `500` | Courier fee (0 for products marked "Transport falas") |
 | `COOKIE_SECURE` | `false` | Set to `true` behind TLS so the admin session cookie is never sent in clear |
 
