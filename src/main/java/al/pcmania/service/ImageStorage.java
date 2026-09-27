@@ -44,6 +44,13 @@ public class ImageStorage {
 
     private final FileStorage storage;
 
+    static {
+        // Registers the WebP reader (TwelveMonkeys). ImageIO discovers plugins through the class loader
+        // that first initialised it, which inside Spring Boot's packaged jar cannot see the libraries
+        // in BOOT-INF/lib; scanning again from here, on the application's class loader, finds them.
+        ImageIO.scanForPlugins();
+    }
+
     public static String url(Size size, String filename) {
         return "/img/p/" + size.name() + "/" + filename;
     }
@@ -134,7 +141,7 @@ public class ImageStorage {
         try (ImageInputStream in = ImageIO.createImageInputStream(file.toFile())) {
             Iterator<ImageReader> readers = in == null ? null : ImageIO.getImageReaders(in);
             if (readers == null || !readers.hasNext()) {
-                throw new IllegalArgumentException("Formati i imazhit nuk mbështetet. Përdorni JPG ose PNG.");
+                throw new IllegalArgumentException("Formati i imazhit nuk mbështetet. Përdorni JPG, PNG ose WebP.");
             }
             ImageReader reader = readers.next();
             try {

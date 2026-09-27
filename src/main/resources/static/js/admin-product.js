@@ -79,7 +79,7 @@
         const add = files => {
             const rejected = [];
             [...files].forEach(f => {
-                if (!/^image\/(jpeg|png)$/.test(f.type)) rejected.push(f.name + ' — vetëm JPG ose PNG');
+                if (!/^image\/(jpeg|png|webp)$/.test(f.type)) rejected.push(f.name + ' — vetëm JPG, PNG ose WebP');
                 else if (f.size > maxBytes) rejected.push(f.name + ' — mbi 15 MB');
                 else staged.items.add(f);
             });

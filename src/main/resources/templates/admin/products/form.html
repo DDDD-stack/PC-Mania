@@ -196,10 +196,10 @@
                 <small class="text-body-secondary">— e para është kryesore (përdoret në Facebook)</small></div>
             <div class="card-body">
                 <label id="stageZone" class="dropzone">
-                    <input type="file" id="stageInput" name="newImages" accept="image/jpeg,image/png" multiple hidden>
+                    <input type="file" id="stageInput" name="newImages" accept="image/jpeg,image/png,image/webp" multiple hidden>
                     <i class="bi bi-cloud-arrow-up fs-2"></i>
                     <div>Tërhiqni fotot këtu ose <u>zgjidhni</u></div>
-                    <div class="small text-body-secondary">JPG ose PNG, deri në 15 MB secila — ngarkohen bashkë me produktin</div>
+                    <div class="small text-body-secondary">JPG, PNG ose WebP, deri në 15 MB secila — ngarkohen bashkë me produktin</div>
                 </label>
                 <div id="stageGrid" class="image-grid mt-3"></div>
                 <p id="stageEmpty" class="text-body-secondary small mt-2 mb-0">Ende nuk ka foto të zgjedhura.</p>
@@ -221,10 +221,10 @@
         <div class="card-header"><strong>Fotot</strong> <small class="text-body-secondary">— tërhiqini për t'i renditur; e para është kryesore (përdoret në Facebook)</small></div>
         <div class="card-body">
             <label id="dropzone" class="dropzone" th:data-url="@{/admin/products/{id}/images(id=${product.id})}">
-                <input type="file" id="fileInput" accept="image/jpeg,image/png" multiple hidden>
+                <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
                 <i class="bi bi-cloud-arrow-up fs-2"></i>
                 <div>Tërhiqni fotot këtu ose <u>zgjidhni</u></div>
-                <div class="small text-body-secondary">JPG ose PNG, deri në 15 MB secila</div>
+                <div class="small text-body-secondary">JPG, PNG ose WebP, deri në 15 MB secila</div>
                 <div class="progress mt-2 d-none" id="uploadProgress"><div class="progress-bar progress-bar-striped progress-bar-animated" style="width:100%">Po ngarkohet…</div></div>
             </label>
             <div th:fragment="images" id="imagesBox" th:data-order-url="@{/admin/products/{id}/images/order(id=${product.id})}">

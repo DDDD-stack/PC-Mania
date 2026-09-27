@@ -53,11 +53,36 @@ class ImageStorageTest {
         assertEquals(0xffffff, img.getRGB(5, 5) & 0xffffff);
     }
 
+    /**
+     * Pictures saved from Facebook or Google are WebP, often under a .jpg name. They must decode, and
+     * the transparent half must come out white like any other transparent upload.
+     */
+    @Test
+    void readsWebpEvenWhenNamedJpg() throws IOException {
+        BufferedImage img = ImageStorage.decode(fixture("/saved-from-web-really-webp.jpg"));
+        assertEquals(120, img.getWidth());
+        assertEquals(80, img.getHeight());
+        assertTrue(isRed(img.getRGB(20, 40)), "left half should be red");
+        assertEquals(0xffffff, img.getRGB(100, 40) & 0xffffff, "transparent half should be white");
+
+        BufferedImage lossless = ImageStorage.decode(fixture("/lossless.webp"));
+        assertEquals(90, lossless.getWidth());
+        assertEquals(60, lossless.getHeight());
+    }
+
     @Test
     void rejectsFilesThatAreNotImages() throws IOException {
         Path file = dir.resolve("notes.txt");
         Files.writeString(file, "not a photo");
         assertThrows(IllegalArgumentException.class, () -> ImageStorage.decode(file));
+    }
+
+    private Path fixture(String resource) throws IOException {
+        Path file = dir.resolve(resource.substring(1));
+        try (InputStream in = getClass().getResourceAsStream(resource)) {
+            Files.copy(in, file);
+        }
+        return file;
     }
 
     private Path jpeg(int w, int h) throws IOException {
