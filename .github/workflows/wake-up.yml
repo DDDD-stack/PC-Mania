@@ -1,0 +1,41 @@
+# Wakes the site at 06:00 Tirana time on Render's free plan.
+#
+# During the day the site keeps itself awake (see KeepAwake.java): every 10 minutes between 06:00 and
+# 01:00 it requests its own public address. After 01:00 it is allowed to sleep, which keeps it at about
+# 80% of Render's 750 free hours a month, and a sleeping service cannot wake itself. This does it.
+#
+# GitHub runs schedules in UTC and Albania switches between UTC+2 (summer) and UTC+1 (winter), so it is
+# scheduled for both 04:00 and 05:00 UTC and only acts once it is 06:00 or later in Tirana. Scheduled
+# runs can start late when GitHub is busy; any time before 01:00 is still fine.
+#
+# Actions minutes are free for public repositories. GitHub pauses schedules in a repository with no
+# activity for 60 days; if that happens, re-enable the workflow under Actions (the site still keeps
+# itself awake whenever a visitor wakes it).
+name: Wake the site at 06:00
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+    - cron: "0 5 * * *"
+  workflow_dispatch: {}
+
+env:
+  SITE_URL: https://pc-mania.onrender.com/healthz
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Request the site if it is between 06:00 and 01:00 in Tirana
+        run: |
+          hour=$(TZ=Europe/Tirane date +%H)
+          echo "Tirana time: $(TZ=Europe/Tirane date '+%H:%M')"
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] && [ "$hour" -ge 1 ] && [ "$hour" -lt 6 ]; then
+            echo "Before 06:00 in Tirana: leaving the site asleep."
+            exit 0
+          fi
+          # A sleeping free service takes about a minute to start, so allow for it and retry.
+          curl -fsS --max-time 120 --retry 4 --retry-delay 20 --retry-all-errors "$SITE_URL"
+          echo
+          echo "Site is awake."

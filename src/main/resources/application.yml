@@ -91,6 +91,12 @@ app:
   admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:}
+  # Render's free plan: keep the site awake between these times (Tirana time) and let it sleep
+  # otherwise. 06:00-01:00 uses about 80% of the 750 free hours a month. See KeepAwake.
+  keep-awake:
+    enabled: ${KEEP_AWAKE:true}
+    from: ${KEEP_AWAKE_FROM:06:00}
+    until: ${KEEP_AWAKE_UNTIL:01:00}
   # The key built into the phone app, which then opens without a sign-in. At least 32 characters;
   # blank switches it off and the app has to sign in with the admin username and password instead.
   mobile-api-key: ${MOBILE_API_KEY:}
