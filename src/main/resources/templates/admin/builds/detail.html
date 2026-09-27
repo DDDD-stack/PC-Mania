@@ -40,7 +40,7 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Totali i ofertës (Lekë)</label>
-                        <input class="form-control" type="number" min="0" step="500" name="quotedTotalLek" th:value="${b.quotedTotalLek}">
+                        <input class="form-control" type="number" min="0" step="1" name="quotedTotalLek" th:value="${b.quotedTotalLek}">
                         <div class="form-text" th:if="${b.quotedTotalLek != null}"
                              th:text="'Diferenca nga buxheti: ' + ${@fmt.price(b.quotedTotalLek - b.budgetLek)}"></div>
                     </div>

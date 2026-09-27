@@ -117,11 +117,11 @@
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label class="form-label">Çmimi (Lekë) *</label>
-                            <input class="form-control" type="number" min="0" step="100" th:field="*{priceLek}" th:errorclass="is-invalid" required>
+                            <input class="form-control" type="number" min="0" step="1" th:field="*{priceLek}" th:errorclass="is-invalid" required>
                         </div>
                         <div class="col-6">
                             <label class="form-label">Kostoja (Lekë) *</label>
-                            <input class="form-control" type="number" min="0" step="100" th:field="*{costLek}" th:errorclass="is-invalid" required>
+                            <input class="form-control" type="number" min="0" step="1" th:field="*{costLek}" th:errorclass="is-invalid" required>
                         </div>
                         <div class="col-12 small" id="marginInfo"></div>
                         <div class="col-6">
@@ -162,7 +162,7 @@
                             <div class="row g-2">
                                 <div class="col-6">
                                     <label class="form-label small mb-0">Çmimi i shitjes</label>
-                                    <input class="form-control form-control-sm" type="number" min="0" step="100" name="priceLek" form="offlineSaleForm" th:value="${product.priceLek}" required>
+                                    <input class="form-control form-control-sm" type="number" min="0" step="1" name="priceLek" form="offlineSaleForm" th:value="${product.priceLek}" required>
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label small mb-0">Sasia</label>
