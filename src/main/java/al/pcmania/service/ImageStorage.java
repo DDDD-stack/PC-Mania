@@ -16,11 +16,16 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.SequenceInputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -152,8 +157,7 @@ public class ImageStorage {
                 if (step > 1) param.setSourceSubsampling(step, step, 0, 0);
                 BufferedImage img = reader.read(0, param);
                 // Phones store portrait photos sideways plus an EXIF note saying how to turn them.
-                // Thumbnailator applies it when given the file; decoding here means applying it here.
-                Orientation orientation = exifOrientation(reader);
+                Orientation orientation = exifOrientation(file);
                 if (orientation != null && orientation != Orientation.TOP_LEFT) {
                     img = ExifFilterUtils.getFilterForOrientation(orientation).apply(img);
                 }
@@ -164,14 +168,69 @@ public class ImageStorage {
         }
     }
 
-    /** EXIF orientation, or null. Unreadable metadata must not fail an upload whose pixels are fine. */
-    private static Orientation exifOrientation(ImageReader reader) {
-        try {
-            return ExifUtils.getExifOrientation(reader, 0);
+    /**
+     * EXIF orientation, read from the file's own bytes; null if there is none. Unreadable metadata must
+     * not fail an upload whose pixels are fine.
+     *
+     * Not through ImageReader.getImageMetadata(): the JDK's JPEG reader throws "JFIF APP0 must be first
+     * marker after SOI" for photos whose EXIF block comes before the JFIF header - a legal order, and
+     * what Samsung's gallery writes after an edit - and such portrait photos ended up sideways.
+     */
+    static Orientation exifOrientation(Path file) {
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(file)))) {
+            byte[] exif = exifBlock(in);
+            return exif == null ? null : ExifUtils.getOrientationFromExif(exif);
         } catch (IOException | RuntimeException e) {
             log.debug("Could not read EXIF orientation: {}", e.getMessage());
             return null;
         }
+    }
+
+    private static final byte[] EXIF_HEADER = {'E', 'x', 'i', 'f', 0, 0};
+
+    /** The EXIF block as ExifUtils expects it (the "Exif" header, two zero bytes, then the TIFF data), from a JPEG or WebP file; null if absent. */
+    private static byte[] exifBlock(DataInputStream in) throws IOException {
+        byte[] head = new byte[12];
+        in.readFully(head);
+        if ((head[0] & 0xff) == 0xff && (head[1] & 0xff) == 0xd8) {
+            // JPEG: walk the segments before the image data. head[2..11] already holds the first one's start.
+            DataInputStream rest = new DataInputStream(new SequenceInputStream(
+                    new ByteArrayInputStream(head, 2, 10), in));
+            while (true) {
+                int marker = rest.readUnsignedShort();
+                while (marker == 0xffff) marker = 0xff00 | rest.readUnsignedByte(); // fill bytes
+                if ((marker & 0xff00) != 0xff00 || marker == 0xffda || marker == 0xffd9) return null; // image data: no EXIF
+                int length = rest.readUnsignedShort() - 2;
+                if (length < 0) return null;
+                if (marker == 0xffe1 && length > EXIF_HEADER.length) {
+                    byte[] segment = new byte[length];
+                    rest.readFully(segment);
+                    if (Arrays.equals(segment, 0, EXIF_HEADER.length, EXIF_HEADER, 0, EXIF_HEADER.length)) return segment;
+                } else {
+                    rest.skipNBytes(length);
+                }
+            }
+        }
+        if (head[0] == 'R' && head[1] == 'I' && head[2] == 'F' && head[3] == 'F'
+                && head[8] == 'W' && head[9] == 'E' && head[10] == 'B' && head[11] == 'P') {
+            // WebP: RIFF chunks, each a four-letter name, a little-endian size and a payload padded to even length.
+            byte[] name = new byte[4];
+            while (true) {
+                in.readFully(name);
+                long size = Integer.toUnsignedLong(Integer.reverseBytes(in.readInt()));
+                if (name[0] == 'E' && name[1] == 'X' && name[2] == 'I' && name[3] == 'F') {
+                    if (size > 1 << 20) return null;
+                    byte[] payload = new byte[(int) size];
+                    in.readFully(payload);
+                    if (Arrays.equals(payload, 0, Math.min(EXIF_HEADER.length, payload.length), EXIF_HEADER, 0, EXIF_HEADER.length)) return payload;
+                    byte[] withHeader = Arrays.copyOf(EXIF_HEADER, EXIF_HEADER.length + payload.length);
+                    System.arraycopy(payload, 0, withHeader, EXIF_HEADER.length, payload.length);
+                    return withHeader;
+                }
+                in.skipNBytes(size + (size & 1));
+            }
+        }
+        return null;
     }
 
     /** JPEG has no alpha channel: paint transparent PNGs onto white instead of black. */

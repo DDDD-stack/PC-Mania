@@ -35,6 +35,33 @@ class ImageStorageTest {
         assertFalse(isRed(img.getRGB(50, 180)), "bottom should be blue");
     }
 
+    /**
+     * Samsung's gallery writes the EXIF block before the JFIF header. The JDK's JPEG metadata reader
+     * refuses that order ("JFIF APP0 must be first marker after SOI"), and relying on it left such
+     * portrait photos sideways on the live site.
+     */
+    @Test
+    void appliesExifRotationWhenExifComesBeforeJfif() throws IOException {
+        BufferedImage img = ImageStorage.decode(fixture("/exif-before-jfif.jpg"));
+        assertEquals(100, img.getWidth());
+        assertEquals(200, img.getHeight());
+        assertTrue(isRed(img.getRGB(50, 20)), "top should be red");
+        assertFalse(isRed(img.getRGB(50, 180)), "bottom should be blue");
+    }
+
+    @Test
+    void appliesExifRotationToWebp() throws IOException {
+        BufferedImage img = ImageStorage.decode(fixture("/exif-rotate-90.webp"));
+        assertEquals(100, img.getWidth());
+        assertEquals(200, img.getHeight());
+    }
+
+    @Test
+    void photosWithoutExifAreLeftAsTheyAre() throws IOException {
+        assertNull(ImageStorage.exifOrientation(jpeg(300, 200)));
+        assertNull(ImageStorage.exifOrientation(fixture("/lossless.webp")));
+    }
+
     /** Very large photos are read subsampled, so a 50 MP upload does not exhaust the heap. */
     @Test
     void subsamplesVeryLargePhotosButNotOrdinaryOnes() throws IOException {
