@@ -51,11 +51,12 @@
             <button class="navbar-toggler border-0 px-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="Menyja">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand brand me-auto fw-bold" href="/"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" width="30" height="30"><span>PC<span class="text-accent">Mania</span></span></a>
+            <a class="navbar-brand brand me-auto fw-bold" href="/"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" width="30" height="30"><span translate="no">PC<span class="text-accent">Mania</span></span></a>
             <nav class="d-none d-lg-flex gap-3 me-3 header-links">
                 <a th:each="c, st : ${navCategories}" th:if="${st.index < 5}" th:href="@{/kategori/{s}(s=${c.slug})}" th:text="${c.nameSq}"></a>
                 <a th:if="${hasUpcoming}" href="/se-shpejti">Së shpejti</a>
                 <a href="/pc-me-porosi">PC me porosi</a>
+                <a href="/kerko-produkt">Kërko një produkt</a>
             </nav>
             <a class="btn btn-sm btn-whatsapp" th:href="${whatsappGeneral}" target="_blank" rel="noopener" aria-label="WhatsApp">
                 <i class="bi bi-whatsapp"></i><span class="d-none d-sm-inline ms-1">WhatsApp</span>
@@ -69,7 +70,7 @@
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title brand fw-bold" id="mainMenuLabel"><img class="brand-mark brand-mark-dark" th:src="@{/favicon.svg}" alt="" width="28" height="28"><span>PC<span class="text-accent">Mania</span></span></h5>
+        <h5 class="offcanvas-title brand fw-bold" id="mainMenuLabel"><img class="brand-mark brand-mark-dark" th:src="@{/favicon.svg}" alt="" width="28" height="28"><span translate="no">PC<span class="text-accent">Mania</span></span></h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Mbyll"></button>
     </div>
     <div class="offcanvas-body pt-0">
@@ -80,12 +81,13 @@
             </a>
             <a th:if="${hasUpcoming}" class="list-group-item list-group-item-action fw-semibold" href="/se-shpejti"><i class="bi bi-bell me-2"></i>Së shpejti</a>
             <a class="list-group-item list-group-item-action fw-semibold" href="/pc-me-porosi"><i class="bi bi-tools me-2"></i>PC me porosi</a>
+            <a class="list-group-item list-group-item-action fw-semibold" href="/kerko-produkt"><i class="bi bi-search-heart me-2"></i>Kërko një produkt</a>
         </div>
         <hr>
         <div class="list-group list-group-flush small">
             <a class="list-group-item list-group-item-action" href="/transporti-dhe-pagesa">Transporti dhe pagesa</a>
             <a class="list-group-item list-group-item-action" href="/rreth-nesh">Rreth nesh</a>
-            <a class="list-group-item list-group-item-action" href="/kontakt">Kontakt</a>
+            <a class="list-group-item list-group-item-action" href="/kontakt">Na kontaktoni</a>
         </div>
     </div>
 </div>
@@ -96,7 +98,7 @@
     <div class="container py-4">
         <div class="row g-4">
             <div class="col-12 col-md-5">
-                <div class="brand fw-bold fs-5 mb-2"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" width="30" height="30"><span>PC<span class="text-accent">Mania</span></span></div>
+                <div class="brand fw-bold fs-5 mb-2"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" width="30" height="30"><span translate="no">PC<span class="text-accent">Mania</span></span></div>
                 <p class="small mb-2">Karta grafike dhe pjesë kompjuteri të reja e të përdorura, të testuara para shitjes. Tiranë, Shqipëri.</p>
                 <p class="small mb-0">
                     <i class="bi bi-telephone me-1"></i><a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a><br>
@@ -114,10 +116,11 @@
                 <ul class="list-unstyled small mb-0">
                     <li th:if="${hasUpcoming}"><a href="/se-shpejti">Së shpejti</a></li>
                     <li><a href="/pc-me-porosi">PC me porosi</a></li>
+                    <li><a href="/kerko-produkt">Kërko një produkt</a></li>
                     <li><a href="/transporti-dhe-pagesa">Transporti dhe pagesa</a></li>
                     <li><a href="/kushtet-e-perdorimit">Kushtet e përdorimit</a></li>
                     <li><a href="/rreth-nesh">Rreth nesh</a></li>
-                    <li><a href="/kontakt">Kontakt</a></li>
+                    <li><a href="/kontakt">Na kontaktoni</a></li>
                     <li><a th:href="${site.facebookUrl}" target="_blank" rel="noopener"><i class="bi bi-facebook me-1"></i>Facebook</a></li>
                 </ul>
             </div>

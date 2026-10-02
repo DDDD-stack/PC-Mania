@@ -56,6 +56,14 @@ public final class Enums {
         public String getLabel() { return label; }
     }
 
+    /** Lifecycle of a customer's request for a product the shop does not stock yet. */
+    public enum WishStatus {
+        NEW("E re"), SEARCHING("Në kërkim"), FOUND("U gjet"), CLOSED("E mbyllur");
+        public final String label;
+        WishStatus(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
     public enum BuildStatus {
         NEW("E re"), QUOTED("Me ofertë"), ACCEPTED("E pranuar"), DECLINED("E refuzuar"), CLOSED("E mbyllur");
         public final String label;

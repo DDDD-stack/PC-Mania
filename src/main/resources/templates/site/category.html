@@ -98,6 +98,7 @@
                 <a th:if="${filter.hasFilters()}" class="btn btn-sm btn-outline-dark" th:href="${path}">Pastro filtrat</a>
                 <a th:unless="${filter.hasFilters()}" class="btn btn-sm btn-whatsapp" th:href="${whatsappGeneral}" target="_blank" rel="noopener">
                     <i class="bi bi-whatsapp me-1"></i>Pyesni për disponueshmërinë</a>
+                <a class="btn btn-sm btn-outline-dark" href="/kerko-produkt"><i class="bi bi-search-heart me-1"></i>Na kërko një produkt</a>
             </div>
 
             <nav th:if="${page.totalPages > 1}" class="mt-4" aria-label="Faqet">
@@ -115,6 +116,12 @@
                     </li>
                 </ul>
             </nav>
+
+            <a th:unless="${page.empty}" class="wish-cta mt-4" href="/kerko-produkt">
+                <i class="bi bi-search-heart"></i>
+                <span><strong>Nuk e gjen modelin që kërkon?</strong> Na e kërko dhe e sjellim ne.</span>
+                <span class="wish-cta-go">Kërko një produkt <i class="bi bi-arrow-right"></i></span>
+            </a>
         </section>
     </div>
 </main>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Kërkesë për produkt')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('wishes')}"></nav>
+<main class="container py-3" style="max-width: 900px">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a href="/admin/wishes" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0" th:text="${w.item}"></h1>
+        <span class="badge fs-6" th:classappend="'status-' + ${w.status}" th:text="${w.status.label}"></span>
+        <span class="text-body-secondary small ms-auto" th:text="${@fmt.dateTime(w.createdAt)}"></span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>Kërkesa</strong></div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5">Kërkon</dt><dd class="col-7 fw-bold" th:text="${w.item}"></dd>
+                        <dt class="col-5">Buxheti</dt><dd class="col-7" th:text="${w.maxPriceLek != null} ? ${@fmt.price(w.maxPriceLek)} : 'Nuk e tha'"></dd>
+                        <dt class="col-5">Gjendja</dt><dd class="col-7" th:text="${w.condition != null} ? ${w.condition.label} : 'Nuk ka rëndësi'"></dd>
+                        <dt class="col-5">Klienti</dt><dd class="col-7" th:text="${w.customerName}"></dd>
+                        <dt class="col-5">Telefoni</dt><dd class="col-7"><a th:href="'tel:' + ${w.customerPhone}" th:text="${w.customerPhone}"></a></dd>
+                    </dl>
+                    <div th:if="${w.notes}" class="mt-2">
+                        <div class="text-body-secondary small">Shënime nga klienti</div>
+                        <div style="white-space: pre-line" th:text="${w.notes}"></div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <a class="btn btn-sm btn-outline-dark" th:href="'tel:' + ${w.customerPhone}"><i class="bi bi-telephone"></i> Telefono</a>
+                        <a class="btn btn-sm btn-success" th:if="${customerWhatsapp}" th:href="${customerWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <form class="card h-100" th:action="@{/admin/wishes/{id}(id=${w.id})}" method="post">
+                <div class="card-header"><strong>Statusi</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <select class="form-select" name="status">
+                            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}" th:selected="${s == w.status}"></option>
+                        </select>
+                        <div class="form-text">E re → Në kërkim kur e kërkon → U gjet kur i telefonon me ofertë → E mbyllur.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Shënime të brendshme <small class="text-body-secondary">(ku e gjete, çmimi, çfarë i the klientit…)</small></label>
+                        <textarea class="form-control" name="adminNotes" rows="6" th:text="${w.adminNotes}"></textarea>
+                    </div>
+                    <button class="btn btn-primary w-100" type="submit">Ruaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <form class="mt-3 text-end" th:action="@{/admin/wishes/{id}/delete(id=${w.id})}" method="post"
+          data-confirm="Ta fshij këtë kërkesë? (p.sh. nëse është spam)">
+        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i> Fshi</button>
+    </form>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

@@ -75,6 +75,8 @@
                 <a class="btn btn-whatsapp btn-lg" th:href="${whatsappLink}" target="_blank" rel="noopener">
                     <i class="bi bi-whatsapp me-2"></i><span th:text="${p.available} ? 'Pyet në WhatsApp' : 'Pyet për një të ngjashme'"></span>
                 </a>
+                <a th:unless="${p.available}" class="btn btn-outline-dark" th:href="@{/kerko-produkt(p=${p.title})}">
+                    <i class="bi bi-search-heart me-2"></i>Na kërko një të ngjashme</a>
             </div>
 
             <p class="lead-sm" th:if="${p.shortDescription}" th:text="${p.shortDescription}"></p>

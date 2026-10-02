@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-3">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h1 class="h2 fw-bold">Nuk e gjen? Na e kërko</h1>
+            <p class="lead-sm">Po kërkon një kartë grafike, procesor apo pjesë tjetër që nuk e kemi në stok? Na thuaj çfarë të duhet dhe buxhetin – ne e gjejmë dhe e sjellim për ty.</p>
+            <ol class="steps mt-4">
+                <li><strong>Na thuaj çfarë të duhet</strong><br><span class="text-body-secondary">Modeli ose diçka të ngjashme, buxheti dhe nëse e do të re apo të përdorur.</span></li>
+                <li><strong>E kërkojmë për ty</strong><br><span class="text-body-secondary">Te furnitorët tanë dhe në tregun e përdorur. Çdo kartë e përdorur testohet para shitjes.</span></li>
+                <li><strong>Të telefonojmë me çmimin</strong><br><span class="text-body-secondary">Sapo ta gjejmë. Vendos ti nëse e merr – pa asnjë detyrim.</span></li>
+            </ol>
+            <div class="alert alert-light border small">
+                <i class="bi bi-info-circle me-1"></i> Kërkesa është falas. Nuk paguan asgjë derisa të pranosh ofertën.
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div th:if="${submitted}" class="form-card text-center">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem"></i>
+                <h2 class="h4 fw-bold mt-2">Kërkesa u regjistrua!</h2>
+                <p class="mb-1">Po kërkojmë: <strong th:text="${submittedItem}"></strong></p>
+                <p>Do t'ju telefonojmë në <strong th:text="${submitted}"></strong> sapo ta gjejmë.</p>
+                <div class="d-grid d-sm-flex gap-2 justify-content-center">
+                    <a class="btn btn-whatsapp" th:href="${whatsappGeneral}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Na shkruani në WhatsApp</a>
+                    <a class="btn btn-outline-dark" href="/kerko-produkt">Kërko diçka tjetër</a>
+                </div>
+            </div>
+
+            <form th:unless="${submitted}" th:action="@{/kerko-produkt}" th:object="${form}" method="post" class="form-card" novalidate data-loading>
+                <h2 class="h5 fw-bold mb-3">Çfarë po kërkon?</h2>
+                <div th:if="${formError}" class="alert alert-danger" th:text="${formError}"></div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="item">Produkti *</label>
+                    <input class="form-control form-control-lg" th:field="*{item}" th:errorclass="is-invalid" required maxlength="200"
+                           placeholder="p.sh. RTX 3070 ose RX 6700 XT">
+                    <div class="invalid-feedback" th:errors="*{item}"></div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label" for="maxPriceLek">Buxheti maksimal (Lekë)</label>
+                        <input class="form-control" type="number" th:field="*{maxPriceLek}" th:errorclass="is-invalid" min="1000" step="1" inputmode="numeric" placeholder="p.sh. 45000">
+                        <div class="invalid-feedback" th:errors="*{maxPriceLek}"></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="condition">Gjendja</label>
+                        <select class="form-select" th:field="*{condition}">
+                            <option value="">Nuk ka rëndësi</option>
+                            <option th:each="c : ${conditions}" th:value="${c}" th:text="${c.label}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="notes">Shënime</label>
+                    <textarea class="form-control" th:field="*{notes}" rows="3" maxlength="1000"
+                              placeholder="p.sh. marka e preferuar, sa shpejt të duhet, për çfarë do ta përdorësh…"></textarea>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label" for="customerName">Emri *</label>
+                        <input class="form-control" th:field="*{customerName}" th:errorclass="is-invalid" autocomplete="name" required maxlength="120">
+                        <div class="invalid-feedback" th:errors="*{customerName}"></div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" for="customerPhone">Telefoni *</label>
+                        <input class="form-control" th:field="*{customerPhone}" th:errorclass="is-invalid" type="tel" inputmode="tel" autocomplete="tel" placeholder="06X XXX XXXX" required maxlength="20">
+                        <div class="invalid-feedback" th:errors="*{customerPhone}"></div>
+                    </div>
+                </div>
+                <div class="hp-field" aria-hidden="true">
+                    <label for="website">Website</label>
+                    <input th:field="*{website}" tabindex="-1" autocomplete="off">
+                </div>
+
+                <button class="btn btn-accent btn-lg w-100" type="submit"><i class="bi bi-send me-2"></i>Dërgo kërkesën</button>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

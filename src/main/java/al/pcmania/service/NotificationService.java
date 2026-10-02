@@ -4,8 +4,10 @@ import al.pcmania.config.AppProperties;
 import al.pcmania.domain.BuildRequest;
 import al.pcmania.domain.Order;
 import al.pcmania.domain.OrderItem;
+import al.pcmania.domain.WishRequest;
 import al.pcmania.repo.BuildRequestRepository;
 import al.pcmania.repo.OrderRepository;
+import al.pcmania.repo.WishRequestRepository;
 import al.pcmania.web.Fmt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +34,13 @@ public class NotificationService {
     /** Published after a build request is saved. */
     public record BuildRequested(Long buildRequestId) {}
 
+    /** Published after a customer asks the shop to bring something in. */
+    public record WishRequested(Long wishRequestId) {}
+
     private final ObjectProvider<JavaMailSender> mailSender;
     private final OrderRepository orders;
     private final BuildRequestRepository builds;
+    private final WishRequestRepository wishes;
     private final AppProperties props;
 
     @Value("${spring.mail.host:}")
@@ -118,6 +124,32 @@ public class NotificationService {
                 Hape në admin: %s/admin/builds/%d
                 """.formatted(b.getCustomerName(), b.getCustomerPhone(), Fmt.lek(b.getBudgetLek()), b.getUseCase().label,
                 orDash(b.getNotes()), props.base(), b.getId());
+        send(props.notifyEmail(), subject, body);
+    }
+
+    @Async
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void onWishRequested(WishRequested event) {
+        WishRequest w = wishes.findById(event.wishRequestId()).orElse(null);
+        if (w == null) return;
+        String subject = "Kërkesë për produkt – " + w.getItem();
+        String body = """
+                Një klient kërkon një produkt
+
+                Kërkon: %s
+                Buxheti: %s
+                Gjendja: %s
+                Klienti: %s
+                Telefoni: %s
+
+                Shënime:
+                %s
+
+                Hape në admin: %s/admin/wishes/%d
+                """.formatted(w.getItem(), w.getMaxPriceLek() == null ? "-" : Fmt.lek(w.getMaxPriceLek()),
+                w.getCondition() == null ? "Nuk ka rëndësi" : w.getCondition().label, w.getCustomerName(),
+                w.getCustomerPhone(), orDash(w.getNotes()), props.base(), w.getId());
         send(props.notifyEmail(), subject, body);
     }
 

@@ -1,16 +1,20 @@
 package al.pcmania;
 
 import al.pcmania.domain.Category;
+import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.DeliveryMethod;
 import al.pcmania.domain.Enums.OrderStatus;
 import al.pcmania.domain.Enums.PaymentMethod;
 import al.pcmania.domain.Enums.ProductStatus;
+import al.pcmania.domain.Enums.WishStatus;
 import al.pcmania.domain.Order;
 import al.pcmania.domain.Product;
+import al.pcmania.domain.WishRequest;
 import al.pcmania.repo.BrandRepository;
 import al.pcmania.repo.CategoryRepository;
 import al.pcmania.repo.OrderRepository;
 import al.pcmania.repo.ProductRepository;
+import al.pcmania.repo.WishRequestRepository;
 import al.pcmania.service.CategoryAdminService;
 import al.pcmania.service.ImageStorage;
 import al.pcmania.service.OrderService;
@@ -26,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,6 +47,7 @@ import java.time.Year;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -79,6 +85,7 @@ class PostgresIntegrationTests {
     @Autowired TransactionTemplate tx;
     @Autowired EntityManagerFactory emf;
     @Autowired ImageStorage images;
+    @Autowired WishRequestRepository wishes;
 
     private Statistics stats;
 
@@ -142,7 +149,7 @@ class PostgresIntegrationTests {
         String slug = product(1).getSlug();
         for (String path : new String[]{"/", "/kategori/karta-grafike", "/kategori/karta-grafike?rendit=cmimi-rritje&gjendja=USED",
                 "/produkt/" + slug, "/porosit/" + slug, "/pc-me-porosi", "/se-shpejti", "/rreth-nesh", "/kontakt",
-                "/transporti-dhe-pagesa", "/kushtet-e-perdorimit", "/sitemap.xml", "/robots.txt"}) {
+                "/transporti-dhe-pagesa", "/kushtet-e-perdorimit", "/kerko-produkt", "/sitemap.xml", "/robots.txt"}) {
             mvc.perform(get(path)).andExpect(status().isOk());
         }
         mvc.perform(get("/produkt/does-not-exist")).andExpect(status().isNotFound());
@@ -164,6 +171,80 @@ class PostgresIntegrationTests {
     void adminAndApiRequireAuthentication() throws Exception {
         mvc.perform(get("/admin")).andExpect(status().is3xxRedirection());
         mvc.perform(get("/api/v1/summary")).andExpect(status().isUnauthorized());
+    }
+
+    /** "Kërko një produkt": a customer's request lands in the admin wish list as new. */
+    @Test
+    void customersCanAskForAProductToBeBroughtIn() throws Exception {
+        String item = "RTX 3070 " + UUID.randomUUID();
+        mvc.perform(post("/kerko-produkt")
+                        .param("item", item)
+                        .param("maxPriceLek", "45000")
+                        .param("condition", "USED")
+                        .param("notes", "Sa më shpejt")
+                        .param("customerName", "Test Klient")
+                        .param("customerPhone", "069 123 4567"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/kerko-produkt"));
+
+        WishRequest saved = wishes.findAll().stream().filter(w -> w.getItem().equals(item)).findFirst().orElseThrow();
+        assertEquals(WishStatus.NEW, saved.getStatus());
+        assertEquals(45000, saved.getMaxPriceLek());
+        assertEquals(Condition.USED, saved.getCondition());
+        assertEquals("069 123 4567", saved.getCustomerPhone());
+    }
+
+    @Test
+    void wishFormRejectsBadInputAndSpam() throws Exception {
+        long before = wishes.count();
+        mvc.perform(post("/kerko-produkt").param("item", "").param("customerName", "A").param("customerPhone", "abc"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Shkruani çfarë po kërkoni")));
+        // The hidden "website" field is only ever filled in by bots: accepted silently, never saved.
+        mvc.perform(post("/kerko-produkt").param("item", "RX 6600").param("customerName", "Bot")
+                        .param("customerPhone", "069 123 4567").param("website", "http://spam.example"))
+                .andExpect(status().is3xxRedirection());
+        assertEquals(before, wishes.count());
+    }
+
+    @Test
+    void soldOutProductsOfferToSourceASimilarOne() throws Exception {
+        mvc.perform(get("/kerko-produkt").param("p", "MSI RTX 3060 Ventus"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"MSI RTX 3060 Ventus\"")));
+        mvc.perform(get("/sitemap.xml"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/kerko-produkt</loc>")));
+    }
+
+    @Test
+    void wishListIsAdminOnly() throws Exception {
+        mvc.perform(get("/admin/wishes")).andExpect(status().is3xxRedirection());
+        mvc.perform(get("/api/v1/wishes").header("Authorization", "Bearer " + APP_KEY)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminWorksThroughTheWishList() throws Exception {
+        WishRequest w = new WishRequest();
+        w.setItem("Ryzen 5 5600 " + UUID.randomUUID());
+        w.setCustomerName("Test Klient");
+        w.setCustomerPhone("069 123 4567");
+        w = wishes.save(w);
+
+        mvc.perform(get("/admin/wishes")).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(w.getItem())));
+        mvc.perform(get("/admin/wishes/" + w.getId())).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("https://wa.me/355691234567")));
+        mvc.perform(post("/admin/wishes/" + w.getId()).with(csrf()).param("status", "SEARCHING").param("adminNotes", "Te furnitori"))
+                .andExpect(status().is3xxRedirection());
+        WishRequest updated = wishes.findById(w.getId()).orElseThrow();
+        assertEquals(WishStatus.SEARCHING, updated.getStatus());
+        assertEquals("Te furnitori", updated.getAdminNotes());
+        mvc.perform(get("/admin")).andExpect(status().isOk());
+        mvc.perform(get("/admin/live")).andExpect(content().string(org.hamcrest.Matchers.containsString("newWishes")));
+
+        mvc.perform(post("/admin/wishes/" + w.getId() + "/delete").with(csrf())).andExpect(status().is3xxRedirection());
+        assertTrue(wishes.findById(w.getId()).isEmpty());
     }
 
     /** The phone app carries the key instead of signing in; it opens the API and nothing else. */

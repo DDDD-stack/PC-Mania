@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Lista e dëshirave')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('wishes')}"></nav>
+<main class="container-fluid py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+    <h1 class="h4 mb-1">Lista e dëshirave</h1>
+    <p class="text-body-secondary small mb-3">Produkte që klientët na kanë kërkuar t'i sjellim, nga faqja <a href="/kerko-produkt" target="_blank">/kerko-produkt</a>.</p>
+
+    <ul class="nav nav-pills flex-nowrap overflow-auto mb-3 small">
+        <li class="nav-item"><a class="nav-link text-nowrap" th:classappend="${status == null} ? active" href="/admin/wishes">Të gjitha</a></li>
+        <li class="nav-item" th:each="s : ${statuses}">
+            <a class="nav-link text-nowrap" th:classappend="${s == status} ? active" th:href="@{/admin/wishes(status=${s})}">
+                <span th:text="${s.label}"></span> <span class="badge text-bg-secondary" th:text="${counts.get(s)}"></span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white">
+            <thead class="table-light">
+            <tr><th>Data</th><th>Kërkon</th><th class="text-end">Buxheti</th><th>Gjendja</th><th>Klienti</th><th>Statusi</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="w : ${page.content}">
+                <td class="text-nowrap small"><a th:href="@{/admin/wishes/{id}(id=${w.id})}" th:text="${@fmt.dateTime(w.createdAt)}"></a></td>
+                <td><a class="text-decoration-none fw-semibold" th:href="@{/admin/wishes/{id}(id=${w.id})}" th:text="${w.item}"></a></td>
+                <td class="text-end text-nowrap" th:text="${w.maxPriceLek != null} ? ${@fmt.price(w.maxPriceLek)} : '—'"></td>
+                <td th:text="${w.condition != null} ? ${w.condition.label} : 'Çdo gjendje'"></td>
+                <td><span th:text="${w.customerName}"></span><div class="small text-body-secondary" th:text="${w.customerPhone}"></div></td>
+                <td><span class="badge" th:classappend="'status-' + ${w.status}" th:text="${w.status.label}"></span></td>
+            </tr>
+            <tr th:if="${page.empty}"><td colspan="6" class="text-center text-body-secondary py-4">Ende asnjë kërkesë.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:if="${page.totalPages > 1}">
+        <ul class="pagination pagination-sm">
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? active">
+                <a class="page-link" th:href="@{/admin/wishes(status=${status}, page=${i})}" th:text="${i + 1}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>
