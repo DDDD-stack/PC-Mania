@@ -49,6 +49,13 @@
                             </div>
                         </div>
 
+                        <div class="filter-group">
+                            <div class="filter-title">Nderrim</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="nderrim" value="true" id="f-nderrim" th:checked="${filter.trade}">
+                                <label class="form-check-label" for="f-nderrim">Pranon këmbim <a href="/nderro" class="small">(si funksionon)</a></label>
+                            </div>
+                        </div>
                         <div class="filter-group" th:if="${facets.brands.size() > 1 || !filter.brands.isEmpty()}">
                             <div class="filter-title">Marka</div>
                             <div class="form-check" th:each="b : ${facets.brands}">

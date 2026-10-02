@@ -47,7 +47,7 @@ public class SeoController {
         url(xml, "/", null);
         for (Category c : catalog.categories()) url(xml, "/kategori/" + c.getSlug(), null);
         for (Product p : catalog.sitemapProducts()) url(xml, "/produkt/" + p.getSlug(), p.getListedAt());
-        for (String page : List.of("/pc-me-porosi", "/kerko-produkt", "/rreth-nesh", "/kontakt", "/transporti-dhe-pagesa", "/kushtet-e-perdorimit")) {
+        for (String page : List.of("/nderro", "/pc-me-porosi", "/kerko-produkt", "/rreth-nesh", "/kontakt", "/transporti-dhe-pagesa", "/kushtet-e-perdorimit")) {
             url(xml, page, null);
         }
         // Only worth indexing while something is actually listed there.

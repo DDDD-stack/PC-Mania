@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-3">
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-7">
+            <h1 class="h2 fw-bold">Nderro: sill të vjetrën, merr të renë</h1>
+            <p class="lead-sm">Ke një kartë grafike, procesor ose RAM që nuk të duhet më? Jepe si pjesë të pagesës për një produkt nga dyqani.
+                E vlerësojmë vetë, një nga një – jo me një formulë automatike – dhe vlera zbritet nga totali i porosisë.</p>
+            <ol class="steps mt-4">
+                <li><strong>Zgjidh produktin që do</strong><br><span class="text-body-secondary">Pranojmë këmbim për produktet më poshtë, të shënuara me <span class="badge trade-badge static">Nderrim</span>.</span></li>
+                <li><strong>Na trego çfarë jep dhe dërgo provën</strong><br><span class="text-body-secondary">Një video e shkurtër e testit, ose një foto e GPU-Z / HWiNFO nën ngarkesë. Mund ta dërgosh edhe në WhatsApp.</span></li>
+                <li><strong>Merr ofertën brenda 24 orëve</strong><br><span class="text-body-secondary">Të telefonojmë ose të shkruajmë me vlerën që të japim. Oferta vlen 7 ditë.</span></li>
+                <li><strong>Paguaj vetëm diferencën</strong><br><span class="text-body-secondary">Kur e pranon, bëjmë porosinë me vlerën e pajisjes së zbritur. Deri atëherë nuk ke asnjë detyrim.</span></li>
+            </ol>
+        </div>
+        <div class="col-lg-5">
+            <div class="form-card">
+                <h2 class="h6 fw-bold mb-2">Çfarë pranojmë</h2>
+                <ul class="list-unstyled mb-3">
+                    <li th:each="t : ${itemTypes}" class="py-1"><i class="bi bi-check-circle-fill text-success me-2"></i><span th:text="${t.label}"></span></li>
+                </ul>
+                <div th:replace="~{site/fragments :: tradeProofRules}"></div>
+            </div>
+        </div>
+    </div>
+
+    <section class="mt-5">
+        <h2 class="section-title mb-3">Produktet që pranojnë këmbim</h2>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-2 g-md-3" th:unless="${products.empty}">
+            <div class="col" th:each="p : ${products}">
+                <div class="d-flex flex-column h-100 gap-2">
+                    <div class="flex-grow-1 d-flex"><div th:replace="~{site/fragments :: cardLink(${p})}"></div></div>
+                    <a class="btn btn-sm btn-dark w-100" th:href="@{/nderro/{s}(s=${p.slug})}"><i class="bi bi-arrow-left-right me-1"></i>Nderro për këtë</a>
+                </div>
+            </div>
+        </div>
+        <div th:if="${products.empty}" class="empty-state">
+            <i class="bi bi-arrow-left-right"></i>
+            <p class="mb-2">Për momentin asnjë produkt nuk pranon këmbim.</p>
+            <a class="btn btn-sm btn-whatsapp" th:href="${whatsappGeneral}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Na pyesni në WhatsApp</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

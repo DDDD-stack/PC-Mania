@@ -34,7 +34,7 @@ class UnitTests {
     @Test
     void catalogFilterParsesAndBuildsUrls() {
         var f = CatalogFilter.of(0, 100000, List.of("USED", "BOGUS"), List.of("msi"),
-                List.of("VRAM:12 GB", "VRAM:8 GB", "broken", "Bus:PCIe 4.0 x16"), "cmimi-rritje", 2);
+                List.of("VRAM:12 GB", "VRAM:8 GB", "broken", "Bus:PCIe 4.0 x16"), null, "cmimi-rritje", 2);
         assertNull(f.min());
         assertEquals(Set_of(Condition.USED), f.conditions());
         assertTrue(f.hasSpec("VRAM", "8 GB"));
@@ -44,6 +44,16 @@ class UnitTests {
         assertTrue(url.contains("spec=VRAM:12%20GB"), url);
         assertTrue(url.endsWith("rendit=cmimi-rritje&faqe=3"), url);
         assertFalse(f.pageUrl("/k", 1).contains("faqe"));
+        assertFalse(url.contains("nderrim"));
+    }
+
+    @Test
+    void tradeFilterCountsAndSurvivesPaging() {
+        var f = CatalogFilter.of(null, null, null, null, null, true, null, 1);
+        assertTrue(f.trade());
+        assertTrue(f.hasFilters());
+        assertEquals(1, f.activeCount());
+        assertTrue(f.pageUrl("/kategori/karta-grafike", 2).contains("nderrim=true"));
     }
 
     @Test

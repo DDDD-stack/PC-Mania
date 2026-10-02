@@ -16,6 +16,9 @@ body { background: #f4f5f7; }
 .badge.status-CLOSED { background: #343a40; }
 .badge.status-SEARCHING { background: #fd7e14; }
 .badge.status-FOUND { background: #198754; }
+.badge.status-REVIEWING { background: #fd7e14; }
+.badge.status-EXPIRED { background: #adb5bd; }
+.badge.status-CONVERTED { background: #0d6efd; }
 
 .save-bar {
     position: sticky; bottom: 0; z-index: 10;

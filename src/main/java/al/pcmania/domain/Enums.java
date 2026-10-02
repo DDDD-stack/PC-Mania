@@ -64,6 +64,47 @@ public final class Enums {
         public String getLabel() { return label; }
     }
 
+    /** How a trade-in customer wants to hear back: exactly one of phone or email is kept. */
+    public enum ContactMethod {
+        PHONE("Telefon"), EMAIL("Email");
+        public final String label;
+        ContactMethod(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
+    /** What can be traded in. {@link #categorySlug} is where it goes when taken into stock. */
+    public enum TradeItemType {
+        GPU("Kartë grafike", "karta-grafike"), CPU("Procesor", "procesore"), RAM("Memorie RAM", "memorie-ram");
+        public final String label;
+        public final String categorySlug;
+        TradeItemType(String label, String categorySlug) { this.label = label; this.categorySlug = categorySlug; }
+        public String getLabel() { return label; }
+    }
+
+    public enum TradeMediaType { VIDEO, IMAGE }
+
+    /**
+     * Lifecycle of a trade-in quote request. Submitting one never creates an order or reserves stock:
+     * the order is made only once the operator has quoted and the customer has accepted.
+     */
+    public enum TradeStatus {
+        NEW("E re"), REVIEWING("Në shqyrtim"), QUOTED("Me ofertë"), ACCEPTED("E pranuar"),
+        DECLINED("E refuzuar"), EXPIRED("E skaduar"), CONVERTED("U bë porosi");
+        public final String label;
+        TradeStatus(String label) { this.label = label; }
+        public String getLabel() { return label; }
+
+        /** Still needs the operator: shown on the dashboard. */
+        public boolean isOpen() {
+            return this == NEW || this == REVIEWING || this == QUOTED || this == ACCEPTED;
+        }
+
+        /** Finished either way; the proof media is deleted some time after this. */
+        public boolean isClosed() {
+            return this == DECLINED || this == EXPIRED || this == CONVERTED;
+        }
+    }
+
     public enum BuildStatus {
         NEW("E re"), QUOTED("Me ofertë"), ACCEPTED("E pranuar"), DECLINED("E refuzuar"), CLOSED("E mbyllur");
         public final String label;

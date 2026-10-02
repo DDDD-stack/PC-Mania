@@ -18,6 +18,8 @@ public record CatalogFilter(
         Set<Condition> conditions,
         Set<String> brands,
         Map<String, Set<String>> specs,
+        /** Only products that accept a trade-in ("Nderrim"). */
+        boolean trade,
         Sort sort,
         int page) {
 
@@ -35,7 +37,7 @@ public record CatalogFilter(
     }
 
     public static CatalogFilter of(Integer min, Integer max, List<String> conditions, List<String> brands,
-                                   List<String> specs, String sort, Integer page) {
+                                   List<String> specs, Boolean trade, String sort, Integer page) {
         Set<Condition> conds = EnumSet.noneOf(Condition.class);
         if (conditions != null) conditions.forEach(c -> {
             try { conds.add(Condition.valueOf(c)); } catch (IllegalArgumentException ignored) {}
@@ -46,7 +48,7 @@ public record CatalogFilter(
             if (i > 0 && i < s.length() - 1) specMap.computeIfAbsent(s.substring(0, i), k -> new LinkedHashSet<>()).add(s.substring(i + 1));
         }
         return new CatalogFilter(positive(min), positive(max), conds,
-                brands == null ? Set.of() : new LinkedHashSet<>(brands), specMap, Sort.of(sort),
+                brands == null ? Set.of() : new LinkedHashSet<>(brands), specMap, Boolean.TRUE.equals(trade), Sort.of(sort),
                 page == null || page < 1 ? 1 : page);
     }
 
@@ -55,7 +57,7 @@ public record CatalogFilter(
     }
 
     public boolean hasFilters() {
-        return min != null || max != null || !conditions.isEmpty() || !brands.isEmpty() || !specs.isEmpty();
+        return min != null || max != null || !conditions.isEmpty() || trade || !brands.isEmpty() || !specs.isEmpty();
     }
 
     public boolean hasSpec(String key, String value) {
@@ -67,7 +69,7 @@ public record CatalogFilter(
     }
 
     public int activeCount() {
-        return (min != null || max != null ? 1 : 0) + conditions.size() + brands.size()
+        return (min != null || max != null ? 1 : 0) + conditions.size() + (trade ? 1 : 0) + brands.size()
                 + specs.values().stream().mapToInt(Set::size).sum();
     }
 
@@ -83,6 +85,7 @@ public record CatalogFilter(
         if (min != null) q.add("min", min.toString());
         if (max != null) q.add("max", max.toString());
         conditions.forEach(c -> q.add("gjendja", c.name()));
+        if (trade) q.add("nderrim", "true");
         brands.stream().filter(StringUtils::hasText).forEach(b -> q.add("marka", b));
         specs.forEach((k, vs) -> vs.forEach(v -> q.add("spec", k + ":" + v)));
         if (includeSort && sort != Sort.TE_REJAT) q.add("rendit", sort.param);

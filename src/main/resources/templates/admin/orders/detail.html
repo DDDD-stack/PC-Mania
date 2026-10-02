@@ -35,6 +35,9 @@
                         <tfoot>
                         <tr><td colspan="4" class="text-end">Nëntotali</td><td class="text-end text-nowrap" th:text="${@fmt.price(order.subtotalLek)}"></td></tr>
                         <tr><td colspan="4" class="text-end">Transporti</td><td class="text-end text-nowrap" th:text="${@fmt.price(order.shippingLek)}"></td></tr>
+                        <tr th:if="${order.tradeCreditLek > 0}" class="text-primary">
+                            <td colspan="4" class="text-end">Këmbimi <a th:if="${order.tradeRequestId}" th:href="@{/admin/trades/{id}(id=${order.tradeRequestId})}">(shiko)</a></td>
+                            <td class="text-end text-nowrap" th:text="'−' + ${@fmt.price(order.tradeCreditLek)}"></td></tr>
                         <tr class="fw-bold"><td colspan="4" class="text-end">Totali</td><td class="text-end text-nowrap" th:text="${@fmt.price(order.totalLek)}"></td></tr>
                         <tr class="text-success"><td colspan="4" class="text-end">Fitimi nga produktet</td><td class="text-end text-nowrap" th:text="${@fmt.price(profit)}"></td></tr>
                         </tfoot>

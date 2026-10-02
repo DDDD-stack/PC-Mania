@@ -220,6 +220,12 @@ html { scroll-behavior: smooth; }
 .upcoming-body > div:last-child, .upcoming-body > a { margin-top: auto; }
 .upcoming-waiting { color: #6c757d; margin-top: .6rem; display: flex; align-items: center; gap: .35rem; }
 
+/* "Nderro" trade-ins: the grid badge (top right of the photo) and the proof rules box */
+.trade-badge { position: absolute; top: .4rem; right: .4rem; background: var(--pm-dark); color: #fde68a; font-weight: 600; }
+.trade-badge.static { position: static; }
+.trade-proof { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .6rem; padding: .85rem 1rem; }
+.trade-proof li { margin-bottom: .2rem; }
+
 /* "Kërko një produkt" call to action (home, category pages) */
 .wish-cta { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; padding: .9rem 1.1rem;
     background: #fffbeb; border: 1px solid #fde68a; border-radius: .75rem; color: inherit; text-decoration: none;

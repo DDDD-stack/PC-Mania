@@ -2,11 +2,14 @@ package al.pcmania.service;
 
 import al.pcmania.config.AppProperties;
 import al.pcmania.domain.BuildRequest;
+import al.pcmania.domain.Enums.TradeMediaType;
 import al.pcmania.domain.Order;
 import al.pcmania.domain.OrderItem;
+import al.pcmania.domain.TradeRequest;
 import al.pcmania.domain.WishRequest;
 import al.pcmania.repo.BuildRequestRepository;
 import al.pcmania.repo.OrderRepository;
+import al.pcmania.repo.TradeRequestRepository;
 import al.pcmania.repo.WishRequestRepository;
 import al.pcmania.web.Fmt;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.StringUtils;
+
+import java.time.format.DateTimeFormatter;
 
 /**
  * Emails the operator about new orders and build requests. Runs after commit and asynchronously,
@@ -37,10 +42,16 @@ public class NotificationService {
     /** Published after a customer asks the shop to bring something in. */
     public record WishRequested(Long wishRequestId) {}
 
+    /** Published after a trade-in quote request is saved. */
+    public record TradeRequested(Long tradeRequestId) {}
+
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
     private final ObjectProvider<JavaMailSender> mailSender;
     private final OrderRepository orders;
     private final BuildRequestRepository builds;
     private final WishRequestRepository wishes;
+    private final TradeRequestRepository trades;
     private final AppProperties props;
 
     @Value("${spring.mail.host:}")
@@ -153,11 +164,75 @@ public class NotificationService {
         send(props.notifyEmail(), subject, body);
     }
 
-    private void send(String to, String subject, String body) {
+    @Async
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void onTradeRequested(TradeRequested event) {
+        TradeRequest t = trades.findWithProductById(event.tradeRequestId()).orElse(null);
+        if (t == null) return;
+        String proof = t.getMediaFilename() != null ? (t.getMediaType() == TradeMediaType.VIDEO ? "Video e ngarkuar" : "Foto e ngarkuar")
+                : t.isWhatsappInstead() ? "Do ta dërgojë në WhatsApp" : "-";
+        String subject = "Kërkesë për këmbim " + t.getRequestNumber() + " – " + t.getManufacturer() + " " + t.getModel();
+        String body = """
+                Kërkesë e re për këmbim (Nderro)
+
+                Nr.: %s
+                Klienti: %s
+                Kontakti: %s (%s)
+
+                Jep: %s – %s %s
+                Shënime: %s
+                Prova: %s
+
+                Kërkon: %s (%s)
+
+                Hape në admin: %s/admin/trades/%d
+                """.formatted(t.getRequestNumber(), t.getCustomerName(), t.getContact(), t.getContactMethod().label,
+                t.getItemType().label, t.getManufacturer(), t.getModel(), orDash(t.getExtraNotes()), proof,
+                t.getProductTitleSnapshot(), t.getProduct() == null ? "-" : Fmt.lek(t.getProduct().getPriceLek()),
+                props.base(), t.getId());
+        send(props.notifyEmail(), subject, body);
+    }
+
+    /**
+     * Emails a quote to a customer who chose email: the value offered, what the product then costs and
+     * when the offer lapses. Sent from the no-reply address. Returns false when nothing went out (mail
+     * not configured, or the send failed), so the operator knows to contact them another way.
+     */
+    public boolean sendTradeQuote(TradeRequest t) {
+        int price = t.getProduct().getPriceLek();
+        String shipping = t.getProduct().isTransportIncluded() ? "transporti falas" : "pa transportin";
+        String body = """
+                Përshëndetje %s,
+
+                Faleminderit për kërkesën %s për të ndërruar %s %s me %s.
+
+                Vlera që ju ofrojmë për pajisjen tuaj: %s
+                Çmimi i produktit: %s
+                Pas këmbimit paguani: %s (%s)
+                %s
+                Oferta vlen deri më %s.
+
+                Për ta pranuar, na telefononi në %s ose na shkruani në WhatsApp, dhe përmendni numrin %s.
+
+                PCMania
+                %s
+
+                (Ky email dërgohet automatikisht. Mos iu përgjigjni këtij emaili.)
+                """.formatted(t.getCustomerName(), t.getRequestNumber(), t.getManufacturer(), t.getModel(),
+                t.getProductTitleSnapshot(), Fmt.lek(t.getQuotedValueLek()), Fmt.lek(price),
+                Fmt.lek(price - t.getQuotedValueLek()), shipping,
+                StringUtils.hasText(t.getQuoteNotes()) ? "\nShënim: " + t.getQuoteNotes() + "\n" : "",
+                DATE.format(t.getQuoteExpiresAt()), props.phoneDisplay(), t.getRequestNumber(), props.base());
+        return send(t.getCustomerEmail(), "PCMania – oferta për këmbimin " + t.getRequestNumber(), body);
+    }
+
+    /** Returns whether the email was handed to the mail server. */
+    private boolean send(String to, String subject, String body) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (!StringUtils.hasText(mailHost) || sender == null || !StringUtils.hasText(to)) {
             log.info("Email not sent (mail not configured). To: {} | {}\n{}", to, subject, body);
-            return;
+            return false;
         }
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
@@ -167,8 +242,10 @@ public class NotificationService {
             msg.setText(body);
             sender.send(msg);
             log.info("Email sent to {}: {}", to, subject);
+            return true;
         } catch (RuntimeException e) {
             log.error("Failed to send email to {} ({}): {}\n{}", to, subject, e.getMessage(), body);
+            return false;
         }
     }
 

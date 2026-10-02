@@ -4,23 +4,40 @@
 
 <!--/* Product card for grids. Expects a ProductCard (never the entity). */-->
 <div th:fragment="card(p)" class="col reveal">
-    <a class="product-card" th:href="@{/produkt/{s}(s=${p.slug})}">
-        <div class="product-thumb">
-            <img data-fade th:src="${@img.medium(p.imageFilename)}" th:srcset="${@img.srcset(p.imageFilename)}"
-                 sizes="(min-width: 1200px) 270px, (min-width: 768px) 33vw, 50vw"
-                 th:alt="${p.title}" width="400" height="400" loading="lazy" decoding="async">
-            <span class="badge cond-badge" th:classappend="'cond-' + ${p.condition}" th:text="${p.condition.label}"></span>
+    <a th:replace="~{site/fragments :: cardLink(${p})}"></a>
+</div>
+
+<!--/* The card itself, without the grid column, for layouts that add something underneath. */-->
+<a th:fragment="cardLink(p)" class="product-card" th:href="@{/produkt/{s}(s=${p.slug})}">
+    <div class="product-thumb">
+        <img data-fade th:src="${@img.medium(p.imageFilename)}" th:srcset="${@img.srcset(p.imageFilename)}"
+             sizes="(min-width: 1200px) 270px, (min-width: 768px) 33vw, 50vw"
+             th:alt="${p.title}" width="400" height="400" loading="lazy" decoding="async">
+        <span class="badge cond-badge" th:classappend="'cond-' + ${p.condition}" th:text="${p.condition.label}"></span>
+        <span th:if="${p.tradeEligible}" class="badge trade-badge" title="Pranon këmbim (Nderro)"><i class="bi bi-arrow-left-right me-1"></i>Nderrim</span>
+    </div>
+    <div class="product-body">
+        <div class="product-brand" th:if="${p.brandName}" th:text="${p.brandName}"></div>
+        <h3 class="product-title" th:text="${p.title}"></h3>
+        <div class="product-meta">
+            <span th:if="${p.miningFree}" title="Pa minim"><i class="bi bi-shield-check"></i></span>
+            <span th:if="${p.warrantyDays != null && p.warrantyDays > 0}" th:text="${@fmt.warranty(p.warrantyDays)}"></span>
         </div>
-        <div class="product-body">
-            <div class="product-brand" th:if="${p.brandName}" th:text="${p.brandName}"></div>
-            <h3 class="product-title" th:text="${p.title}"></h3>
-            <div class="product-meta">
-                <span th:if="${p.miningFree}" title="Pa minim"><i class="bi bi-shield-check"></i></span>
-                <span th:if="${p.warrantyDays != null && p.warrantyDays > 0}" th:text="${@fmt.warranty(p.warrantyDays)}"></span>
-            </div>
-            <div class="product-price" th:text="${@fmt.price(p.priceLek)}"></div>
-        </div>
-    </a>
+        <div class="product-price" th:text="${@fmt.price(p.priceLek)}"></div>
+    </div>
+</a>
+
+<!--/* What counts as proof for a trade-in ("Nderro"), on the overview and on the form. */-->
+<div th:fragment="tradeProofRules" class="trade-proof">
+    <h2 class="h6 fw-bold mb-2"><i class="bi bi-camera-video me-1"></i>Prova që na duhet</h2>
+    <ul class="small mb-2 ps-3">
+        <li>Pjesa e montuar dhe e dukshme në sistem (p.sh. në GPU-Z ose Device Manager).</li>
+        <li><strong>Karta grafike:</strong> FurMark të punojë <strong>15 minuta</strong> pa ndërprerje.</li>
+        <li><strong>Procesori:</strong> një test i plotë Cinebench (R23 ose 2024).</li>
+        <li><strong>RAM:</strong> sistemi i ndezur me kapacitetin e plotë të dukshëm (p.sh. në CPU-Z ose Task Manager).</li>
+        <li>Temperaturat të lexohen qartë në fund të testit.</li>
+    </ul>
+    <p class="small text-body-secondary mb-0">Në vend të videos mjafton edhe një foto e qartë e <strong>GPU-Z</strong> ose <strong>HWiNFO</strong> që tregon temperaturat nën ngarkesë.</p>
 </div>
 
 </body>

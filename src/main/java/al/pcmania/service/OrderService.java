@@ -8,6 +8,7 @@ import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.domain.Order;
 import al.pcmania.domain.OrderItem;
 import al.pcmania.domain.Product;
+import al.pcmania.domain.TradeRequest;
 import al.pcmania.repo.OrderItemRepository;
 import al.pcmania.repo.OrderRepository;
 import al.pcmania.repo.OrderSequenceRepository;
@@ -109,6 +110,45 @@ public class OrderService {
             p.changeStatus(ProductStatus.SOLD);
             p.setSoldAt(when);
         }
+        return orders.save(o);
+    }
+
+    /**
+     * The order for an accepted trade-in: the requested product, with the agreed trade value taken off
+     * the total (subtotal + shipping - trade credit). It starts confirmed - the customer has already said
+     * yes - and reserves the stock like any order. The credit may not exceed what is owed.
+     */
+    @Transactional
+    public Order placeFromTrade(TradeRequest t, TradeService.OrderDetails details) {
+        if (!StringUtils.hasText(details.phone())) throw new IllegalArgumentException("Shkruani telefonin e klientit.");
+        if (!StringUtils.hasText(details.city())) throw new IllegalArgumentException("Shkruani qytetin.");
+        if (details.delivery() == null || details.payment() == null) throw new IllegalArgumentException("Zgjidhni dorëzimin dhe pagesën.");
+        Product p = lock(t.getProduct().getId());
+        if (p.getStatus() != ProductStatus.ACTIVE || p.getQuantity() < 1) throw new OutOfStockException();
+
+        Order o = new Order();
+        o.setOrderNumber(nextOrderNumber());
+        o.setCustomerName(t.getCustomerName());
+        o.setCustomerPhone(details.phone().trim());
+        o.setCustomerEmail(t.getCustomerEmail());
+        o.setCity(details.city().trim());
+        o.setAddress(StringUtils.hasText(details.address()) ? details.address().trim() : null);
+        o.setDeliveryMethod(details.delivery());
+        o.setPaymentMethod(details.payment());
+        o.setStatus(OrderStatus.CONFIRMED);
+        o.setAdminNotes("Nga këmbimi " + t.getRequestNumber() + ": " + t.getItemType().label + " " + t.getManufacturer() + " " + t.getModel() + ".");
+        addItem(o, p, 1, p.getPriceLek());
+        o.setShippingLek(shippingFor(details.delivery(), p.isTransportIncluded()));
+        int credit = t.getQuotedValueLek();
+        if (credit > o.getSubtotalLek() + o.getShippingLek()) {
+            throw new IllegalArgumentException("Vlera e këmbimit kalon totalin e porosisë.");
+        }
+        o.setTradeRequestId(t.getId());
+        o.setTradeCreditLek(credit);
+        o.setTotalLek(o.getSubtotalLek() + o.getShippingLek() - credit);
+
+        p.setQuantity(p.getQuantity() - 1);
+        if (p.getQuantity() == 0) p.changeStatus(ProductStatus.RESERVED);
         return orders.save(o);
     }
 

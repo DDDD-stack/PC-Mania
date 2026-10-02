@@ -34,6 +34,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @EntityGraph(attributePaths = "brand")
     List<Product> findByCategorySlugAndStatusAndIdNotOrderByListedAtDesc(String categorySlug, ProductStatus status, Long id, Pageable pageable);
 
+    @EntityGraph(attributePaths = "brand")
+    List<Product> findByTradeEligibleTrueAndStatusAndQuantityGreaterThanOrderByListedAtDesc(ProductStatus status, int quantity);
+
     List<Product> findByStatusNot(ProductStatus status);
 
     List<Product> findByStatusIn(Collection<ProductStatus> statuses);

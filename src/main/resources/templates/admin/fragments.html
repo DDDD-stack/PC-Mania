@@ -41,6 +41,10 @@
                         <span class="badge rounded-pill text-bg-warning nav-count" data-live-builds hidden><span data-live-build-count></span></span></a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" th:classappend="${active == 'trades'} ? active" href="/admin/trades"><i class="bi bi-arrow-left-right"></i> Këmbimet
+                        <span class="badge rounded-pill text-bg-danger nav-count" data-live-trades hidden><span data-live-trade-count></span></span></a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" th:classappend="${active == 'wishes'} ? active" href="/admin/wishes"><i class="bi bi-search-heart"></i> Lista e dëshirave
                         <span class="badge rounded-pill text-bg-info nav-count" data-live-wishes hidden><span data-live-wish-count></span></span></a>
                 </li>

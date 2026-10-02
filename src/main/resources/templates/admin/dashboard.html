@@ -6,15 +6,31 @@
 <main class="container-xl py-3">
     <div th:replace="~{admin/fragments :: flash}"></div>
 
-    <div class="d-flex flex-wrap gap-2 mb-3" th:if="${d.newOrders > 0 || d.openOrders > 0 || d.newBuildRequests > 0 || newWishes > 0}">
+    <div class="d-flex flex-wrap gap-2 mb-3" th:if="${d.newOrders > 0 || d.openOrders > 0 || d.newBuildRequests > 0 || newWishes > 0 || openTrades > 0}">
         <a th:if="${d.newOrders > 0}" class="btn btn-danger" href="/admin/orders?status=NEW">
             <i class="bi bi-bag-plus"></i> <span th:text="${d.newOrders}"></span> porosi të reja</a>
         <a th:if="${d.openOrders > 0}" class="btn btn-outline-dark" href="/admin/orders">
             <i class="bi bi-truck"></i> <span th:text="${d.openOrders}"></span> në proces</a>
         <a th:if="${d.newBuildRequests > 0}" class="btn btn-warning" href="/admin/builds?status=NEW">
             <i class="bi bi-tools"></i> <span th:text="${d.newBuildRequests}"></span> kërkesa PC</a>
+        <a th:if="${openTrades > 0}" class="btn btn-dark" href="/admin/trades">
+            <i class="bi bi-arrow-left-right"></i> <span th:text="${openTrades}"></span> <span th:text="${openTrades == 1} ? 'këmbim i hapur' : 'këmbime të hapura'"></span></a>
         <a th:if="${newWishes > 0}" class="btn btn-info" href="/admin/wishes?status=NEW">
             <i class="bi bi-search-heart"></i> <span th:text="${newWishes}"></span> <span th:text="${newWishes == 1} ? 'produkt i kërkuar' : 'produkte të kërkuara'"></span></a>
+    </div>
+
+    <!-- Traded-in items not listed yet: stock on its way in -->
+    <div class="card mb-3 border-warning" th:unless="${incomingTradeIns.empty}">
+        <div class="card-header bg-warning-subtle"><i class="bi bi-box-arrow-in-down me-1"></i><strong>Stok i ardhur nga këmbimet</strong>
+            <span class="small text-body-secondary">– pajisje të marra me këmbim, ende pa u listuar</span></div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex flex-wrap gap-2 align-items-center" th:each="t : ${incomingTradeIns}">
+                <span class="badge text-bg-light border" th:text="${t.itemType.label}"></span>
+                <strong th:text="${t.manufacturer + ' ' + t.model}"></strong>
+                <span class="small text-body-secondary" th:text="'kosto ' + ${@fmt.price(t.quotedValueLek)} + ' · ' + ${t.requestNumber}"></span>
+                <a class="btn btn-sm btn-outline-dark ms-auto" th:href="@{/admin/trades/{id}(id=${t.id})}">Merre në stok</a>
+            </li>
+        </ul>
     </div>
 
     <!-- KPI tiles -->

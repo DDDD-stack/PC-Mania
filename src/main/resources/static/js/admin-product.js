@@ -26,6 +26,14 @@
     });
     if (window.Sortable) Sortable.create(specRows, {handle: '.drag-handle', animation: 150});
 
+    // ---- Switches that reveal a related field (e.g. "Pranon këmbim" shows the internal trade cap) ----
+    document.querySelectorAll('[data-toggles]').forEach(sw => {
+        const target = document.querySelector(sw.dataset.toggles);
+        const sync = () => { if (target) target.hidden = !sw.checked; };
+        sw.addEventListener('change', sync);
+        sync();
+    });
+
     // ---- Margin preview ----
     const price = document.getElementById('priceLek'), cost = document.getElementById('costLek');
     const marginInfo = document.getElementById('marginInfo');

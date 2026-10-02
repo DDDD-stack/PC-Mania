@@ -4,8 +4,10 @@ import al.pcmania.domain.*;
 import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.repo.BrandRepository;
+import al.pcmania.repo.CategoryRepository;
 import al.pcmania.repo.OrderItemRepository;
 import al.pcmania.repo.ProductRepository;
+import al.pcmania.web.Fmt;
 import al.pcmania.web.admin.ProductForm;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class ProductAdminService {
 
     private final ProductRepository products;
     private final BrandRepository brands;
+    private final CategoryRepository categories;
     private final OrderItemRepository orderItems;
     private final ImageStorage images;
 
@@ -101,6 +104,8 @@ public class ProductAdminService {
         p.setTestNotes(trimToNull(form.getTestNotes()));
         p.setMiningFree(form.isMiningFree());
         p.setTransportIncluded(form.isTransportIncluded());
+        p.setTradeEligible(form.isTradeEligible());
+        p.setMaxTradeValueLek(form.isTradeEligible() ? form.getMaxTradeValueLek() : null);
 
         // Slugs are only generated once: changing them later breaks links already shared on Facebook.
         String wanted = StringUtils.hasText(form.getSlug()) ? form.getSlug() : (p.getSlug() != null ? p.getSlug() : Slugs.of(p.getTitle()));
@@ -137,10 +142,34 @@ public class ProductAdminService {
         p.setTestNotes(src.getTestNotes());
         p.setMiningFree(src.isMiningFree());
         p.setTransportIncluded(src.isTransportIncluded());
+        p.setTradeEligible(src.isTradeEligible());
+        p.setMaxTradeValueLek(src.getMaxTradeValueLek());
         p.setSlug(uniqueSlug(src.getSlug()));
         p.setStatus(ProductStatus.DRAFT);
         src.getSpecs().forEach(s -> p.getSpecs().add(new ProductSpec(p, s.getSpecKey(), s.getSpecValue(), s.getSortOrder())));
         src.getImages().forEach(i -> p.getImages().add(new ProductImage(p, images.copy(i.getFilename()), i.getSortOrder(), i.isPrimary())));
+        return products.save(p);
+    }
+
+    /**
+     * A Draft listing for a traded-in item: cost = the trade credit given, price a placeholder at the
+     * same value until the operator prices it. Goes in the item type's category if it exists.
+     */
+    @Transactional
+    public Product createDraftFromTradeIn(TradeRequest t, String fallbackCategory) {
+        Product p = new Product();
+        p.setTitle((t.getManufacturer() + " " + t.getModel()).trim());
+        p.setBrand(brands.findByNameIgnoreCase(t.getManufacturer().trim()).orElse(null));
+        p.setModel(t.getModel());
+        String category = t.getItemType().categorySlug;
+        p.setCategorySlug(categories.existsBySlug(category) || fallbackCategory == null ? category : fallbackCategory);
+        p.setCondition(Condition.USED);
+        p.setCostLek(t.getQuotedValueLek());
+        p.setPriceLek(t.getQuotedValueLek());
+        p.setQuantity(1);
+        p.setStatus(ProductStatus.DRAFT);
+        p.setTestNotes("Marrë me këmbim " + t.getRequestNumber() + " (vlera e dhënë: " + Fmt.lek(t.getQuotedValueLek()) + ").");
+        p.setSlug(uniqueSlug(p.getTitle()));
         return products.save(p);
     }
 

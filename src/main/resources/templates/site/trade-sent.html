@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-5" style="max-width: 640px">
+    <div class="form-card text-center">
+        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem"></i>
+        <h1 class="h4 fw-bold mt-2">Kërkesa për këmbim u dërgua!</h1>
+        <p class="mb-1">Numri i kërkesës:</p>
+        <p class="fs-4 fw-bold font-monospace" th:text="${number}">TR-2026-0001</p>
+        <p>Denis do ta shohë provën dhe do t'ju përgjigjet <strong>brenda 24 orëve</strong> me një ofertë – me telefon ose me email, siç zgjodhët.</p>
+        <div class="alert alert-light border small text-start">
+            <i class="bi bi-info-circle me-1"></i> Kjo nuk është porosi: produkti nuk është rezervuar dhe nuk keni asnjë detyrim. Kur të merrni ofertën, vendosni ju nëse e pranoni.
+        </div>
+        <p class="small mb-2">Zgjodhët ta dërgoni videon në WhatsApp? Dërgojeni tani, me numrin e kërkesës:</p>
+        <div class="d-grid d-sm-flex gap-2 justify-content-center">
+            <a class="btn btn-whatsapp" th:href="${whatsappProof}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Dërgo videon në WhatsApp</a>
+            <a class="btn btn-outline-dark" href="/">Kryefaqja</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>

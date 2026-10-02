@@ -2,6 +2,8 @@ package al.pcmania.repo;
 
 import al.pcmania.domain.StoredFile;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +20,10 @@ public interface StoredFileRepository extends JpaRepository<StoredFile, Long> {
     List<Meta> findByFileKeyStartingWithOrderByCreatedAtDesc(String prefix);
 
     boolean existsByFileKey(String fileKey);
+
+    /** Total bytes stored under a key prefix, e.g. "trade/" for trade-in proof media. */
+    @Query("select coalesce(sum(f.sizeBytes), 0) from StoredFile f where f.fileKey like concat(:prefix, '%')")
+    long totalSizeUnder(@Param("prefix") String prefix);
 
     void deleteByFileKey(String fileKey);
 

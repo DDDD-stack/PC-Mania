@@ -48,6 +48,11 @@ public class ProductForm {
     private String testNotes;
     private boolean miningFree;
     private boolean transportIncluded;
+    /** Offered for "Nderro" trade-ins. */
+    private boolean tradeEligible;
+    /** Internal cap on what to give in trade against this product; never shown publicly. */
+    @Min(0)
+    private Integer maxTradeValueLek;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate listedAt;
     private List<String> specKeys = new ArrayList<>();
@@ -71,6 +76,8 @@ public class ProductForm {
         f.testNotes = p.getTestNotes();
         f.miningFree = p.isMiningFree();
         f.transportIncluded = p.isTransportIncluded();
+        f.tradeEligible = p.isTradeEligible();
+        f.maxTradeValueLek = p.getMaxTradeValueLek();
         f.listedAt = p.getListedAt() == null ? null : p.getListedAt().toLocalDate();
         for (ProductSpec s : p.getSpecs()) {
             f.specKeys.add(s.getSpecKey());

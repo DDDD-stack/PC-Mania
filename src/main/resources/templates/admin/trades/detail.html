@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${t.requestNumber})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('trades')}"></nav>
+<main class="container py-3" style="max-width: 1100px">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a href="/admin/trades" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0" th:text="${t.requestNumber}"></h1>
+        <span class="badge fs-6" th:classappend="'status-' + ${t.status}" th:text="${t.status.label}"></span>
+        <span th:if="${t.needsCall}" class="badge fs-6 text-bg-danger"><i class="bi bi-telephone-outbound me-1"></i><span th:text="${t.contactMethod.name() == 'PHONE'} ? 'Telefono për ofertën' : 'Emaili nuk u dërgua – kontaktoje'"></span></span>
+        <span class="text-body-secondary small ms-auto" th:text="${@fmt.dateTime(t.createdAt)}"></span>
+    </div>
+
+    <div class="row g-3">
+        <!--/* Left: what they give, and the proof */-->
+        <div class="col-lg-7">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Prova</strong></div>
+                <div class="card-body">
+                    <div th:if="${t.mediaFilename != null}">
+                        <video th:if="${t.mediaType.name() == 'VIDEO'}" class="w-100 rounded bg-dark" controls preload="metadata"
+                               th:src="@{/admin/trades/{id}/media(id=${t.id})}" style="max-height: 480px"></video>
+                        <a th:if="${t.mediaType.name() == 'IMAGE'}" th:href="@{/admin/trades/{id}/media(id=${t.id})}" target="_blank">
+                            <img class="img-fluid rounded border" th:src="@{/admin/trades/{id}/media(id=${t.id})}" alt="Prova e testit">
+                        </a>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-2 small text-body-secondary">
+                            <span th:if="${media}" th:text="${media.label} + ' · ' + ${#numbers.formatDecimal(media.sizeBytes / 1048576.0, 1, 1)} + ' MB'"></span>
+                            <span th:if="${t.closedAt != null}">· fshihet automatikisht 30 ditë pas mbylljes</span>
+                            <form class="ms-auto" th:action="@{/admin/trades/{id}/delete-media(id=${t.id})}" method="post" data-confirm="Ta fshij videon/foton?">
+                                <button class="btn btn-sm btn-link text-danger p-0" type="submit"><i class="bi bi-trash"></i> Fshi</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div th:if="${t.mediaFilename == null}" class="text-body-secondary">
+                        <span th:if="${t.whatsappInstead}"><i class="bi bi-whatsapp text-success me-1"></i>Klienti do ta dërgojë videon në WhatsApp, me numrin <strong th:text="${t.requestNumber}"></strong>.</span>
+                        <span th:unless="${t.whatsappInstead}">Nuk ka video ose foto (ose është fshirë).</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><strong>Çfarë jep</strong></div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-4">Lloji</dt><dd class="col-8" th:text="${t.itemType.label}"></dd>
+                        <dt class="col-4">Pajisja</dt><dd class="col-8 fw-bold" th:text="${t.manufacturer + ' ' + t.model}"></dd>
+                        <dt class="col-4">Klienti</dt><dd class="col-8" th:text="${t.customerName}"></dd>
+                        <dt class="col-4">Kontakti</dt>
+                        <dd class="col-8">
+                            <a th:if="${t.customerPhone}" th:href="'tel:' + ${t.customerPhone}" th:text="${t.customerPhone}"></a>
+                            <a th:if="${t.customerEmail}" th:href="'mailto:' + ${t.customerEmail}" th:text="${t.customerEmail}"></a>
+                            <span class="text-body-secondary small" th:text="'(' + ${t.contactMethod.label} + ')'"></span>
+                        </dd>
+                    </dl>
+                    <div th:if="${t.extraNotes}" class="mt-2">
+                        <div class="text-body-secondary small">Shënime nga klienti</div>
+                        <div style="white-space: pre-line" th:text="${t.extraNotes}"></div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3" th:if="${t.customerPhone}">
+                        <a class="btn btn-sm btn-outline-dark" th:href="'tel:' + ${t.customerPhone}"><i class="bi bi-telephone"></i> Telefono</a>
+                        <a class="btn btn-sm btn-success" th:if="${customerWhatsapp}" th:href="${customerWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--/* Right: what they want, and what to do next */-->
+        <div class="col-lg-5">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Produkti që kërkon</strong></div>
+                <div class="card-body">
+                    <div class="fw-semibold" th:text="${t.productTitleSnapshot}"></div>
+                    <div th:if="${t.product != null}">
+                        <dl class="row mb-0 mt-2 small">
+                            <dt class="col-7">Çmimi</dt><dd class="col-5 text-end fw-bold" th:text="${@fmt.price(t.product.priceLek)}"></dd>
+                            <dt class="col-7">Maks. për këmbim <span class="badge text-bg-secondary">e brendshme</span></dt>
+                            <dd class="col-5 text-end" th:text="${t.product.maxTradeValueLek != null} ? ${@fmt.price(t.product.maxTradeValueLek)} : 'pa kufi'"></dd>
+                            <dt class="col-7">Statusi / stoku</dt>
+                            <dd class="col-5 text-end"><span class="badge" th:classappend="'status-' + ${t.product.status}" th:text="${t.product.status.label}"></span> <span th:text="${t.product.quantity}"></span></dd>
+                        </dl>
+                        <a class="small" th:href="@{/admin/products/{id}(id=${t.product.id})}">Hape produktin</a>
+                    </div>
+                    <div th:if="${t.product == null}" class="text-danger small mt-2">Produkti është fshirë.</div>
+                </div>
+            </div>
+
+            <!--/* Quote shown */-->
+            <div class="card mb-3" th:if="${t.quotedValueLek != null}">
+                <div class="card-header"><strong>Oferta</strong></div>
+                <div class="card-body small">
+                    <div class="fs-5 fw-bold" th:text="${@fmt.price(t.quotedValueLek)}"></div>
+                    <div th:if="${t.product != null}">Klienti paguan pas këmbimit: <strong th:text="${@fmt.price(t.product.priceLek - t.quotedValueLek)}"></strong> + transporti</div>
+                    <div th:text="'Dhënë: ' + ${@fmt.dateTime(t.quotedAt)} + ' · skadon: ' + ${@fmt.dateTime(t.quoteExpiresAt)}"></div>
+                    <div th:if="${t.quoteEmailedAt}" class="text-success"><i class="bi bi-envelope-check me-1"></i>Iu dërgua me email <span th:text="${@fmt.dateTime(t.quoteEmailedAt)}"></span></div>
+                    <div th:if="${t.quoteNotes}" class="mt-1" style="white-space: pre-line" th:text="${t.quoteNotes}"></div>
+                </div>
+            </div>
+
+            <!--/* NEW -> REVIEWING */-->
+            <form th:if="${t.status.name() == 'NEW'}" class="mb-3" th:action="@{/admin/trades/{id}/reviewing(id=${t.id})}" method="post">
+                <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-eye me-1"></i>Po e shqyrtoj</button>
+            </form>
+
+            <!--/* Quote (also re-quote while quoted) */-->
+            <form th:if="${t.status.name() == 'NEW' || t.status.name() == 'REVIEWING' || t.status.name() == 'QUOTED'}"
+                  class="card mb-3" th:action="@{/admin/trades/{id}/quote(id=${t.id})}" method="post"
+                  th:attr="data-price=${t.product != null} ? ${t.product.priceLek} : 0, data-max=${t.product != null and t.product.maxTradeValueLek != null} ? ${t.product.maxTradeValueLek} : ''" id="quoteForm">
+                <div class="card-header"><strong th:text="${t.status.name() == 'QUOTED'} ? 'Ndrysho ofertën' : 'Jep ofertën'"></strong></div>
+                <div class="card-body">
+                    <div class="row g-2 mb-2">
+                        <div class="col-7">
+                            <label class="form-label small mb-1">Vlera e këmbimit (Lekë)</label>
+                            <input class="form-control" type="number" min="1" step="1" name="quotedValueLek" th:value="${t.quotedValueLek}" required>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small mb-1">Vlen (ditë)</label>
+                            <input class="form-control" type="number" min="1" max="60" step="1" name="days" th:value="${defaultDays}">
+                        </div>
+                    </div>
+                    <div class="form-text mb-2" id="quotePreview"></div>
+                    <label class="form-label small mb-1">Shënime për klientin <span class="text-body-secondary">(opsionale, shkojnë në email)</span></label>
+                    <textarea class="form-control mb-2" name="quoteNotes" rows="2" th:text="${t.quoteNotes}"></textarea>
+                    <button class="btn btn-primary w-100" type="submit">
+                        <span th:text="${t.contactMethod.name() == 'EMAIL'} ? 'Ruaj dhe dërgo me email' : 'Ruaj ofertën (pastaj telefono)'"></span>
+                    </button>
+                </div>
+            </form>
+
+            <!--/* QUOTED -> ACCEPTED */-->
+            <form th:if="${t.status.name() == 'QUOTED'}" class="mb-3" th:action="@{/admin/trades/{id}/accept(id=${t.id})}" method="post"
+                  data-confirm="Klienti e pranoi ofertën?">
+                <button class="btn btn-success w-100" type="submit"><i class="bi bi-check2-circle me-1"></i>Klienti e pranoi</button>
+            </form>
+
+            <!--/* ACCEPTED -> order */-->
+            <form th:if="${t.status.name() == 'ACCEPTED' && t.product != null}" class="card mb-3 border-success" th:action="@{/admin/trades/{id}/convert(id=${t.id})}" method="post">
+                <div class="card-header bg-success-subtle"><strong>Krijo porosinë nga këmbimi</strong></div>
+                <div class="card-body">
+                    <p class="small mb-2">Porosi për <strong th:text="${t.productTitleSnapshot}"></strong>: <span th:text="${@fmt.price(t.product.priceLek)}"></span>
+                        − <span th:text="${@fmt.price(t.quotedValueLek)}"></span> këmbim + transporti. Rezervon produktin.</p>
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label small mb-1">Telefoni</label>
+                            <input class="form-control form-control-sm" name="phone" th:value="${t.customerPhone}" required></div>
+                        <div class="col-6"><label class="form-label small mb-1">Qyteti</label>
+                            <input class="form-control form-control-sm" name="city" value="Tiranë" required></div>
+                        <div class="col-12"><label class="form-label small mb-1">Adresa</label>
+                            <input class="form-control form-control-sm" name="address"></div>
+                        <div class="col-6"><label class="form-label small mb-1">Dorëzimi</label>
+                            <select class="form-select form-select-sm" name="deliveryMethod">
+                                <option th:each="d : ${deliveryMethods}" th:value="${d}" th:text="${d.label}" th:selected="${d.name() == 'PICKUP_TIRANA'}"></option>
+                            </select></div>
+                        <div class="col-6"><label class="form-label small mb-1">Pagesa</label>
+                            <select class="form-select form-select-sm" name="paymentMethod">
+                                <option th:each="pm : ${paymentMethods}" th:value="${pm}" th:text="${pm.label}"></option>
+                            </select></div>
+                    </div>
+                    <button class="btn btn-success w-100 mt-3" type="submit"><i class="bi bi-bag-check me-1"></i>Krijo porosinë</button>
+                </div>
+            </form>
+
+            <!--/* CONVERTED: the order, and the traded-in item as incoming stock */-->
+            <div th:if="${t.status.name() == 'CONVERTED'}" class="card mb-3">
+                <div class="card-header"><strong>U bë porosi</strong></div>
+                <div class="card-body">
+                    <a th:if="${t.orderId}" class="btn btn-outline-dark w-100 mb-2" th:href="@{/admin/orders/{id}(id=${t.orderId})}"><i class="bi bi-bag me-1"></i>Hape porosinë</a>
+                    <form th:if="${t.stockProductId == null}" th:action="@{/admin/trades/{id}/stock(id=${t.id})}" method="post">
+                        <button class="btn btn-warning w-100" type="submit"><i class="bi bi-box-arrow-in-down me-1"></i>Merr pajisjen në stok</button>
+                        <div class="form-text">Krijon një produkt Draft me koston <span th:text="${@fmt.price(t.quotedValueLek)}"></span> (vlera e këmbimit).</div>
+                    </form>
+                    <a th:if="${t.stockProductId != null}" class="btn btn-outline-success w-100" th:href="@{/admin/products/{id}(id=${t.stockProductId})}"><i class="bi bi-box-seam me-1"></i>Pajisja në stok</a>
+                </div>
+            </div>
+
+            <div th:if="${t.status.name() == 'DECLINED'}" class="alert alert-secondary">
+                <strong>U refuzua:</strong> <span th:text="${t.declineReason}"></span>
+            </div>
+            <div th:if="${t.status.name() == 'EXPIRED'}" class="alert alert-secondary">Oferta skadoi pa përgjigje.</div>
+
+            <!--/* Decline while open */-->
+            <form th:if="${t.status.open}" class="card" th:action="@{/admin/trades/{id}/decline(id=${t.id})}" method="post">
+                <div class="card-body">
+                    <label class="form-label small mb-1">Refuzo me arsye</label>
+                    <textarea class="form-control form-control-sm mb-2" name="reason" rows="2" required placeholder="p.sh. karta ka artefakte në test"></textarea>
+                    <button class="btn btn-sm btn-outline-danger w-100" type="submit">Refuzo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+<script>
+    (() => {
+        const form = document.getElementById('quoteForm');
+        if (!form) return;
+        const input = form.querySelector('[name=quotedValueLek]');
+        const preview = document.getElementById('quotePreview');
+        const price = +form.dataset.price, max = form.dataset.max === '' ? null : +form.dataset.max;
+        const fmt = n => n.toLocaleString('de-DE') + ' Lekë';
+        const update = () => {
+            const v = +input.value;
+            if (!v) { preview.textContent = max != null ? 'Maks. i brendshëm: ' + fmt(max) : ''; return; }
+            let text = 'Klienti paguan ' + fmt(price - v) + ' + transporti.';
+            if (max != null && v > max) text += ' Kujdes: mbi maksimumin e brendshëm (' + fmt(max) + ').';
+            preview.textContent = text;
+            preview.classList.toggle('text-danger', max != null && v > max);
+        };
+        input.addEventListener('input', update);
+        update();
+    })();
+</script>
+</body>
+</html>

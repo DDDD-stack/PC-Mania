@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{::scripts})}">
+<body>
+<main class="container py-3" style="max-width: 980px">
+    <a class="small text-decoration-none" href="/nderro"><i class="bi bi-arrow-left"></i> Nderro</a>
+    <h1 class="h3 fw-bold mt-2 mb-3">Kërko një ofertë këmbimi</h1>
+
+    <div class="row g-3">
+        <div class="col-lg-7 order-2 order-lg-1">
+            <form th:action="@{/nderro/{s}(s=${p.slug})}" th:object="${form}" method="post" enctype="multipart/form-data"
+                  id="tradeForm" class="form-card" novalidate
+                  th:attr="data-max-video=${maxVideoMb}, data-max-image=${maxImageMb}">
+                <div class="alert alert-danger" id="formError" th:classappend="${#fields.hasGlobalErrors()} ? '' : 'd-none'"
+                     th:text="${#fields.hasGlobalErrors()} ? ${#fields.globalErrors()[0]} : ''"></div>
+
+                <h2 class="h6 fw-bold mb-3">1. Të dhënat tuaja</h2>
+                <div class="mb-3">
+                    <label class="form-label" for="customerName">Emri dhe mbiemri *</label>
+                    <input class="form-control" th:field="*{customerName}" th:errorclass="is-invalid" autocomplete="name" required maxlength="120">
+                    <div class="invalid-feedback" data-error-for="customerName" th:errors="*{customerName}"></div>
+                </div>
+                <div class="mb-2">
+                    <span class="form-label d-block">Si t'ju kontaktojmë? *</span>
+                    <div class="d-flex gap-2">
+                        <label class="choice-card flex-fill py-2" th:each="m : ${contactMethods}">
+                            <input class="form-check-input" type="radio" th:field="*{contactMethod}" th:value="${m}" data-contact-choice>
+                            <i class="bi me-1" th:classappend="${m.name() == 'PHONE'} ? 'bi-telephone' : 'bi-envelope'"></i><span th:text="${m.label}"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3" data-contact-field="PHONE">
+                    <label class="form-label" for="customerPhone">Telefoni *</label>
+                    <input class="form-control" th:field="*{customerPhone}" th:errorclass="is-invalid" type="tel" inputmode="tel" autocomplete="tel" placeholder="06X XXX XXXX" maxlength="20">
+                    <div class="invalid-feedback" data-error-for="customerPhone" th:errors="*{customerPhone}"></div>
+                </div>
+                <div class="mb-3" data-contact-field="EMAIL">
+                    <label class="form-label" for="customerEmail">Email *</label>
+                    <input class="form-control" th:field="*{customerEmail}" th:errorclass="is-invalid" type="email" inputmode="email" autocomplete="email" maxlength="160">
+                    <div class="invalid-feedback" data-error-for="customerEmail" th:errors="*{customerEmail}"></div>
+                    <div class="form-text">Oferta do t'ju vijë me email.</div>
+                </div>
+
+                <h2 class="h6 fw-bold mb-3 mt-4">2. Çfarë jepni</h2>
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-4">
+                        <label class="form-label" for="itemType">Lloji *</label>
+                        <select class="form-select" th:field="*{itemType}" th:errorclass="is-invalid" required>
+                            <option value="">Zgjidhni…</option>
+                            <option th:each="t : ${itemTypes}" th:value="${t}" th:text="${t.label}"></option>
+                        </select>
+                        <div class="invalid-feedback" data-error-for="itemType" th:errors="*{itemType}"></div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label" for="manufacturer">Prodhuesi *</label>
+                        <input class="form-control" th:field="*{manufacturer}" th:errorclass="is-invalid" required maxlength="80" placeholder="p.sh. MSI, AMD, Corsair">
+                        <div class="invalid-feedback" data-error-for="manufacturer" th:errors="*{manufacturer}"></div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label" for="model">Modeli *</label>
+                        <input class="form-control" th:field="*{model}" th:errorclass="is-invalid" required maxlength="120" placeholder="p.sh. RTX 3060 12GB">
+                        <div class="invalid-feedback" data-error-for="model" th:errors="*{model}"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="extraNotes">Shënime <span class="text-body-secondary small">(opsionale)</span></label>
+                    <textarea class="form-control" th:field="*{extraNotes}" rows="2" maxlength="1000" placeholder="p.sh. sa vjeç është, a ka kutinë, a është riparuar ndonjëherë"></textarea>
+                </div>
+
+                <h2 class="h6 fw-bold mb-2 mt-4">3. Prova e testit</h2>
+                <div class="mb-2" id="mediaGroup">
+                    <label class="form-label" for="media">Video (MP4/MOV, deri në <span th:text="${maxVideoMb}"></span> MB) ose foto (JPG/PNG, deri në <span th:text="${maxImageMb}"></span> MB)</label>
+                    <input class="form-control" type="file" id="media" name="media" accept="video/mp4,video/quicktime,.mp4,.mov,image/jpeg,image/png,image/webp">
+                    <div class="form-text" id="mediaInfo"></div>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" th:field="*{whatsappInstead}" th:errorclass="is-invalid">
+                    <label class="form-check-label" th:for="${#ids.prev('whatsappInstead')}">Do ta dërgoj videon në WhatsApp</label>
+                    <div class="invalid-feedback" data-error-for="whatsappInstead" th:errors="*{whatsappInstead}"></div>
+                </div>
+                <div class="form-text mb-3">Nëse videoja është e gjatë, dërgojeni në WhatsApp te <a th:href="${whatsappGeneral}" target="_blank" rel="noopener" th:text="${site.phoneDisplay}"></a> me numrin e kërkesës që do të merrni.</div>
+
+                <div class="hp-field" aria-hidden="true">
+                    <label for="website">Website</label>
+                    <input th:field="*{website}" tabindex="-1" autocomplete="off">
+                </div>
+
+                <div class="progress mb-2 d-none" id="uploadProgress" role="progressbar" aria-label="Ngarkimi" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning text-dark fw-semibold" style="width: 0%">0%</div>
+                </div>
+
+                <button class="btn btn-accent btn-lg w-100" type="submit" id="tradeSubmit"><i class="bi bi-send me-2"></i>Dërgo për vlerësim</button>
+                <p class="small text-body-secondary text-center mt-2 mb-0">Kjo nuk është porosi: produkti nuk rezervohet dhe nuk paguani asgjë. Pasi të merrni ofertën, vendosni ju.</p>
+            </form>
+        </div>
+
+        <div class="col-lg-5 order-1 order-lg-2">
+            <div class="form-card mb-3 order-summary">
+                <div class="small text-body-secondary mb-2">Doni ta ndërroni me:</div>
+                <div class="d-flex gap-3 align-items-center">
+                    <img th:src="${@img.thumb(p.primaryImage)}" th:alt="${p.title}">
+                    <div class="flex-grow-1">
+                        <a class="fw-semibold lh-sm text-decoration-none" th:href="@{/produkt/{s}(s=${p.slug})}" th:text="${p.title}"></a>
+                        <div class="small text-body-secondary" th:text="${p.condition.label}"></div>
+                    </div>
+                    <div class="fw-bold text-nowrap" th:text="${@fmt.price(p.priceLek)}"></div>
+                </div>
+            </div>
+            <div class="form-card">
+                <div th:replace="~{site/fragments :: tradeProofRules}"></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<th:block th:fragment="scripts">
+    <script>
+        (() => {
+            const form = document.getElementById('tradeForm');
+            const MB = 1024 * 1024;
+            const maxVideo = +form.dataset.maxVideo * MB, maxImage = +form.dataset.maxImage * MB;
+            const media = document.getElementById('media');
+            const mediaInfo = document.getElementById('mediaInfo');
+            const whatsapp = form.querySelector('[name=whatsappInstead]');
+            const errorBox = document.getElementById('formError');
+            const button = document.getElementById('tradeSubmit');
+            const progress = document.getElementById('uploadProgress');
+            const bar = progress.querySelector('.progress-bar');
+
+            // Contact: show only the field for the chosen method.
+            const showContact = () => {
+                const chosen = form.querySelector('[data-contact-choice]:checked')?.value || 'PHONE';
+                form.querySelectorAll('[data-contact-field]').forEach(g => {
+                    const on = g.dataset.contactField === chosen;
+                    g.hidden = !on;
+                    g.querySelector('input').required = on;
+                });
+            };
+            form.querySelectorAll('[data-contact-choice]').forEach(r => r.addEventListener('change', showContact));
+            showContact();
+
+            const isVideo = f => f.type.startsWith('video/') || /\.(mp4|mov)$/i.test(f.name);
+            const fmtMb = b => (b / MB).toFixed(1).replace('.', ',') + ' MB';
+
+            // Size check before anything is sent: a 300 MB video should be refused now, not after uploading.
+            const checkMedia = () => {
+                const f = media.files[0];
+                media.classList.remove('is-invalid');
+                if (!f) { mediaInfo.textContent = ''; return true; }
+                const limit = isVideo(f) ? maxVideo : maxImage;
+                if (f.size > limit) {
+                    media.classList.add('is-invalid');
+                    mediaInfo.innerHTML = '';
+                    const msg = document.createElement('span');
+                    msg.className = 'text-danger fw-semibold';
+                    msg.textContent = (isVideo(f) ? 'Videoja' : 'Fotoja') + ' është ' + fmtMb(f.size) + ', më shumë se ' + fmtMb(limit) +
+                        '. ' + (isVideo(f) ? 'Shkurtojeni ose ulni cilësinë, ose zgjidhni ta dërgoni në WhatsApp.' : 'Zgjidhni një foto më të vogël.');
+                    mediaInfo.appendChild(msg);
+                    return false;
+                }
+                mediaInfo.textContent = f.name + ' · ' + fmtMb(f.size);
+                return true;
+            };
+            media.addEventListener('change', checkMedia);
+
+            const clearErrors = () => {
+                errorBox.classList.add('d-none');
+                form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                form.querySelectorAll('[data-error-for]').forEach(el => { el.textContent = ''; });
+            };
+            const showErrors = errors => {
+                Object.entries(errors || {}).forEach(([field, message]) => {
+                    if (field === 'form') { errorBox.textContent = message; errorBox.classList.remove('d-none'); return; }
+                    const input = form.querySelector('[name="' + field + '"]');
+                    input?.classList.add('is-invalid');
+                    const slot = form.querySelector('[data-error-for="' + field + '"]');
+                    if (slot) slot.textContent = message;
+                });
+                form.querySelector('.is-invalid, #formError:not(.d-none)')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+            const busy = on => {
+                button.disabled = on;
+                button.classList.toggle('is-loading', on);
+            };
+
+            form.addEventListener('submit', e => {
+                e.preventDefault();
+                clearErrors();
+                if (!checkMedia()) { media.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+                if (!media.files.length && !whatsapp.checked) {
+                    showErrors({ whatsappInstead: 'Ngarkoni videon ose foton e testit, ose zgjidhni ta dërgoni në WhatsApp.' });
+                    return;
+                }
+                if (!form.checkValidity()) { form.reportValidity(); return; }
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', form.action);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.responseType = 'json';
+                if (media.files.length) {
+                    progress.classList.remove('d-none');
+                    xhr.upload.addEventListener('progress', ev => {
+                        if (!ev.lengthComputable) return;
+                        const pct = Math.round(ev.loaded / ev.total * 100);
+                        bar.style.width = pct + '%';
+                        bar.textContent = pct < 100 ? pct + '%' : 'Po ruhet…';
+                    });
+                }
+                xhr.addEventListener('load', () => {
+                    const body = xhr.response || {};
+                    if (xhr.status >= 200 && xhr.status < 300 && body.redirect) { window.location.href = body.redirect; return; }
+                    busy(false);
+                    progress.classList.add('d-none');
+                    showErrors(body.errors || { form: 'Diçka shkoi keq. Provoni përsëri ose na shkruani në WhatsApp.' });
+                });
+                xhr.addEventListener('error', () => {
+                    busy(false);
+                    progress.classList.add('d-none');
+                    showErrors({ form: 'Lidhja u ndërpre gjatë ngarkimit. Kontrolloni internetin dhe provoni përsëri.' });
+                });
+                busy(true);
+                xhr.send(new FormData(form));
+            });
+        })();
+    </script>
+</th:block>
+</body>
+</html>

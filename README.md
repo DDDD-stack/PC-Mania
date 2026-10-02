@@ -241,6 +241,21 @@ no cable. One slot: uploading replaces the previous build. The file is stored in
 like the photos, the download sits behind `/admin/**` so only a signed-in operator can fetch
 it, and it is sent with `Cache-Control: no-store` so the phone never gets a stale build.
 
+**Nderro (trade-ins).** Customers part-exchange an old GPU, CPU or RAM against a product marked
+"Pranon këmbim" (admin product form, which also holds an internal maximum trade value that never
+reaches a public page). `/nderro/{slug}` collects the item, one contact (phone *or* email) and proof:
+a video (MP4/MOV, up to 40 MB) or a GPU-Z/HWiNFO photo (up to 10 MB), or "I'll send it on WhatsApp".
+Submitting creates a `TradeRequest` (TR-2026-0001) and nothing else - no order, no reservation.
+In Admin › Këmbimet the operator watches the proof, quotes a value (valid 7 days by default), and once the
+customer accepts, "Krijo porosinë" makes the order with `tradeCreditLek` taken off the total
+(total = subtotal + shipping − trade credit). The traded-in item then appears on the dashboard as
+incoming stock until "Merr pajisjen në stok" turns it into a Draft product whose cost is the credit.
+Quotes are emailed to email customers once `MAIL_*` is configured; until then, and always for phone
+customers, the request is flagged "Telefono"/"Kontaktoje". Proof media is checked by its bytes, streamed
+into `stored_file` without being held in memory, capped at 150 MB in total (beyond that the form asks for
+WhatsApp - the Supabase free database is 500 MB), and deleted 30 days after the request closes; quotes
+past their expiry close as EXPIRED. Both run hourly in `TradeService.housekeeping`.
+
 **Logo and icons.** The chip mark is drawn by `tools/logo.py`, which writes the favicons, the Apple
 touch icon, the manifest icons and `images/logo-mark.svg` from one set of coordinates. Edit it and run
 `python tools/logo.py src/main/resources/static` (needs Pillow) rather than editing the files one by one.

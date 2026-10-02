@@ -55,6 +55,7 @@
             <nav class="d-none d-lg-flex gap-3 me-3 header-links">
                 <a th:each="c, st : ${navCategories}" th:if="${st.index < 5}" th:href="@{/kategori/{s}(s=${c.slug})}" th:text="${c.nameSq}"></a>
                 <a th:if="${hasUpcoming}" href="/se-shpejti">Së shpejti</a>
+                <a href="/nderro">Nderro</a>
                 <a href="/pc-me-porosi">PC me porosi</a>
                 <a href="/kerko-produkt">Kërko një produkt</a>
             </nav>
@@ -80,6 +81,7 @@
                 <i class="bi me-2" th:classappend="${c.iconClass}"></i><span th:text="${c.nameSq}"></span>
             </a>
             <a th:if="${hasUpcoming}" class="list-group-item list-group-item-action fw-semibold" href="/se-shpejti"><i class="bi bi-bell me-2"></i>Së shpejti</a>
+            <a class="list-group-item list-group-item-action fw-semibold" href="/nderro"><i class="bi bi-arrow-left-right me-2"></i>Nderro</a>
             <a class="list-group-item list-group-item-action fw-semibold" href="/pc-me-porosi"><i class="bi bi-tools me-2"></i>PC me porosi</a>
             <a class="list-group-item list-group-item-action fw-semibold" href="/kerko-produkt"><i class="bi bi-search-heart me-2"></i>Kërko një produkt</a>
         </div>
@@ -115,6 +117,7 @@
                 <div class="fw-semibold mb-2">Informacion</div>
                 <ul class="list-unstyled small mb-0">
                     <li th:if="${hasUpcoming}"><a href="/se-shpejti">Së shpejti</a></li>
+                    <li><a href="/nderro">Nderro – sill të vjetrën</a></li>
                     <li><a href="/pc-me-porosi">PC me porosi</a></li>
                     <li><a href="/kerko-produkt">Kërko një produkt</a></li>
                     <li><a href="/transporti-dhe-pagesa">Transporti dhe pagesa</a></li>

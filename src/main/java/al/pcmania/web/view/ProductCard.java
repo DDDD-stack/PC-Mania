@@ -15,11 +15,13 @@ public record ProductCard(
         String imageFilename,
         boolean miningFree,
         boolean transportIncluded,
-        Integer warrantyDays) {
+        Integer warrantyDays,
+        /** Offered for "Nderro". The internal trade-value cap never comes here. */
+        boolean tradeEligible) {
 
     public static ProductCard of(Product p, String imageFilename) {
         return new ProductCard(p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
                 p.getCondition(), p.getPriceLek(), p.getStatus(), imageFilename, p.isMiningFree(),
-                p.isTransportIncluded(), p.getWarrantyDays());
+                p.isTransportIncluded(), p.getWarrantyDays(), p.isTradeEligible());
     }
 }

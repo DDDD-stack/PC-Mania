@@ -55,6 +55,7 @@
                 <span class="badge text-bg-light border" th:if="${@fmt.warranty(p.warrantyDays)}"><i class="bi bi-shield-check me-1"></i><span th:text="${@fmt.warranty(p.warrantyDays)}"></span></span>
                 <span class="badge text-bg-success" th:if="${p.miningFree}"><i class="bi bi-check2-circle me-1"></i>Pa minim</span>
                 <span class="badge text-bg-info" th:if="${p.transportIncluded}"><i class="bi bi-truck me-1"></i>Transport falas</span>
+                <a class="badge trade-badge static text-decoration-none" th:if="${p.tradeable}" href="/nderro"><i class="bi bi-arrow-left-right me-1"></i>Pranon këmbim</a>
             </div>
 
             <div class="price-box">
@@ -72,6 +73,7 @@
 
             <div class="d-grid gap-2 my-3">
                 <a th:if="${p.available}" class="btn btn-accent btn-lg" th:href="@{/porosit/{s}(s=${p.slug})}"><i class="bi bi-bag-check me-2"></i>Porosit</a>
+                <a th:if="${p.tradeable}" class="btn btn-dark btn-lg" th:href="@{/nderro/{s}(s=${p.slug})}"><i class="bi bi-arrow-left-right me-2"></i>Nderro</a>
                 <a class="btn btn-whatsapp btn-lg" th:href="${whatsappLink}" target="_blank" rel="noopener">
                     <i class="bi bi-whatsapp me-2"></i><span th:text="${p.available} ? 'Pyet në WhatsApp' : 'Pyet për një të ngjashme'"></span>
                 </a>

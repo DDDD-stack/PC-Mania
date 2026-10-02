@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Këmbimet')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('trades')}"></nav>
+<main class="container-fluid py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+    <h1 class="h4 mb-1">Këmbimet (Nderro)</h1>
+    <p class="text-body-secondary small mb-3">Kërkesa për ofertë: asnjëra nuk rezervon produktin derisa të pranohet oferta dhe të bëhet porosia.</p>
+
+    <ul class="nav nav-pills flex-nowrap overflow-auto mb-3 small">
+        <li class="nav-item"><a class="nav-link text-nowrap" th:classappend="${status == null} ? active" href="/admin/trades">Të gjitha</a></li>
+        <li class="nav-item" th:each="s : ${statuses}">
+            <a class="nav-link text-nowrap" th:classappend="${s == status} ? active" th:href="@{/admin/trades(status=${s})}">
+                <span th:text="${s.label}"></span> <span class="badge text-bg-secondary" th:text="${counts.get(s)}"></span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white">
+            <thead class="table-light">
+            <tr><th>Nr.</th><th>Klienti</th><th>Jep</th><th>Për</th><th class="text-end">Oferta</th><th>Prova</th><th>Statusi</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${page.content}">
+                <td class="text-nowrap">
+                    <a class="fw-semibold" th:href="@{/admin/trades/{id}(id=${t.id})}" th:text="${t.requestNumber}"></a>
+                    <div class="small text-body-secondary" th:text="${@fmt.dateTime(t.createdAt)}"></div>
+                </td>
+                <td>
+                    <span th:text="${t.customerName}"></span>
+                    <div class="small text-body-secondary">
+                        <i class="bi" th:classappend="${t.contactMethod.name() == 'EMAIL'} ? 'bi-envelope' : 'bi-telephone'"></i>
+                        <span th:text="${t.contact}"></span>
+                    </div>
+                    <span th:if="${t.needsCall && t.contactMethod.name() == 'PHONE'}" class="badge text-bg-danger"><i class="bi bi-telephone-outbound me-1"></i>Telefono</span>
+                    <span th:if="${t.needsCall && t.contactMethod.name() == 'EMAIL'}" class="badge text-bg-warning" title="Emaili me ofertën nuk u dërgua">Kontaktoje</span>
+                </td>
+                <td><span class="small text-body-secondary" th:text="${t.itemType.label}"></span><div th:text="${t.manufacturer + ' ' + t.model}"></div></td>
+                <td class="small" th:text="${t.productTitleSnapshot}"></td>
+                <td class="text-end text-nowrap" th:text="${t.quotedValueLek != null} ? ${@fmt.price(t.quotedValueLek)} : '—'"></td>
+                <td>
+                    <i th:if="${t.mediaFilename != null && t.mediaType.name() == 'VIDEO'}" class="bi bi-camera-video" title="Video"></i>
+                    <i th:if="${t.mediaFilename != null && t.mediaType.name() == 'IMAGE'}" class="bi bi-image" title="Foto"></i>
+                    <i th:if="${t.mediaFilename == null && t.whatsappInstead}" class="bi bi-whatsapp text-success" title="Në WhatsApp"></i>
+                </td>
+                <td><span class="badge" th:classappend="'status-' + ${t.status}" th:text="${t.status.label}"></span></td>
+            </tr>
+            <tr th:if="${page.empty}"><td colspan="7" class="text-center text-body-secondary py-4">Ende asnjë kërkesë për këmbim.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:if="${page.totalPages > 1}">
+        <ul class="pagination pagination-sm">
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? active">
+                <a class="page-link" th:href="@{/admin/trades(status=${status}, page=${i})}" th:text="${i + 1}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

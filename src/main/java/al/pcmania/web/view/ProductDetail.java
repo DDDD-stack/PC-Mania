@@ -25,6 +25,8 @@ public record ProductDetail(
         String testNotes,
         boolean miningFree,
         boolean transportIncluded,
+        /** Offered for "Nderro". The internal trade-value cap never comes here. */
+        boolean tradeEligible,
         List<Spec> specs,
         List<String> images) {
 
@@ -34,9 +36,14 @@ public record ProductDetail(
         return new ProductDetail(p.getId(), p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
                 p.getModel(), p.getCategorySlug(), p.getCondition(), p.getPriceLek(), p.getQuantity(), p.getStatus(),
                 p.getShortDescription(), p.getFullDescription(), p.getWarrantyDays(), p.getTestNotes(),
-                p.isMiningFree(), p.isTransportIncluded(),
+                p.isMiningFree(), p.isTransportIncluded(), p.isTradeEligible(),
                 p.getSpecs().stream().map(s -> new Spec(s.getSpecKey(), s.getSpecValue())).toList(),
                 p.getImages().stream().map(ProductImage::getFilename).toList());
+    }
+
+    /** Can be asked about for a trade-in right now. */
+    public boolean isTradeable() {
+        return tradeEligible && isAvailable();
     }
 
     public boolean isAvailable() {

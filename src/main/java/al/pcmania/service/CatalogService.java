@@ -97,6 +97,11 @@ public class CatalogService {
                 p.categorySlug(), ProductStatus.ACTIVE, p.id(), PageRequest.of(0, limit)));
     }
 
+    /** What can be asked about on the "Nderro" page: offered for trade and in stock. */
+    public List<ProductCard> tradeable() {
+        return cards(products.findByTradeEligibleTrueAndStatusAndQuantityGreaterThanOrderByListedAtDesc(ProductStatus.ACTIVE, 0));
+    }
+
     public List<Product> sitemapProducts() {
         return products.findByStatusIn(List.of(ProductStatus.ACTIVE, ProductStatus.RESERVED));
     }
@@ -114,6 +119,7 @@ public class CatalogService {
             if (f.min() != null) p.add(cb.ge(root.get("priceLek"), f.min()));
             if (f.max() != null) p.add(cb.le(root.get("priceLek"), f.max()));
             if (!f.conditions().isEmpty()) p.add(root.get("condition").in(f.conditions()));
+            if (f.trade()) p.add(cb.isTrue(root.get("tradeEligible")));
             if (!f.brands().isEmpty()) p.add(root.join("brand").get("slug").in(f.brands()));
             // One EXISTS per spec key: values within a key are OR-ed, different keys are AND-ed.
             f.specs().forEach((key, vals) -> {

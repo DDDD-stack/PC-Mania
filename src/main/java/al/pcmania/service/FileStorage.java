@@ -3,6 +3,7 @@ package al.pcmania.service;
 import al.pcmania.domain.StoredFile;
 import al.pcmania.repo.StoredFileRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,9 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.sql.PreparedStatement;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
@@ -28,6 +32,7 @@ import java.util.Optional;
 public class FileStorage {
 
     private final StoredFileRepository files;
+    private final JdbcTemplate jdbc;
 
     /** Writes a file, replacing whatever was under that key. Image dimensions are recorded here. */
     @Transactional
@@ -43,6 +48,30 @@ public class FileStorage {
         f.setWidthPx(pixels == null ? null : pixels[0]);
         f.setHeightPx(pixels == null ? null : pixels[1]);
         files.save(f);
+    }
+
+    /**
+     * Writes a new file from a stream without holding it in memory: a trade-in proof video is tens of
+     * megabytes, and the hosted instance has 512 MB in all. The key must not exist yet.
+     */
+    @Transactional
+    public void putStream(String key, String contentType, InputStream data, long size, String label) {
+        if (size > Integer.MAX_VALUE) throw new IllegalArgumentException("File too large");
+        jdbc.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                    "insert into stored_file (file_key, content_type, size_bytes, label, data, created_at) values (?, ?, ?, ?, ?, ?)");
+            ps.setString(1, key);
+            ps.setString(2, contentType);
+            ps.setInt(3, (int) size);
+            ps.setString(4, label);
+            ps.setBinaryStream(5, data, size);
+            ps.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
+            return ps;
+        });
+    }
+
+    public long totalSizeUnder(String prefix) {
+        return files.totalSizeUnder(prefix);
     }
 
     public Optional<StoredFileRepository.Content> content(String key) {

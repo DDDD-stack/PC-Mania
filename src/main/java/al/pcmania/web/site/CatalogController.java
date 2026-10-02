@@ -46,11 +46,12 @@ public class CatalogController {
                     @RequestParam(name = "gjendja", required = false) List<String> conditions,
                     @RequestParam(name = "marka", required = false) List<String> brands,
                     @RequestParam(name = "spec", required = false) List<String> specs,
+                    @RequestParam(name = "nderrim", required = false) Boolean trade,
                     @RequestParam(name = "rendit", required = false) String sort,
                     @RequestParam(name = "faqe", required = false) Integer page,
                     Model model) {
         Category category = catalog.category(slug).orElseThrow(NotFoundException::new);
-        CatalogFilter filter = CatalogFilter.of(min, max, conditions, brands, specs, sort, page);
+        CatalogFilter filter = CatalogFilter.of(min, max, conditions, brands, specs, trade, sort, page);
         String path = "/kategori/" + slug;
 
         Seo pageSeo = seo.category(category, filter.page());

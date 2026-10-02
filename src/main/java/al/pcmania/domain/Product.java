@@ -42,6 +42,10 @@ public class Product {
     @Column(name = "is_mining_free")
     private boolean miningFree;
     private boolean transportIncluded;
+    /** Offered for "Nderro": customers can trade in an old part against it. */
+    private boolean tradeEligible;
+    /** The most the operator would give in trade against this product. Internal, like costLek. */
+    private Integer maxTradeValueLek;
     private LocalDateTime createdAt;
     private LocalDateTime listedAt;
     private LocalDateTime soldAt;
