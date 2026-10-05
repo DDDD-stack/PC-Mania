@@ -111,4 +111,48 @@ public final class Enums {
         BuildStatus(String label) { this.label = label; }
         public String getLabel() { return label; }
     }
+
+    // ---- GPU catalogue ----
+
+    public enum GpuVendor {
+        NVIDIA("NVIDIA"), AMD("AMD"), INTEL("Intel");
+        public final String label;
+        GpuVendor(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
+    /** Which generation of an upscaler (DLSS or FSR) a card supports; NONE when it has no support at all. */
+    public enum UpscalerVersion {
+        NONE("Jo"), V1("1"), V2("2"), V3("3"), V4("4");
+        public final String label;
+        UpscalerVersion(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
+    public enum DriverStatus {
+        ACTIVE("Merr drajverë"), LEGACY("Legacy"), EOL("Pa drajverë të rinj");
+        public final String label;
+        DriverStatus(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
+    /** How likely a used card of this model is to have been mined on. */
+    public enum MiningRisk {
+        LOW("I ulët"), MEDIUM("Mesatar"), HIGH("I lartë");
+        public final String label;
+        MiningRisk(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
+    // ---- Customer assistant ----
+
+    public enum ChatRole { USER, ASSISTANT }
+
+    /** Lifecycle of a lead the assistant captured: the operator calls the customer back. */
+    public enum LeadStatus {
+        NEW("E re"), CONTACTED("Kontaktuar"), CLOSED("E mbyllur");
+        public final String label;
+        LeadStatus(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
 }

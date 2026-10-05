@@ -29,6 +29,19 @@ body { background: #f4f5f7; }
 
 .drag-handle { cursor: grab; }
 
+/* Product title combobox: suggestions from the GPU catalogue drop under the field. */
+.gpu-combobox { position: relative; }
+.gpu-suggestions { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; max-height: 320px; overflow-y: auto; margin-top: 2px; }
+.gpu-suggestions[hidden] { display: none; }
+.gpu-suggestions .list-group-item { cursor: pointer; display: flex; align-items: center; gap: .5rem; padding: .45rem .75rem; }
+.gpu-suggestions .list-group-item.active { background: #fff8e1; color: inherit; border-color: #dee2e6; }
+.gpu-suggestions .list-group-item .meta { margin-left: auto; font-size: .78rem; color: #6c757d; white-space: nowrap; }
+/* A value the catalogue filled in; the marker goes once the operator edits it. */
+.from-catalog-wrap { position: relative; }
+.from-catalog { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); font-size: .68rem; pointer-events: none; }
+textarea ~ .from-catalog { top: .55rem; transform: none; }
+.spec-row .from-catalog { right: 3rem; }
+
 .dropzone {
     display: block; width: 100%; cursor: pointer; text-align: center;
     border: 2px dashed #adb5bd; border-radius: .5rem; padding: 1.5rem; background: #fff;
@@ -69,6 +82,8 @@ body { background: #f4f5f7; }
 .pm-toast-error { background: #7f1d1d; }
 .pm-toast-error > i { color: #fecaca; }
 .pm-toast-info > i { color: #fbbf24; }
+.pm-toast-warning { background: #78350f; }
+.pm-toast-warning > i { color: #fde68a; }
 .pm-toast .btn-close { flex-shrink: 0; }
 .pm-toast.is-leaving { animation: pm-toast-out .22s ease-in both; }
 @keyframes pm-toast-in { from { opacity: 0; transform: translateY(12px) scale(.98); } }

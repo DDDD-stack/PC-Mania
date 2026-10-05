@@ -55,6 +55,8 @@ public class ProductForm {
     private Integer maxTradeValueLek;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate listedAt;
+    /** Catalogue row picked in the title combobox; null when the operator did not pick one. */
+    private Long gpuModelId;
     private List<String> specKeys = new ArrayList<>();
     private List<String> specValues = new ArrayList<>();
 
@@ -79,6 +81,7 @@ public class ProductForm {
         f.tradeEligible = p.isTradeEligible();
         f.maxTradeValueLek = p.getMaxTradeValueLek();
         f.listedAt = p.getListedAt() == null ? null : p.getListedAt().toLocalDate();
+        f.gpuModelId = p.getGpuModel() == null ? null : p.getGpuModel().getId();
         for (ProductSpec s : p.getSpecs()) {
             f.specKeys.add(s.getSpecKey());
             f.specValues.add(s.getSpecValue());

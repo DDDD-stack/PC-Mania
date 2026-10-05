@@ -55,4 +55,17 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     List<Object[]> countByCategoryAllStatuses();
 
     long countByCategorySlug(String categorySlug);
+
+    /** How many products point at each catalogue row: (gpu_model_id, count). */
+    @Query("select p.gpuModel.id, count(p) from Product p where p.gpuModel is not null group by p.gpuModel.id")
+    List<Object[]> countByGpuModel();
+
+    /** Sellable products with a catalogue row behind them: what the assistant may recommend. Fastest first. */
+    @Query("select p from Product p join fetch p.gpuModel g left join fetch p.brand where p.status = :status and p.quantity > 0 order by g.tier desc, p.priceLek asc")
+    List<Product> findInStockWithGpuModel(@Param("status") ProductStatus status);
+
+    @EntityGraph(attributePaths = {"brand", "gpuModel"})
+    Optional<Product> findWithGpuModelBySlug(String slug);
+
+    boolean existsByGpuModelIdAndStatusAndQuantityGreaterThan(Long gpuModelId, ProductStatus status, int quantity);
 }

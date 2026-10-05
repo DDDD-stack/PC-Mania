@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Katalogu GPU')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('gpu-catalog')}"></nav>
+<main class="container-fluid py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+        <h1 class="h4 mb-0 me-auto">Katalogu GPU</h1>
+        <a class="btn btn-sm btn-primary" href="/admin/gpu-catalog/new"><i class="bi bi-plus-lg"></i> Rresht i ri</a>
+    </div>
+    <p class="text-body-secondary small mb-3">
+        Të dhënat referuese për çdo model karte: nga këtu plotësohet formulari i produktit (shkruani modelin te Titulli) dhe
+        nga këtu arsyeton asistenti. Rreshtat me fusha bosh shënohen: asistenti nuk mund t'i krahasojë si duhet.
+        Çdo deploy rifreskon rreshtat nga <code>data/gpu-catalog.json</code>; ndryshimet që bëni këtu mbahen deri atëherë.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle bg-white">
+            <thead class="table-light">
+            <tr>
+                <th>Modeli</th><th>Prodhuesi</th><th class="text-center">Tier</th><th class="text-end">VRAM</th>
+                <th class="text-end">TDP</th><th class="text-end">PSU min.</th><th>Konektorët</th><th class="text-end">Gjatësia</th>
+                <th>DLSS / FSR</th><th>Drajverët</th><th>Minim</th><th class="text-end">FPS 1080p AAA</th><th class="text-center">Produkte</th><th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="g : ${rows}" th:with="missing=${g.missingFields()}">
+                <td>
+                    <a class="fw-semibold text-decoration-none" th:href="@{/admin/gpu-catalog/{id}(id=${g.id})}" th:text="${g.name}"></a>
+                    <div class="small text-body-secondary" th:text="${g.architecture} + (${g.releaseYear != null} ? ' · ' + ${g.releaseYear} : '')"></div>
+                    <div th:unless="${missing.empty}" class="small text-warning-emphasis">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Mungon: <span th:text="${#strings.listJoin(missing, ', ')}"></span>
+                    </div>
+                </td>
+                <td th:text="${g.vendor != null} ? ${g.vendor.label} : '—'"></td>
+                <td class="text-center"><span class="badge text-bg-dark" th:text="${g.tier != null} ? ${g.tier} : '?'"></span></td>
+                <td class="text-end text-nowrap" th:text="${g.vramGb != null} ? ${g.vramGb} + ' GB ' + ${g.memoryType ?: ''} : '—'"></td>
+                <td class="text-end text-nowrap" th:text="${g.tdpWatts != null} ? ${g.tdpWatts} + ' W' : '—'"></td>
+                <td class="text-end text-nowrap" th:text="${g.psuMinWatts != null} ? ${g.psuMinWatts} + ' W' : '—'"></td>
+                <td th:text="${g.pcieConnectors ?: '—'}"></td>
+                <td class="text-end text-nowrap" th:text="${g.lengthMm != null} ? ${g.lengthMm} + ' mm' : '—'"></td>
+                <td class="text-nowrap">
+                    <span th:text="${g.supportsDlss != null} ? 'DLSS ' + ${g.supportsDlss.label} : 'DLSS ?'"></span> /
+                    <span th:text="${g.supportsFsr != null} ? 'FSR ' + ${g.supportsFsr.label} : 'FSR ?'"></span>
+                    <i th:if="${g.rayTracing}" class="bi bi-lightning-charge-fill text-warning" title="Ray tracing"></i>
+                </td>
+                <td th:text="${g.driverStatus != null} ? ${g.driverStatus.label} : '—'"></td>
+                <td th:text="${g.miningRisk != null} ? ${g.miningRisk.label} : '—'"></td>
+                <td class="text-end" th:text="${g.fpsAaa1080p != null} ? ${g.fpsAaa1080p} : '—'"></td>
+                <td class="text-center">
+                    <span class="badge" th:with="n=${productCounts.getOrDefault(g.id, 0L)}" th:classappend="${n > 0} ? 'text-bg-success' : 'text-bg-secondary'" th:text="${n}"></span>
+                </td>
+                <td class="text-end text-nowrap">
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/gpu-catalog/{id}(id=${g.id})}"><i class="bi bi-pencil"></i></a>
+                </td>
+            </tr>
+            <tr th:if="${rows.empty}"><td colspan="14" class="text-center text-body-secondary py-4">Katalogu është bosh.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

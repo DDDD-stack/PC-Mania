@@ -26,6 +26,134 @@
     });
     if (window.Sortable) Sortable.create(specRows, {handle: '.drag-handle', animation: 150});
 
+    // ---- Title combobox: pick the card's model from the GPU catalogue and prefill from it ----
+    // Typing in the title queries the catalogue (debounced); choosing a row stamps gpuModelId and fills the
+    // specs and the short description, but never a field the operator has already filled in. Everything
+    // prefilled stays editable and carries a "nga katalogu" marker until it is edited by hand.
+    const combobox = document.getElementById('gpuCombobox');
+    if (combobox) {
+        const title = document.getElementById('title');
+        const list = document.getElementById('gpuSuggestions');
+        const modelId = document.getElementById('gpuModelId');
+        const info = document.getElementById('gpuModelInfo');
+        const modelName = document.getElementById('gpuModelName');
+        let hits = [], active = -1, timer = null, lastQuery = '';
+
+        const close = () => { list.hidden = true; list.innerHTML = ''; hits = []; active = -1; title.setAttribute('aria-expanded', 'false'); };
+        const highlight = (i) => {
+            active = i;
+            [...list.children].forEach((li, k) => li.classList.toggle('active', k === i));
+            list.children[i]?.scrollIntoView({ block: 'nearest' });
+        };
+        const render = () => {
+            list.innerHTML = '';
+            hits.forEach((h, i) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.setAttribute('role', 'option');
+                li.innerHTML = '<i class="bi bi-cpu text-body-secondary"></i><span></span><span class="meta"></span>';
+                li.children[1].textContent = h.name;
+                li.children[2].textContent = [h.vendor, h.vramGb ? h.vramGb + ' GB' : null, h.tier ? 'tier ' + h.tier : null].filter(Boolean).join(' · ');
+                li.addEventListener('mousedown', e => e.preventDefault()); // keep the focus in the field
+                li.addEventListener('click', () => choose(i));
+                list.appendChild(li);
+            });
+            list.hidden = hits.length === 0;
+            title.setAttribute('aria-expanded', String(hits.length > 0));
+            highlight(hits.length ? 0 : -1);
+        };
+        const search = async () => {
+            const q = title.value.trim();
+            if (q === lastQuery) return;
+            lastQuery = q;
+            if (q.length < 2) return close();
+            try {
+                const res = await fetch(combobox.dataset.searchUrl + '?q=' + encodeURIComponent(q), { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                if (!res.ok || q !== title.value.trim()) return;
+                hits = await res.json();
+                render();
+            } catch { close(); }
+        };
+
+        const mark = (el) => {
+            if (!el.value) return;
+            const wrap = el.closest('.spec-row') || el.parentElement;
+            if (!wrap.classList.contains('spec-row')) wrap.classList.add('from-catalog-wrap');
+            if (!wrap.querySelector('.from-catalog')) {
+                const badge = document.createElement('span');
+                badge.className = 'badge text-bg-warning from-catalog';
+                badge.textContent = 'nga katalogu';
+                wrap.appendChild(badge);
+            }
+            el.dataset.fromCatalog = '1';
+            el.addEventListener('input', () => {
+                delete el.dataset.fromCatalog;
+                wrap.querySelector('.from-catalog')?.remove();
+            }, { once: true });
+        };
+        const setSpec = (key, value) => {
+            if (value == null || value === '') return;
+            const rows = [...specRows.querySelectorAll('.spec-row')];
+            let row = rows.find(r => r.querySelector('[name=specKeys]').value.trim().toLowerCase() === key.toLowerCase());
+            if (row) {
+                const v = row.querySelector('[name=specValues]');
+                if (v.value.trim()) return; // the operator filled it in already
+                v.value = value;
+                mark(v);
+            } else {
+                row = addRow(key, value);
+                mark(row.querySelector('[name=specValues]'));
+            }
+        };
+        const prefill = (d) => {
+            modelId.value = d.id;
+            modelName.textContent = d.name;
+            info.hidden = false;
+            setSpec('VRAM', d.vramGb ? d.vramGb + ' GB' : null);
+            setSpec('Tipi i memories', d.memoryType);
+            setSpec('TDP', d.tdpWatts ? d.tdpWatts + ' W' : null);
+            setSpec('PSU minimale', d.psuMinWatts ? d.psuMinWatts + ' W' : null);
+            setSpec('Konektorët', d.pcieConnectors);
+            setSpec('Gjatësia', d.lengthMm ? d.lengthMm + ' mm' : null);
+            const short = document.getElementById('shortDescription');
+            if (short && !short.value.trim() && d.shortDescription) {
+                short.value = d.shortDescription;
+                mark(short);
+            }
+        };
+        const choose = async (i) => {
+            const hit = hits[i];
+            close();
+            if (!hit) return;
+            if (!title.value.trim()) title.value = hit.name;
+            lastQuery = title.value.trim();
+            try {
+                const res = await fetch(combobox.dataset.detailUrl + hit.id, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+                if (res.ok) prefill(await res.json());
+            } catch { /* the model is still stamped on the next successful fetch */ }
+        };
+
+        title.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(search, 250);
+        });
+        title.addEventListener('keydown', e => {
+            if (list.hidden) {
+                if (e.key === 'ArrowDown') { search(); }
+                return;
+            }
+            if (e.key === 'ArrowDown') { e.preventDefault(); highlight((active + 1) % hits.length); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); highlight((active - 1 + hits.length) % hits.length); }
+            else if (e.key === 'Enter') { e.preventDefault(); choose(active); }
+            else if (e.key === 'Escape') { close(); }
+        });
+        document.addEventListener('click', e => { if (!combobox.contains(e.target)) close(); });
+        document.getElementById('gpuModelClear').addEventListener('click', () => {
+            modelId.value = '';
+            info.hidden = true;
+        });
+    }
+
     // ---- Switches that reveal a related field (e.g. "Pranon këmbim" shows the internal trade cap) ----
     document.querySelectorAll('[data-toggles]').forEach(sw => {
         const target = document.querySelector(sw.dataset.toggles);

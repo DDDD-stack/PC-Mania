@@ -29,9 +29,19 @@
             <div class="col-lg-8">
                 <div class="card card-body mb-3">
                     <div class="mb-3">
-                        <label class="form-label">Titulli *</label>
-                        <input class="form-control" th:field="*{title}" th:errorclass="is-invalid" required maxlength="200">
-                        <div class="invalid-feedback" th:errors="*{title}"></div>
+                        <label class="form-label" for="title">Titulli *</label>
+                        <div class="gpu-combobox" id="gpuCombobox" data-search-url="/admin/api/gpu-catalog/search" data-detail-url="/admin/api/gpu-catalog/">
+                            <input class="form-control" th:field="*{title}" th:errorclass="is-invalid" required maxlength="200"
+                                   autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="gpuSuggestions"
+                                   placeholder="p.sh. MSI RTX 3060 Ti Ventus 8GB – shkruani modelin dhe zgjidhni nga katalogu">
+                            <ul class="gpu-suggestions list-group shadow" id="gpuSuggestions" role="listbox" hidden></ul>
+                        </div>
+                        <div class="invalid-feedback d-block" th:errors="*{title}"></div>
+                        <input type="hidden" th:field="*{gpuModelId}" id="gpuModelId">
+                        <div class="form-text d-flex flex-wrap align-items-center gap-2" id="gpuModelInfo" th:attr="hidden=${gpuModel == null}">
+                            <span><i class="bi bi-cpu me-1"></i>Modeli nga katalogu: <strong id="gpuModelName" th:text="${gpuModel?.name}"></strong></span>
+                            <button type="button" class="btn btn-link btn-sm p-0" id="gpuModelClear">hiq</button>
+                        </div>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-sm-6">
@@ -59,7 +69,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Përshkrim i shkurtër <small class="text-body-secondary">(shfaqet në karta dhe në Facebook)</small></label>
-                        <textarea class="form-control" th:field="*{shortDescription}" rows="2" maxlength="500"></textarea>
+                        <textarea class="form-control" th:field="*{shortDescription}" rows="2" maxlength="500" data-prefillable></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Përshkrimi i plotë <small class="text-body-secondary">(HTML bazë: &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;b&gt;, &lt;a&gt;)</small></label>

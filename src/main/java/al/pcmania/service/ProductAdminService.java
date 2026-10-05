@@ -5,6 +5,7 @@ import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.repo.BrandRepository;
 import al.pcmania.repo.CategoryRepository;
+import al.pcmania.repo.GpuCatalogRepository;
 import al.pcmania.repo.OrderItemRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.web.Fmt;
@@ -34,6 +35,7 @@ public class ProductAdminService {
     private final BrandRepository brands;
     private final CategoryRepository categories;
     private final OrderItemRepository orderItems;
+    private final GpuCatalogRepository gpuCatalog;
     private final ImageStorage images;
 
     public Product get(Long id) {
@@ -106,6 +108,7 @@ public class ProductAdminService {
         p.setTransportIncluded(form.isTransportIncluded());
         p.setTradeEligible(form.isTradeEligible());
         p.setMaxTradeValueLek(form.isTradeEligible() ? form.getMaxTradeValueLek() : null);
+        p.setGpuModel(form.getGpuModelId() == null ? null : gpuCatalog.findById(form.getGpuModelId()).orElse(null));
 
         // Slugs are only generated once: changing them later breaks links already shared on Facebook.
         String wanted = StringUtils.hasText(form.getSlug()) ? form.getSlug() : (p.getSlug() != null ? p.getSlug() : Slugs.of(p.getTitle()));
@@ -144,6 +147,7 @@ public class ProductAdminService {
         p.setTransportIncluded(src.isTransportIncluded());
         p.setTradeEligible(src.isTradeEligible());
         p.setMaxTradeValueLek(src.getMaxTradeValueLek());
+        p.setGpuModel(src.getGpuModel());
         p.setSlug(uniqueSlug(src.getSlug()));
         p.setStatus(ProductStatus.DRAFT);
         src.getSpecs().forEach(s -> p.getSpecs().add(new ProductSpec(p, s.getSpecKey(), s.getSpecValue(), s.getSortOrder())));

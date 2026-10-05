@@ -30,6 +30,11 @@
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'dashboard'} ? active" href="/admin"><i class="bi bi-graph-up"></i> Paneli</a></li>
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'products'} ? active" href="/admin/products"><i class="bi bi-gpu-card"></i> Produktet</a></li>
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'categories'} ? active" href="/admin/categories"><i class="bi bi-tags"></i> Kategoritë</a></li>
+                <li class="nav-item"><a class="nav-link" th:classappend="${active == 'gpu-catalog'} ? active" href="/admin/gpu-catalog"><i class="bi bi-cpu"></i> Katalogu GPU</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${active == 'chat'} ? active" href="/admin/chat"><i class="bi bi-chat-dots"></i> Asistenti
+                        <span class="badge rounded-pill text-bg-success nav-count" data-live-leads hidden><span data-live-lead-count></span></span></a>
+                </li>
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'upcoming'} ? active" href="/admin/upcoming"><i class="bi bi-bell"></i> Së shpejti</a></li>
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'app'} ? active" href="/admin/app"><i class="bi bi-android2"></i> Aplikacioni</a></li>
                 <li class="nav-item">
@@ -67,6 +72,11 @@
     <div th:if="${error}" class="pm-toast pm-toast-error" role="alert">
         <i class="bi bi-exclamation-triangle-fill"></i>
         <span th:text="${error}"></span>
+        <button type="button" class="btn-close btn-close-white" aria-label="Mbyll"></button>
+    </div>
+    <div th:if="${warning}" class="pm-toast pm-toast-warning" role="alert">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span th:text="${warning}"></span>
         <button type="button" class="btn-close btn-close-white" aria-label="Mbyll"></button>
     </div>
 </div>

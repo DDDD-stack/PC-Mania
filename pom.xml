@@ -20,6 +20,7 @@
         <maven.compiler.release>21</maven.compiler.release>
         <lombok.version>1.18.42</lombok.version>
         <embedded-postgres.version>2.1.0</embedded-postgres.version>
+        <anthropic.version>2.34.0</anthropic.version>
     </properties>
 
     <dependencies>
@@ -97,6 +98,12 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.21.2</version>
+        </dependency>
+        <!-- The shop assistant (ChatService) answers customers' questions through the Claude API. -->
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java</artifactId>
+            <version>${anthropic.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

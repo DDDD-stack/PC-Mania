@@ -6,6 +6,7 @@ import al.pcmania.domain.Product;
 import al.pcmania.repo.BrandRepository;
 import al.pcmania.repo.CategoryRepository;
 import al.pcmania.repo.ProductSpecRepository;
+import al.pcmania.service.GpuCatalogService;
 import al.pcmania.service.ProductAdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +28,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminProductController {
 
+    /** The category whose products the GPU catalogue describes. */
+    static final String GPU_CATEGORY = "karta-grafike";
+
     private final ProductAdminService service;
     private final CategoryRepository categories;
     private final BrandRepository brands;
     private final ProductSpecRepository specs;
+    private final GpuCatalogService gpuCatalog;
 
     @ModelAttribute
     void common(Model model) {
@@ -79,6 +84,10 @@ public class AdminProductController {
             }
         }
         flash.addFlashAttribute("success", (id == null ? "Produkti u krijua." : "Ndryshimet u ruajtën.") + imageNote);
+        // The assistant only recommends cards it can reason about, i.e. ones stamped with a catalogue row.
+        if (p.getGpuModel() == null && GPU_CATEGORY.equals(p.getCategorySlug())) {
+            flash.addFlashAttribute("warning", "Pa model nga katalogu, asistenti nuk do ta rekomandojë këtë produkt.");
+        }
         return "redirect:/admin/products/" + p.getId();
     }
 
@@ -150,8 +159,9 @@ public class AdminProductController {
         model.addAttribute("form", form);
         model.addAttribute("brands", brands.findAllByOrderByNameAsc());
         model.addAttribute("conditions", Condition.values());
-        String cat = form.getCategorySlug() != null ? form.getCategorySlug() : "karta-grafike";
+        String cat = form.getCategorySlug() != null ? form.getCategorySlug() : GPU_CATEGORY;
         model.addAttribute("specKeySuggestions", specs.keysInCategory(cat));
+        model.addAttribute("gpuModel", gpuCatalog.find(form.getGpuModelId()).orElse(null));
         return "admin/products/form";
     }
 }

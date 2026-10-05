@@ -28,9 +28,12 @@ public class CacheConfig {
     /** Teaser counts per status. Evicted by UpcomingService. */
     public static final String UPCOMING_COUNTS = "upcomingCounts";
 
+    /** The GPU catalogue, read per keystroke by the admin autofill. Evicted by GpuCatalogService. */
+    public static final String GPU_CATALOG = "gpuCatalog";
+
     @Bean
     CacheManager cacheManager() {
-        CaffeineCacheManager caffeine = new CaffeineCacheManager(CATEGORIES, UPCOMING_COUNTS);
+        CaffeineCacheManager caffeine = new CaffeineCacheManager(CATEGORIES, UPCOMING_COUNTS, GPU_CATALOG);
         caffeine.setCaffeine(Caffeine.newBuilder().expireAfterWrite(Duration.ofMinutes(10)).maximumSize(100));
         // Evictions wait for the commit, so a page rendered mid-transaction cannot put the old rows back.
         return new TransactionAwareCacheManagerProxy(caffeine);

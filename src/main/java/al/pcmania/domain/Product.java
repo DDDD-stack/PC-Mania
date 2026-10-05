@@ -46,6 +46,14 @@ public class Product {
     private boolean tradeEligible;
     /** The most the operator would give in trade against this product. Internal, like costLek. */
     private Integer maxTradeValueLek;
+    /**
+     * The catalogue row this card is a model of, stamped by the admin autofill. Null for products that
+     * are not graphics cards, or that were saved without picking one: the assistant then cannot
+     * recommend them.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "gpu_model_id")
+    private GpuCatalog gpuModel;
     private LocalDateTime createdAt;
     private LocalDateTime listedAt;
     private LocalDateTime soldAt;

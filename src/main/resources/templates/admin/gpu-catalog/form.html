@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${g.id == null} ? 'Model i ri GPU' : ${g.name})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('gpu-catalog')}"></nav>
+<main class="container py-3 pb-5" style="max-width: 1000px">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a href="/admin/gpu-catalog" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0 me-auto" th:text="${g.id == null} ? 'Model i ri GPU' : ${g.name}"></h1>
+        <form th:if="${g.id != null}" th:action="@{/admin/gpu-catalog/{id}/delete(id=${g.id})}" method="post" class="d-inline"
+              data-confirm="Të fshihet ky model? Produktet që tregojnë tek ai mbeten pa model.">
+            <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+        </form>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+    <div th:if="${g.id != null and !g.missingFields().empty}" class="alert alert-warning small">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> Fusha bosh: <span th:text="${#strings.listJoin(g.missingFields(), ', ')}"></span>.
+        Asistenti i lë jashtë krahasimeve vlerat që mungojnë.
+    </div>
+
+    <form th:action="${g.id == null} ? @{/admin/gpu-catalog} : @{/admin/gpu-catalog/{id}(id=${g.id})}" th:object="${g}" method="post">
+        <div class="card card-body mb-3">
+            <h2 class="h6 fw-bold">Identiteti</h2>
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <label class="form-label small mb-0">Emri *</label>
+                    <input class="form-control" th:field="*{name}" required maxlength="120" placeholder="p.sh. GeForce RTX 3060 12GB">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-0">Slug</label>
+                    <input class="form-control font-monospace" th:field="*{slug}" maxlength="80" placeholder="gjenerohet nga emri">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Prodhuesi *</label>
+                    <select class="form-select" th:field="*{vendor}" required>
+                        <option value="">—</option>
+                        <option th:each="v : ${vendors}" th:value="${v}" th:text="${v.label}"></option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Tier (1–20)</label>
+                    <input class="form-control" type="number" min="1" max="20" th:field="*{tier}">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label small mb-0">Aliase <small class="text-body-secondary">(ndarë me presje; si e shkruajnë njerëzit: "3060 ti,3060ti")</small></label>
+                    <input class="form-control" th:field="*{aliases}" maxlength="300">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Viti</label>
+                    <input class="form-control" type="number" min="2000" max="2100" th:field="*{releaseYear}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-0">Arkitektura</label>
+                    <input class="form-control" th:field="*{architecture}" maxlength="60">
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-body mb-3">
+            <h2 class="h6 fw-bold">Memoria dhe energjia</h2>
+            <div class="row g-2">
+                <div class="col-6 col-md-2"><label class="form-label small mb-0">VRAM (GB)</label><input class="form-control" type="number" min="0" th:field="*{vramGb}"></div>
+                <div class="col-6 col-md-2"><label class="form-label small mb-0">Tipi i memories</label><input class="form-control" th:field="*{memoryType}" maxlength="20" placeholder="GDDR6"></div>
+                <div class="col-6 col-md-2"><label class="form-label small mb-0">Bus (bit)</label><input class="form-control" type="number" min="0" th:field="*{memoryBusBits}"></div>
+                <div class="col-6 col-md-2"><label class="form-label small mb-0">TDP (W)</label><input class="form-control" type="number" min="0" th:field="*{tdpWatts}"></div>
+                <div class="col-6 col-md-2"><label class="form-label small mb-0">PSU min. (W)</label><input class="form-control" type="number" min="0" th:field="*{psuMinWatts}"></div>
+                <div class="col-6 col-md-2"><label class="form-label small mb-0">Gjatësia (mm)</label><input class="form-control" type="number" min="0" th:field="*{lengthMm}"></div>
+                <div class="col-md-4"><label class="form-label small mb-0">Konektorët PCIe</label><input class="form-control" th:field="*{pcieConnectors}" maxlength="40" placeholder="1x 8-pin"></div>
+            </div>
+        </div>
+
+        <div class="card card-body mb-3">
+            <h2 class="h6 fw-bold">Teknologjitë dhe gjendja</h2>
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-0">DLSS</label>
+                    <select class="form-select" th:field="*{supportsDlss}"><option value="">—</option><option th:each="u : ${upscalers}" th:value="${u}" th:text="${u.label}"></option></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label small mb-0">FSR</label>
+                    <select class="form-select" th:field="*{supportsFsr}"><option value="">—</option><option th:each="u : ${upscalers}" th:value="${u}" th:text="${u.label}"></option></select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" th:field="*{frameGeneration}"><label class="form-check-label" th:for="${#ids.prev('frameGeneration')}">Frame generation</label></div>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" th:field="*{rayTracing}"><label class="form-check-label" th:for="${#ids.prev('rayTracing')}">Ray tracing</label></div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small mb-0">Drajverët</label>
+                    <select class="form-select" th:field="*{driverStatus}"><option value="">—</option><option th:each="d : ${driverStatuses}" th:value="${d}" th:text="${d.label}"></option></select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small mb-0">Rreziku i minimit</label>
+                    <select class="form-select" th:field="*{miningRisk}"><option value="">—</option><option th:each="m : ${miningRisks}" th:value="${m}" th:text="${m.label}"></option></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-body mb-3">
+            <h2 class="h6 fw-bold">Performanca tipike (FPS)</h2>
+            <div class="row g-2">
+                <div class="col-4"><label class="form-label small mb-0">Esports 1080p</label><input class="form-control" type="number" min="0" th:field="*{fpsEsports1080p}"></div>
+                <div class="col-4"><label class="form-label small mb-0">AAA 1080p</label><input class="form-control" type="number" min="0" th:field="*{fpsAaa1080p}"></div>
+                <div class="col-4"><label class="form-label small mb-0">AAA 1440p</label><input class="form-control" type="number" min="0" th:field="*{fpsAaa1440p}"></div>
+                <div class="col-12">
+                    <label class="form-label small mb-0">Shënime (shqip) <small class="text-body-secondary">— i lexon asistenti dhe ti; jo klienti</small></label>
+                    <textarea class="form-control" th:field="*{notesSq}" rows="2" maxlength="1000"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="save-bar">
+            <div class="container-xl d-flex gap-2 justify-content-end">
+                <a href="/admin/gpu-catalog" class="btn btn-outline-secondary">Anulo</a>
+                <button class="btn btn-primary px-4" type="submit"><i class="bi bi-check-lg"></i> Ruaj</button>
+            </div>
+        </div>
+    </form>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>
