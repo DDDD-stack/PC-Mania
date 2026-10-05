@@ -12,12 +12,12 @@
             <span class="badge text-bg-danger" th:if="${newLeads > 0}" th:text="${newLeads}"></span></a>
     </div>
 
-    <div th:unless="${configured}" class="alert alert-secondary small">
-        <i class="bi bi-info-circle me-1"></i> Asistenti është i fikur: vendosni <code>ANTHROPIC_API_KEY</code> në Render që të shfaqet në faqe.
-    </div>
-    <div th:if="${configured and overCap}" class="alert alert-warning small">
-        <i class="bi bi-exclamation-triangle-fill me-1"></i> Kufiri mujor i shpenzimit u arrit: në faqe shfaqet lidhja e WhatsApp-it në vend të asistentit deri muajin tjetër.
-        Rriteni me <code>CHAT_MONTHLY_CAP_USD</code> nëse duhet.
+    <div class="alert small" th:classappend="${providerAvailable} ? 'alert-secondary' : 'alert-warning'">
+        <i class="bi bi-cpu me-1"></i> Përgjigjet: <strong th:text="${provider}"></strong>
+        <span th:if="${provider == 'gemini' and !geminiConfigured}">– <code>GEMINI_API_KEY</code> mungon, prandaj përgjigjet kërkimi i shpejtë.</span>
+        <span th:if="${provider == 'anthropic' and !anthropicConfigured}">– <code>ANTHROPIC_API_KEY</code> mungon, prandaj përgjigjet kërkimi i shpejtë.</span>
+        <span th:if="${provider == 'anthropic' and overCap}">– kufiri mujor i shpenzimit u arrit, prandaj përgjigjet kërkimi i shpejtë.</span>
+        <span th:if="${provider == 'guided'}">– pa model: vetëm kërkimi i shpejtë. Vendosni <code>CHAT_PROVIDER=gemini</code> dhe një çelës për asistentin.</span>
     </div>
 
     <!-- The demand signal: what people ask for that the shop does not have. -->
@@ -56,15 +56,58 @@
         </div>
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header"><strong>Shpenzimi këtë muaj</strong> <span class="small text-body-secondary" th:text="${usage.month}"></span></div>
+                <div class="card-header"><strong>Përdorimi i ofruesve sot</strong>
+                    <span class="small text-body-secondary">– Gemini falas: 1.500 kërkesa në ditë, 15 në minutë</span></div>
+                <div class="card-body">
+                    <div class="d-flex align-items-baseline gap-2">
+                        <div class="kpi"><span th:text="${geminiToday}"></span> <small class="text-body-secondary fs-6">/ <span th:text="${@fmt.num(geminiDailyCap)}"></span> Gemini</small></div>
+                        <div class="ms-auto text-end">
+                            <div class="kpi" th:classappend="${fallbacksToday > 0} ? 'text-warning-emphasis'" th:text="${fallbacksToday}"></div>
+                            <div class="kpi-label">herë kërkimi i shpejtë zëvendësoi</div>
+                        </div>
+                    </div>
+                    <div class="progress my-2" style="height: 8px">
+                        <div class="progress-bar" th:classappend="${geminiToday * 100 / geminiDailyCap > 80} ? 'bg-danger' : 'bg-success'"
+                             th:style="'width:' + ${T(java.lang.Math).min(100L, geminiToday * 100L / geminiDailyCap)} + '%'"></div>
+                    </div>
+                    <table class="table table-sm small mb-2">
+                        <thead class="table-light"><tr><th>Ofruesi</th><th class="text-end">Kërkesa</th><th class="text-end">Gabime</th><th class="text-end">Rate limit</th></tr></thead>
+                        <tbody>
+                        <tr th:each="r : ${todayRows}">
+                            <td th:text="${r.provider == 'guided-fallback'} ? 'kërkimi i shpejtë si zëvendësim' : ${r.provider}"></td>
+                            <td class="text-end" th:text="${r.requests}"></td>
+                            <td class="text-end" th:classappend="${r.errors > 0} ? 'text-danger'" th:text="${r.errors}"></td>
+                            <td class="text-end" th:classappend="${r.rateLimitHits > 0} ? 'text-warning-emphasis'" th:text="${r.rateLimitHits}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    <div class="small text-body-secondary">Nëse zëvendësimi ndodh shpesh, është koha të kaloni te Anthropic: <code>ANTHROPIC_API_KEY</code> + <code>CHAT_PROVIDER=anthropic</code>.</div>
+                    <details class="small mt-2" th:unless="${recentUsage.empty}">
+                        <summary>7 ditët e fundit</summary>
+                        <table class="table table-sm small mt-1 mb-0">
+                            <tbody>
+                            <tr th:each="u : ${recentUsage}">
+                                <td th:text="${@fmt.date(u.day.atStartOfDay())}"></td><td th:text="${u.provider}"></td>
+                                <td class="text-end" th:text="${u.requestCount}"></td>
+                                <td class="text-end text-danger" th:text="${u.errorCount > 0} ? ${u.errorCount} + ' gab.' : ''"></td>
+                                <td class="text-end text-warning-emphasis" th:text="${u.rateLimitHits > 0} ? ${u.rateLimitHits} + ' 429' : ''"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </details>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6" th:if="${anthropicConfigured or usage.replies > 0}">
+            <div class="card h-100">
+                <div class="card-header"><strong>Anthropic: shpenzimi këtë muaj</strong> <span class="small text-body-secondary" th:text="${usage.month}"></span></div>
                 <div class="card-body">
                     <div class="kpi"><span th:text="${#numbers.formatDecimal(usage.costUsd(), 1, 2)}"></span> <small class="text-body-secondary fs-6">/ <span th:text="${#numbers.formatDecimal(capUsd, 1, 0)}"></span> USD</small></div>
                     <div class="progress my-2" style="height: 8px">
-                        <div class="progress-bar" th:classappend="${overCap} ? 'bg-danger' : 'bg-success'"
-                             th:style="'width:' + ${capPercent} + '%'"></div>
+                        <div class="progress-bar" th:classappend="${overCap} ? 'bg-danger' : 'bg-success'" th:style="'width:' + ${capPercent} + '%'"></div>
                     </div>
                     <div class="small text-body-secondary">
-                        <span th:text="${usage.replies}"></span> përgjigje ·
+                        <span th:text="${usage.replies}"></span> kërkesa ·
                         <span th:text="${@fmt.num(usage.inputTokens)}"></span> token hyrje (<span th:text="${@fmt.num(usage.cacheReadTokens)}"></span> nga cache) ·
                         <span th:text="${@fmt.num(usage.outputTokens)}"></span> token dalje
                     </div>
@@ -76,7 +119,7 @@
     <h2 class="h5 mt-4">Bisedat</h2>
     <div class="table-responsive">
         <table class="table table-hover align-middle bg-white">
-            <thead class="table-light"><tr><th>Kur</th><th>Fillon me</th><th class="text-center">Mesazhe</th><th>Produkte të treguara</th><th></th></tr></thead>
+            <thead class="table-light"><tr><th>Kur</th><th>Fillon me</th><th class="text-center">Mesazhe</th><th>Produkte të treguara</th><th>Përgjigji</th><th></th></tr></thead>
             <tbody>
             <tr th:each="r : ${rows}">
                 <td class="text-nowrap small"><a th:href="@{/admin/chat/sessions/{id}(id=${r.session.id})}" th:text="${@fmt.dateTime(r.session.lastMessageAt)}"></a></td>
@@ -86,9 +129,10 @@
                     <a th:each="p, st : ${r.products}" th:href="@{/admin/products/{id}(id=${p.id})}" th:text="${p.title} + (${st.last} ? '' : ', ')"></a>
                     <span th:if="${r.products.empty}" class="text-body-secondary">—</span>
                 </td>
+                <td><span class="badge text-bg-light border" th:text="${r.provider ?: '—'}"></span></td>
                 <td class="text-end"><span th:if="${r.leadCaptured}" class="badge text-bg-success"><i class="bi bi-telephone"></i> kontakt</span></td>
             </tr>
-            <tr th:if="${rows.empty}"><td colspan="5" class="text-center text-body-secondary py-4">Ende asnjë bisedë.</td></tr>
+            <tr th:if="${rows.empty}"><td colspan="6" class="text-center text-body-secondary py-4">Ende asnjë bisedë.</td></tr>
             </tbody>
         </table>
     </div>

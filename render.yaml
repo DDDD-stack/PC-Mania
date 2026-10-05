@@ -50,11 +50,17 @@ services:
       - key: COOKIE_SECURE
         value: "true"
 
-      # --- optional: the customer assistant ---------------------------------
-      # Without the key the chat bubble is not shown at all. The key stays on the server.
+      # --- the customer assistant --------------------------------------------
+      # Who answers: gemini (free tier, default), anthropic, or guided (no model). The guided finder
+      # stands in whenever the chosen provider is unavailable or rate-limited.
+      - key: CHAT_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      # Switching to Anthropic later is only: set this key and CHAT_PROVIDER=anthropic, redeploy.
       - key: ANTHROPIC_API_KEY
         sync: false
-      # Past this spend in a calendar month the bubble becomes the WhatsApp link until next month.
+      # Past this spend in a calendar month the Anthropic provider is off until next month.
       - key: CHAT_MONTHLY_CAP_USD
         value: "25"
 

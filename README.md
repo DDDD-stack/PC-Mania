@@ -102,9 +102,11 @@ variable the hosted deployment uses).
 | `FACEBOOK_URL` | `https://www.facebook.com/` | Shop's Facebook page |
 | `COURIER_SHIPPING_LEK` | `500` | Courier fee (0 for products marked "Transport falas") |
 | `COOKIE_SECURE` | `false` | Set to `true` behind TLS so the admin session cookie is never sent in clear |
-| `ANTHROPIC_API_KEY` | *(blank)* | Turns on the customer assistant (the chat bubble). Blank: no bubble, no `/api/chat`. Never leaves the server |
-| `CHAT_MODEL` | `claude-haiku-4-5-20251001` | The Claude model the assistant answers with |
-| `CHAT_MONTHLY_CAP_USD` | `25` | Spend in a calendar month past which the bubble becomes the WhatsApp link until next month |
+| `CHAT_PROVIDER` | `gemini` | Who answers the chat bubble: `gemini` (free tier), `anthropic`, or `guided` (no model, the finder only). The guided finder also stands in whenever the chosen provider is unavailable or rate-limited |
+| `GEMINI_API_KEY` | *(blank)* | Gemini key from [Google AI Studio](https://aistudio.google.com/apikey). Never leaves the server |
+| `GEMINI_MODEL` / `GEMINI_RPM` | `gemini-2.5-flash` / `12` | The Gemini model and the requests per minute the limiter allows (Flash's free tier: 15). `gemini-2.5-flash-lite` allows 30 if Flash proves too tight |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | *(blank)* / `claude-haiku-4-5-20251001` | Switching to Anthropic later is only: set the key and `CHAT_PROVIDER=anthropic`, redeploy |
+| `CHAT_MONTHLY_CAP_USD` | `25` | Anthropic spend in a calendar month past which that provider is off (the finder answers) until next month |
 
 ## Deployment notes
 
@@ -274,25 +276,47 @@ the assistant only recommends products it can reason about. Per-card overrides (
 a partner card, OC clocks) stay in the product's specs; `checkFit` prefers a "Gjatësia" spec over the
 catalogue's reference length.
 
-**Customer assistant.** With `ANTHROPIC_API_KEY` set, every public page shows a chat bubble (full
-screen on a phone). `POST /api/chat` answers over server-sent events (`session`, `status` while a
-tool runs, `delta` text, `products` cards, then `done`, `limit` or `error`); `GET /api/chat/history`
-replays a conversation after a page load. The model (`ChatProperties.model`, Claude Haiku 4.5) answers
-only through six tools against our own database, none of which calls the internet or returns
-`cost_lek`: `searchStock`, `getProduct`, `compareProducts`, `recommendUpgrade` (the customer's card is
-resolved with the same matcher as the autofill; only higher tiers their PSU can run are offered),
-`checkFit` (PSU and case length → OK / TIGHT / NO_FIT) and `createLead`. The system prompt's rules
-are in `ChatPrompt` verbatim: Albanian, nothing stated that did not come from a tool, ask about the
-power supply before any card over 450 W, say so when the customer's card is already as good as the
-stock, no supplier costs, no invented delivery times or discounts. Conversations, messages (with the
-tools called and the products surfaced) and leads are kept in `chat_session`, `chat_message` and
-`chat_lead`; Admin › Asistenti shows the transcripts, the leads inbox (E re → Kontaktuar → E mbyllur)
-and, first, the demand report: what customers asked for that is not in stock, grouped by catalogue
-model. Guardrails: 25 customer messages per conversation (then the WhatsApp link), 4 tool-call rounds
-and 1024 output tokens per reply, 30 messages an hour per client address, and a monthly spend cap
-(`CHAT_MONTHLY_CAP_USD`, tracked in `chat_usage` from the token counts the API reports) past which
-the bubble becomes the WhatsApp link. The key and the model calls stay on the server; the browser
-only ever sees `/api/chat`, which allows no cross-origin use.
+**Customer assistant.** Every public page shows a chat bubble (full screen on a phone). Who answers
+is `CHAT_PROVIDER`: Gemini's free tier now, Anthropic later by changing that one variable, or the
+guided finder on its own. The tool layer and the system prompt are shared by every provider and are
+the real product; providers are thin adapters over them.
+
+- **Tools** (`ToolRegistry`, each defined once as a neutral `ToolDef` over `ChatTools`): `searchStock`
+  (at most 6), `getProduct`, `compareProducts`, `recommendUpgrade` (the customer's card is resolved
+  with the same matcher as the autofill; only higher tiers their PSU can run are offered), `checkFit`
+  (PSU and case length → OK / TIGHT / NO_FIT) and `requestContactForm`. All read our own database;
+  none calls the internet or returns `cost_lek`. `ChatToolsTest` and `ToolRegistryTest` are what decide
+  whether the assistant tells the truth.
+- **No personal details through a model.** No tool takes or returns a name, phone or address. When
+  nothing fits, the assistant calls `requestContactForm`, which only returns a signal; the widget then
+  shows the site's own form, which posts to `POST /api/lead` and writes a `chat_lead` row. Anything that
+  looks like a phone number or an email in a customer's message is replaced before it reaches any
+  provider, and logged (`PiiStripper`). This holds for every provider: Gemini's free tier lets Google use
+  inputs to improve its models.
+- **System prompt**: `src/main/resources/prompts/assistant-sq.txt`, loaded by all providers, the rules
+  verbatim plus the shop facts from configuration.
+- **Providers** (`ChatProvider`): `GeminiChatProvider` streams from the Generative Language REST API
+  (`streamGenerateContent?alt=sse`, `functionDeclarations` from the `ToolDef`s, `functionCall` /
+  `functionResponse` parts, the model's parts echoed back verbatim so thought signatures survive) behind
+  a token bucket at `GEMINI_RPM`; a 429 or a refused token falls through to the guided finder, which tells
+  the customer in Albanian that the assistant is busy. `AnthropicChatProvider` is the same loop on the
+  Messages API over plain HTTP (`stream: true`, `anthropic-version: 2023-06-01`, prompt caching on the
+  system prompt and tool list, a monthly spend cap in `chat_usage`); it compiles and is tested with a
+  scripted network and stays off without a key. `GuidedFinderProvider` is the floor: four questions
+  (what you play, resolution, budget, PSU), then `searchStock`, then the contact form when nothing
+  matches; always available, selectable with `CHAT_PROVIDER=guided`, and reachable at any time from the
+  panel's "Kërkim i shpejtë" button.
+- **API**: `POST /api/chat` answers as server-sent events (`status` while a tool runs, `delta` text,
+  `products` cards, `action` for the contact form, `notice`, `finder`, then `done`, `limit` or `error`);
+  the conversation lives in an HttpOnly cookie. `GET /api/chat/history` replays it. `POST /api/lead`
+  is a plain form post. `GET /api/finder/step` is the finder's state machine.
+- **Guardrails**: 25 customer messages per conversation (then the WhatsApp link), 4 tool-call rounds
+  and 1024 output tokens per reply, 30 messages an hour per client address.
+- **Admin › Asistenti**: first the demand report (what customers asked for that is not in stock, leads
+  grouped by catalogue model), then the provider usage panel (today's Gemini requests against the
+  1,500/day cap, rate-limit hits, errors, and how often the finder stood in: if that is often, move to
+  Anthropic), the leads inbox (E re → Kontaktuar → E mbyllur, with where each came from) and the
+  transcripts with the products each surfaced and which provider answered.
 
 **Logo and icons.** The chip mark is drawn by `tools/logo.py`, which writes the favicons, the Apple
 touch icon, the manifest icons and `images/logo-mark.svg` from one set of coordinates. Edit it and run

@@ -12,9 +12,12 @@ import al.pcmania.repo.ChatMessageRepository;
 import al.pcmania.repo.ChatSessionRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.NotFoundException;
-import al.pcmania.service.chat.ChatAssistant;
+import al.pcmania.service.chat.ChatService;
 import al.pcmania.service.chat.ChatDemand;
 import al.pcmania.service.chat.ChatSpend;
+import al.pcmania.service.chat.GuidedFinderProvider;
+import al.pcmania.service.chat.ProviderUsageService;
+import al.pcmania.domain.ProviderUsage;
 import al.pcmania.web.Links;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,8 +37,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminChatController {
 
-    /** One conversation in the list: when, how long, what it opened with, what the assistant showed. */
-    public record SessionRow(ChatSession session, String opening, List<Product> products, boolean leadCaptured) {}
+    /** One conversation in the list: when, how long, what it opened with, what the assistant showed, who answered. */
+    public record SessionRow(ChatSession session, String opening, List<Product> products, boolean leadCaptured, String provider) {}
+
+    /** One provider's day in the usage panel. */
+    public record UsageRow(String provider, int requests, int errors, int rateLimitHits) {}
 
     /** One turn in a transcript, with the products its tool calls surfaced. */
     public record TranscriptRow(ChatMessage message, List<Product> products) {}
@@ -46,7 +52,8 @@ public class AdminChatController {
     private final ProductRepository products;
     private final ChatDemand demand;
     private final ChatSpend spend;
-    private final ChatAssistant assistant;
+    private final ChatService assistant;
+    private final ProviderUsageService providerUsage;
     private final ChatProperties props;
 
     @ModelAttribute
@@ -63,10 +70,21 @@ public class AdminChatController {
         model.addAttribute("inStock", report.stream().filter(ChatDemand.Row::inStock).toList());
         var usage = spend.thisMonth();
         model.addAttribute("usage", usage);
-        model.addAttribute("capUsd", props.monthlyCapUsd());
-        model.addAttribute("capPercent", props.monthlyCapUsd() > 0 ? Math.min(100, Math.round(usage.costUsd() * 100 / props.monthlyCapUsd())) : 0);
-        model.addAttribute("configured", assistant.configured());
+        model.addAttribute("capUsd", spend.capUsd());
+        model.addAttribute("capPercent", spend.capUsd() > 0 ? Math.min(100, Math.round(usage.costUsd() * 100 / spend.capUsd())) : 0);
         model.addAttribute("overCap", spend.overCap());
+        model.addAttribute("provider", assistant.primary().name());
+        model.addAttribute("providerAvailable", assistant.primary().isAvailable());
+        model.addAttribute("geminiConfigured", props.gemini().keyConfigured());
+        model.addAttribute("anthropicConfigured", props.anthropic().keyConfigured());
+        model.addAttribute("geminiDailyCap", props.gemini().requestsPerDay());
+        Map<String, ProviderUsage> today = providerUsage.today().stream().collect(Collectors.toMap(ProviderUsage::getProvider, u -> u, (a, b) -> a));
+        model.addAttribute("todayRows", List.of("gemini", "anthropic", GuidedFinderProvider.NAME, ProviderUsageService.FALLBACK).stream()
+                .map(name -> { ProviderUsage u = today.get(name); return new UsageRow(name, u == null ? 0 : u.getRequestCount(),
+                        u == null ? 0 : u.getErrorCount(), u == null ? 0 : u.getRateLimitHits()); }).toList());
+        model.addAttribute("geminiToday", today.containsKey("gemini") ? today.get("gemini").getRequestCount() : 0);
+        model.addAttribute("fallbacksToday", today.containsKey(ProviderUsageService.FALLBACK) ? today.get(ProviderUsageService.FALLBACK).getRequestCount() : 0);
+        model.addAttribute("recentUsage", providerUsage.lastDays(7));
 
         Page<ChatSession> sessionPage = sessions.findAllByOrderByLastMessageAtDesc(PageRequest.of(Math.max(page, 0), 25));
         List<Long> ids = sessionPage.getContent().stream().map(ChatSession::getId).toList();
@@ -75,13 +93,13 @@ public class AdminChatController {
         Map<Long, LinkedHashSet<String>> slugs = new HashMap<>();
         if (!ids.isEmpty()) {
             for (ChatMessage m : messages.findBySessionIds(ids)) {
-                for (ChatAssistant.Card c : assistant.cardsOf(m)) slugs.computeIfAbsent(m.getSession().getId(), k -> new LinkedHashSet<>()).add(c.slug());
+                for (ChatService.Card c : assistant.cardsOf(m)) slugs.computeIfAbsent(m.getSession().getId(), k -> new LinkedHashSet<>()).add(c.slug());
             }
         }
         Map<String, Product> bySlug = productsBySlug(slugs.values().stream().flatMap(Collection::stream).toList());
         List<SessionRow> rows = sessionPage.getContent().stream().map(s -> new SessionRow(s, openings.get(s.getId()),
                 slugs.getOrDefault(s.getId(), new LinkedHashSet<>()).stream().map(bySlug::get).filter(Objects::nonNull).toList(),
-                s.isLeadCaptured())).toList();
+                s.isLeadCaptured(), s.getProviderUsed())).toList();
         model.addAttribute("page", sessionPage);
         model.addAttribute("rows", rows);
         return "admin/chat/index";
@@ -92,7 +110,7 @@ public class AdminChatController {
     String session(@PathVariable Long id, Model model) {
         ChatSession s = sessions.findById(id).orElseThrow(NotFoundException::new);
         List<ChatMessage> all = messages.findBySessionOrderByIdAsc(s);
-        List<String> slugs = all.stream().flatMap(m -> assistant.cardsOf(m).stream()).map(ChatAssistant.Card::slug).distinct().toList();
+        List<String> slugs = all.stream().flatMap(m -> assistant.cardsOf(m).stream()).map(ChatService.Card::slug).distinct().toList();
         Map<String, Product> bySlug = productsBySlug(slugs);
         model.addAttribute("s", s);
         model.addAttribute("rows", all.stream().map(m -> new TranscriptRow(m,

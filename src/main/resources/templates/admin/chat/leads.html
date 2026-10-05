@@ -9,7 +9,7 @@
         <a href="/admin/chat" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
         <h1 class="h4 mb-0">Kontaktet për t'u telefonuar</h1>
     </div>
-    <p class="text-body-secondary small mb-3">Klientë që asistenti nuk i shërbeu dot nga stoku dhe lanë emrin e telefonin. Telefonojini dhe shënoni statusin.</p>
+    <p class="text-body-secondary small mb-3">Klientë që asistenti ose kërkimi i shpejtë nuk i shërbeu dot nga stoku dhe lanë emrin e telefonin në formularin e faqes. Telefonojini dhe shënoni statusin.</p>
 
     <ul class="nav nav-pills flex-nowrap overflow-auto mb-3 small">
         <li class="nav-item"><a class="nav-link text-nowrap" th:classappend="${status == null} ? active" href="/admin/chat/leads">Të gjitha</a></li>
@@ -23,7 +23,7 @@
     <div class="table-responsive">
         <table class="table table-hover align-middle bg-white">
             <thead class="table-light">
-            <tr><th>Data</th><th>Kërkon</th><th class="text-end">Buxheti</th><th class="text-end">PSU</th><th>Klienti</th><th>Statusi</th></tr>
+            <tr><th>Data</th><th>Kërkon</th><th class="text-end">Buxheti</th><th class="text-end">PSU</th><th>Klienti</th><th>Nga</th><th>Statusi</th></tr>
             </thead>
             <tbody>
             <tr th:each="l : ${page.content}">
@@ -32,9 +32,10 @@
                 <td class="text-end text-nowrap" th:text="${l.budgetLek != null} ? ${@fmt.price(l.budgetLek)} : '—'"></td>
                 <td class="text-end text-nowrap" th:text="${l.psuWatts != null} ? ${l.psuWatts} + ' W' : '—'"></td>
                 <td><span th:text="${l.name}"></span><div class="small text-body-secondary" th:text="${l.phone}"></div></td>
+                <td class="small" th:text="${l.source.label}"></td>
                 <td><span class="badge" th:classappend="'status-' + ${l.status}" th:text="${l.status.label}"></span></td>
             </tr>
-            <tr th:if="${page.empty}"><td colspan="6" class="text-center text-body-secondary py-4">Ende asnjë kontakt.</td></tr>
+            <tr th:if="${page.empty}"><td colspan="7" class="text-center text-body-secondary py-4">Ende asnjë kontakt.</td></tr>
             </tbody>
         </table>
     </div>

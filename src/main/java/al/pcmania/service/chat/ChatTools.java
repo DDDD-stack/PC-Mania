@@ -1,15 +1,10 @@
 package al.pcmania.service.chat;
 
-import al.pcmania.domain.ChatLead;
-import al.pcmania.domain.ChatSession;
 import al.pcmania.domain.Enums.GpuVendor;
-import al.pcmania.domain.Enums.LeadStatus;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.domain.GpuCatalog;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
-import al.pcmania.repo.ChatLeadRepository;
-import al.pcmania.repo.ChatSessionRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.GpuCatalogService;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +23,8 @@ import java.util.regex.Pattern;
 /**
  * The six tools the assistant can call. Every one reads our own database and nothing else; the
  * records they return are what the model sees, so none of them carries {@code costLek},
- * {@code maxTradeValueLek} or anything else that is internal. Only {@link #createLead} writes.
+ * {@code maxTradeValueLek} or anything else that is internal, and none of them takes or returns a name,
+ * a phone number or an address: the contact form is the site's own and posts to /api/lead directly.
  */
 @Service
 @RequiredArgsConstructor
@@ -47,25 +43,32 @@ public class ChatTools {
 
     private final ProductRepository products;
     private final GpuCatalogService catalog;
-    private final ChatLeadRepository leads;
-    private final ChatSessionRepository sessions;
 
     // ---- What the model sees ----
 
     /** A card in stock, as searchStock lists it. */
     public record StockItem(String slug, String title, int priceLek, String condition, Integer warrantyDays,
-                            Integer vramGb, Integer tier, Integer psuMinWatts, String pcieConnectors,
+                            Integer vramGb, Integer tier, Integer psuMinWatts, String pcieConnectors, Integer lengthMm,
                             String testNotes, boolean isMiningFree, boolean transportIncluded, String gpuModel,
                             Integer fpsEsports1080p, Integer fpsAaa1080p, Integer fpsAaa1440p) {
         static StockItem of(Product p) {
             GpuCatalog g = p.getGpuModel();
             return new StockItem(p.getSlug(), p.getTitle(), p.getPriceLek(), p.getCondition().label, p.getWarrantyDays(),
                     g == null ? null : g.getVramGb(), g == null ? null : g.getTier(), g == null ? null : g.getPsuMinWatts(),
-                    g == null ? null : g.getPcieConnectors(), p.getTestNotes(), p.isMiningFree(), p.isTransportIncluded(),
+                    g == null ? null : g.getPcieConnectors(), cardLength(p), p.getTestNotes(), p.isMiningFree(), p.isTransportIncluded(),
                     g == null ? null : g.getName(), g == null ? null : g.getFpsEsports1080p(),
                     g == null ? null : g.getFpsAaa1080p(), g == null ? null : g.getFpsAaa1440p());
         }
     }
+
+    /** searchStock's answer: the matches (at most {@link #MAX_RESULTS}) and a note when there are none. */
+    public record StockSearch(List<StockItem> items, String note) {}
+
+    /**
+     * What requestContactForm returns: a signal for the site to show its own contact form, prefilled
+     * with what the customer wants. It carries no personal details and stores nothing.
+     */
+    public record LeadFormSignal(String action, String wantedItem, Integer budgetLek, Integer psuWatts, String note) {}
 
     /** The catalogue side of a product, for getProduct and compareProducts. */
     public record GpuInfo(String name, String vendor, Integer releaseYear, String architecture, Integer vramGb,
@@ -112,9 +115,10 @@ public class ChatTools {
     public record FitCheck(String slug, Fit verdict, Fit psuVerdict, Fit lengthVerdict, Integer psuMinWatts,
                            Integer cardLengthMm, List<String> reasons) {}
 
-    public record LeadResult(boolean ok, Long leadId, String message) {}
-
     // ---- The tools ----
+
+    /** The most a search returns: enough to choose from, few enough for a short reply. */
+    public static final int MAX_RESULTS = 6;
 
     /** ACTIVE products with a catalogue row, fastest first, narrowed by whatever the customer has said. */
     public List<StockItem> searchStock(Integer budgetMinLek, Integer budgetMaxLek, UseCase useCase, Integer minVramGb,
@@ -129,6 +133,7 @@ public class ChatTools {
             if (vendor != null && g.getVendor() != vendor) continue;
             if (useCase == UseCase.AAA_1440P && g.getFpsAaa1440p() != null && g.getFpsAaa1440p() < 40) continue;
             out.add(StockItem.of(p));
+            if (out.size() >= MAX_RESULTS) break;
         }
         return out;
     }
@@ -177,7 +182,7 @@ public class ChatTools {
         if (options.isEmpty()) {
             note = "Asnjë kartë në stok nuk është hap përpara nga " + cur.getName()
                     + (psuWatts != null ? " me PSU " + psuWatts + " W" : "") + (budgetLek != null ? " brenda " + budgetLek + " Lekë" : "")
-                    + ". Thuaja hapur: karta e tij është në nivel me atë që kemi, ose ofro PC me porosi / createLead.";
+                    + ". Thuaja hapur: karta e tij është në nivel me atë që kemi, ose ofro PC me porosi / requestContactForm.";
         } else if (bestTier - (cur.getTier() == null ? 0 : cur.getTier()) <= 1) {
             note = "Hapi përpara është i vogël (1 tier). Thuaja klientit se ndryshimi do të jetë i vogël dhe mos e shty të blejë.";
         } else {
@@ -229,29 +234,14 @@ public class ChatTools {
         });
     }
 
-    /** Records a customer to call back. Marks the session so the admin sees which conversations converted. */
-    @Transactional
-    public LeadResult createLead(Long sessionId, String name, String phone, String wantedItem, Integer budgetLek,
-                                 Integer psuWatts, String notes) {
-        if (!StringUtils.hasText(name) || !StringUtils.hasText(phone) || !StringUtils.hasText(wantedItem)) {
-            return new LeadResult(false, null, "Duhen emri, telefoni dhe çfarë kërkon klienti.");
-        }
-        String digits = phone.replaceAll("\\D", "");
-        if (digits.length() < 8) return new LeadResult(false, null, "Numri i telefonit nuk duket i plotë. Pyet përsëri.");
-        ChatSession session = sessions.findById(sessionId).orElse(null);
-        if (session == null) return new LeadResult(false, null, "Biseda nuk u gjet.");
-        ChatLead lead = new ChatLead();
-        lead.setSession(session);
-        lead.setName(name.trim());
-        lead.setPhone(phone.trim());
-        lead.setWantedItem(wantedItem.trim());
-        lead.setBudgetLek(budgetLek);
-        lead.setPsuWatts(psuWatts);
-        lead.setNotes(StringUtils.hasText(notes) ? notes.trim() : null);
-        lead.setStatus(LeadStatus.NEW);
-        leads.save(lead);
-        session.setLeadCaptured(true);
-        return new LeadResult(true, lead.getId(), "U regjistrua. Thuaji klientit se do ta telefonojmë.");
+    /**
+     * The only way the assistant takes a request: it returns a signal and the site shows its own form,
+     * which posts the name and phone straight to /api/lead. Nothing personal passes through here.
+     */
+    public LeadFormSignal requestContactForm(String wantedItem, Integer budgetLek, Integer psuWatts) {
+        if (!StringUtils.hasText(wantedItem)) throw new IllegalArgumentException("Duhet çfarë kërkon klienti.");
+        return new LeadFormSignal("show_lead_form", wantedItem.trim(), budgetLek, psuWatts,
+                "Formulari i kontaktit u shfaq poshtë përgjigjes. Thuaji klientit ta plotësojë dhe se dyqani do ta telefonojë. Mos kërko emër apo telefon.");
     }
 
     // ---- Helpers ----

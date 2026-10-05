@@ -5,7 +5,6 @@ import al.pcmania.service.CatalogService;
 import al.pcmania.domain.Enums.UpcomingStatus;
 import al.pcmania.service.SeoService;
 import al.pcmania.service.UpcomingService;
-import al.pcmania.service.chat.ChatAssistant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -26,7 +25,6 @@ public class SiteAdvice {
     private final SeoService seo;
     private final AppProperties props;
     private final UpcomingService upcoming;
-    private final ChatAssistant assistant;
 
     @ModelAttribute
     void common(Model model) {
@@ -35,9 +33,5 @@ public class SiteAdvice {
         model.addAttribute("whatsappGeneral", seo.whatsappLink("Përshëndetje PCMania! Kam një pyetje."));
         // The "Së shpejti" link only appears once something is actually on the way.
         model.addAttribute("hasUpcoming", upcoming.countByStatus(UpcomingStatus.VISIBLE) > 0);
-        // The assistant's bubble: the chat when it can answer, the WhatsApp link when it is over its monthly cap.
-        boolean configured = assistant.configured();
-        model.addAttribute("chatConfigured", configured);
-        model.addAttribute("chatAvailable", configured && assistant.available());
     }
 }

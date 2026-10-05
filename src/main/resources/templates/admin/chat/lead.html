@@ -22,6 +22,7 @@
                         <dt class="col-5">Kërkon</dt><dd class="col-7 fw-bold" th:text="${l.wantedItem}"></dd>
                         <dt class="col-5">Buxheti</dt><dd class="col-7" th:text="${l.budgetLek != null} ? ${@fmt.price(l.budgetLek)} : 'Nuk e tha'"></dd>
                         <dt class="col-5">Furnizuesi (PSU)</dt><dd class="col-7" th:text="${l.psuWatts != null} ? ${l.psuWatts} + ' W' : 'Nuk e tha'"></dd>
+                        <dt class="col-5">Nga</dt><dd class="col-7" th:text="${l.source.label}"></dd>
                         <dt class="col-5">Klienti</dt><dd class="col-7" th:text="${l.name}"></dd>
                         <dt class="col-5">Telefoni</dt><dd class="col-7"><a th:href="'tel:' + ${l.phone}" th:text="${l.phone}"></a></dd>
                     </dl>

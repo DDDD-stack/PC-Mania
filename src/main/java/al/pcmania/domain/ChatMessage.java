@@ -26,6 +26,8 @@ public class ChatMessage {
     /** For assistant turns: the tools called and the product slugs they surfaced, as JSON. Null otherwise. */
     @Column(columnDefinition = "TEXT")
     private String toolCallsJson;
+    /** For assistant turns: the provider that wrote it (gemini, anthropic, guided). */
+    private String providerUsed;
     private LocalDateTime createdAt;
 
     @PrePersist

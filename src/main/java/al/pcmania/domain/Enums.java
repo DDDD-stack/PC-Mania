@@ -148,6 +148,14 @@ public final class Enums {
 
     public enum ChatRole { USER, ASSISTANT }
 
+    /** Where a lead came from: the chat's contact form, the guided finder, or a plain form on the site. */
+    public enum LeadSource {
+        CHAT("Asistenti"), FINDER("Kërkimi i shpejtë"), FORM("Formular");
+        public final String label;
+        LeadSource(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
     /** Lifecycle of a lead the assistant captured: the operator calls the customer back. */
     public enum LeadStatus {
         NEW("E re"), CONTACTED("Kontaktuar"), CLOSED("E mbyllur");

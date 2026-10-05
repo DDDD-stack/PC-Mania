@@ -23,6 +23,8 @@ public class ChatSession {
     private LocalDateTime lastMessageAt;
     /** Customer messages so far; the per-session guardrail counts these. */
     private int messageCount;
+    /** Which provider answered last: gemini, anthropic or guided. */
+    private String providerUsed;
     private boolean leadCaptured;
 
     @PrePersist

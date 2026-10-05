@@ -1,16 +1,12 @@
 package al.pcmania.service.chat;
 
 import al.pcmania.domain.Brand;
-import al.pcmania.domain.ChatLead;
-import al.pcmania.domain.ChatSession;
 import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.GpuVendor;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.domain.GpuCatalog;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
-import al.pcmania.repo.ChatLeadRepository;
-import al.pcmania.repo.ChatSessionRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.GpuCatalogService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,9 +26,7 @@ class ChatToolsTest {
 
     private final ProductRepository products = mock(ProductRepository.class);
     private final GpuCatalogService catalog = mock(GpuCatalogService.class);
-    private final ChatLeadRepository leads = mock(ChatLeadRepository.class);
-    private final ChatSessionRepository sessions = mock(ChatSessionRepository.class);
-    private final ChatTools tools = new ChatTools(products, catalog, leads, sessions);
+    private final ChatTools tools = new ChatTools(products, catalog);
 
     private final GpuCatalog gtx1660s = gpu("gtx-1660-super", "GeForce GTX 1660 Super", GpuVendor.NVIDIA, 6, 6, 450, 229, 200, 58, 37);
     private final GpuCatalog rx6600 = gpu("rx-6600", "Radeon RX 6600", GpuVendor.AMD, 8, 8, 450, 200, 240, 68, 45);
@@ -163,19 +157,23 @@ class ChatToolsTest {
         assertTrue(tools.checkFit("nuk-ekziston", 500, null).isEmpty());
     }
 
+    /** The contact form is the site's: the tool only signals, and never takes a name or a phone. */
     @Test
-    void leadNeedsAPhoneAndMarksTheSession() {
-        ChatSession session = new ChatSession();
-        session.setId(5L);
-        when(sessions.findById(5L)).thenReturn(Optional.of(session));
-        assertFalse(tools.createLead(5L, "Arben", "06", "RTX 4070", null, null, null).ok());
-        assertFalse(session.isLeadCaptured());
-        when(leads.save(any())).thenAnswer(inv -> { ChatLead l = inv.getArgument(0); l.setId(7L); return l; });
-        ChatTools.LeadResult r = tools.createLead(5L, " Arben ", "069 123 4567", "RTX 4070", 60_000, 650, "");
-        assertTrue(r.ok());
-        assertEquals(7L, r.leadId());
-        assertTrue(session.isLeadCaptured());
-        verify(leads).save(argThat(l -> l.getName().equals("Arben") && l.getNotes() == null && l.getPsuWatts() == 650));
+    void contactFormIsOnlyASignal() {
+        ChatTools.LeadFormSignal sig = tools.requestContactForm("RTX 4070", 80_000, 650);
+        assertEquals("show_lead_form", sig.action());
+        assertEquals("RTX 4070", sig.wantedItem());
+        assertEquals(80_000, sig.budgetLek());
+        assertThrows(IllegalArgumentException.class, () -> tools.requestContactForm(" ", null, null));
+    }
+
+    @Test
+    void searchStockStopsAtSixResults() {
+        List<Product> many = new java.util.ArrayList<>();
+        for (int i = 0; i < 9; i++) many.add(product(100L + i, "card-" + i, "Card " + i, 10_000 + i, 5_000, rx6600));
+        when(products.findInStockWithGpuModel(ProductStatus.ACTIVE)).thenReturn(many);
+        assertEquals(6, tools.searchStock(null, null, null, null, null, null).size());
+        assertEquals(200, tools.searchStock(null, null, null, null, null, null).get(0).lengthMm());
     }
 
     // ---- Fixtures ----

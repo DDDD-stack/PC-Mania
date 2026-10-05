@@ -100,10 +100,18 @@ app:
   # The key built into the phone app, which then opens without a sign-in. At least 32 characters;
   # blank switches it off and the app has to sign in with the admin username and password instead.
   mobile-api-key: ${MOBILE_API_KEY:}
-  # The customer assistant (the chat bubble on every public page). Off without the key, which never
-  # leaves the server. See ChatProperties for the rest; the defaults there are the guardrails.
+  # The customer assistant (the chat bubble on every public page). CHAT_PROVIDER picks who answers:
+  # gemini (free tier), anthropic, or guided (the deterministic finder, which also stands in whenever
+  # the chosen provider is unavailable or rate-limited). Keys never leave the server. See ChatProperties.
   chat:
-    api-key: ${ANTHROPIC_API_KEY:}
-    model: ${CHAT_MODEL:claude-haiku-4-5-20251001}
-    # Spend in a calendar month past which the bubble becomes the WhatsApp link until next month.
-    monthly-cap-usd: ${CHAT_MONTHLY_CAP_USD:25}
+    provider: ${CHAT_PROVIDER:gemini}
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-2.5-flash}
+      # Flash's free tier allows 15 requests a minute; the limiter stays under it.
+      requests-per-minute: ${GEMINI_RPM:12}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model: ${ANTHROPIC_MODEL:claude-haiku-4-5-20251001}
+      # Spend in a calendar month past which the provider reports itself unavailable until next month.
+      monthly-cap-usd: ${CHAT_MONTHLY_CAP_USD:25}
