@@ -67,6 +67,7 @@
       setBadge('[data-live-builds]', '[data-live-build-count]', data.newBuilds);
       setBadge('[data-live-wishes]', '[data-live-wish-count]', data.newWishes);
       setBadge('[data-live-trades]', '[data-live-trade-count]', data.newTrades);
+      setBadge('[data-live-leads]', '[data-live-lead-count]', data.newLeads);
       document.title = data.newOrders ? `(${data.newOrders}) ${baseTitle}` : baseTitle;
       if (lastOrderId !== null && data.latestOrderId > lastOrderId) {
         window.pmToast('Porosi e re! Klikoni për ta hapur.', { tone: 'info', href: '/admin/orders?status=NEW' });

@@ -104,7 +104,7 @@ public class GpuCatalogService {
     }
 
     /** Lower case, letters and digits only: "RTX 3060 Ti" and "rtx3060ti" compare equal. */
-    static String normalize(String s) {
+    public static String normalize(String s) {
         if (s == null) return "";
         StringBuilder b = new StringBuilder(s.length());
         for (char c : s.toLowerCase(Locale.ROOT).toCharArray()) {

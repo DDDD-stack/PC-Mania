@@ -50,6 +50,14 @@ services:
       - key: COOKIE_SECURE
         value: "true"
 
+      # --- optional: the customer assistant ---------------------------------
+      # Without the key the chat bubble is not shown at all. The key stays on the server.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Past this spend in a calendar month the bubble becomes the WhatsApp link until next month.
+      - key: CHAT_MONTHLY_CAP_USD
+        value: "25"
+
       # --- shop details ---------------------------------------------------
       - key: WHATSAPP_NUMBER
         sync: false

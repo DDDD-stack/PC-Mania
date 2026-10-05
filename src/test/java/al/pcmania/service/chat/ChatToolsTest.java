@@ -10,6 +10,7 @@ import al.pcmania.domain.GpuCatalog;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
 import al.pcmania.repo.ChatLeadRepository;
+import al.pcmania.repo.ChatSessionRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.GpuCatalogService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,7 +31,8 @@ class ChatToolsTest {
     private final ProductRepository products = mock(ProductRepository.class);
     private final GpuCatalogService catalog = mock(GpuCatalogService.class);
     private final ChatLeadRepository leads = mock(ChatLeadRepository.class);
-    private final ChatTools tools = new ChatTools(products, catalog, leads);
+    private final ChatSessionRepository sessions = mock(ChatSessionRepository.class);
+    private final ChatTools tools = new ChatTools(products, catalog, leads, sessions);
 
     private final GpuCatalog gtx1660s = gpu("gtx-1660-super", "GeForce GTX 1660 Super", GpuVendor.NVIDIA, 6, 6, 450, 229, 200, 58, 37);
     private final GpuCatalog rx6600 = gpu("rx-6600", "Radeon RX 6600", GpuVendor.AMD, 8, 8, 450, 200, 240, 68, 45);
@@ -164,10 +166,12 @@ class ChatToolsTest {
     @Test
     void leadNeedsAPhoneAndMarksTheSession() {
         ChatSession session = new ChatSession();
-        assertFalse(tools.createLead(session, "Arben", "06", "RTX 4070", null, null, null).ok());
+        session.setId(5L);
+        when(sessions.findById(5L)).thenReturn(Optional.of(session));
+        assertFalse(tools.createLead(5L, "Arben", "06", "RTX 4070", null, null, null).ok());
         assertFalse(session.isLeadCaptured());
         when(leads.save(any())).thenAnswer(inv -> { ChatLead l = inv.getArgument(0); l.setId(7L); return l; });
-        ChatTools.LeadResult r = tools.createLead(session, " Arben ", "069 123 4567", "RTX 4070", 60_000, 650, "");
+        ChatTools.LeadResult r = tools.createLead(5L, " Arben ", "069 123 4567", "RTX 4070", 60_000, 650, "");
         assertTrue(r.ok());
         assertEquals(7L, r.leadId());
         assertTrue(session.isLeadCaptured());

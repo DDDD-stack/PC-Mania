@@ -6,7 +6,7 @@
 <main class="container-xl py-3">
     <div th:replace="~{admin/fragments :: flash}"></div>
 
-    <div class="d-flex flex-wrap gap-2 mb-3" th:if="${d.newOrders > 0 || d.openOrders > 0 || d.newBuildRequests > 0 || newWishes > 0 || openTrades > 0}">
+    <div class="d-flex flex-wrap gap-2 mb-3" th:if="${d.newOrders > 0 || d.openOrders > 0 || d.newBuildRequests > 0 || newWishes > 0 || openTrades > 0 || newLeads > 0}">
         <a th:if="${d.newOrders > 0}" class="btn btn-danger" href="/admin/orders?status=NEW">
             <i class="bi bi-bag-plus"></i> <span th:text="${d.newOrders}"></span> porosi të reja</a>
         <a th:if="${d.openOrders > 0}" class="btn btn-outline-dark" href="/admin/orders">
@@ -17,6 +17,8 @@
             <i class="bi bi-arrow-left-right"></i> <span th:text="${openTrades}"></span> <span th:text="${openTrades == 1} ? 'këmbim i hapur' : 'këmbime të hapura'"></span></a>
         <a th:if="${newWishes > 0}" class="btn btn-info" href="/admin/wishes?status=NEW">
             <i class="bi bi-search-heart"></i> <span th:text="${newWishes}"></span> <span th:text="${newWishes == 1} ? 'produkt i kërkuar' : 'produkte të kërkuara'"></span></a>
+        <a th:if="${newLeads > 0}" class="btn btn-success" href="/admin/chat/leads?status=NEW">
+            <i class="bi bi-chat-dots"></i> <span th:text="${newLeads}"></span> <span th:text="${newLeads == 1} ? 'kontakt nga asistenti' : 'kontakte nga asistenti'"></span></a>
     </div>
 
     <!-- Traded-in items not listed yet: stock on its way in -->

@@ -102,6 +102,11 @@ public class CatalogService {
         return cards(products.findByTradeEligibleTrueAndStatusAndQuantityGreaterThanOrderByListedAtDesc(ProductStatus.ACTIVE, 0));
     }
 
+    /** Cards for the given slugs, whatever their status: the assistant shows what it talked about. */
+    public List<ProductCard> cardsBySlugs(Collection<String> slugs) {
+        return slugs.isEmpty() ? List.of() : cards(products.findBySlugIn(slugs));
+    }
+
     public List<Product> sitemapProducts() {
         return products.findByStatusIn(List.of(ProductStatus.ACTIVE, ProductStatus.RESERVED));
     }

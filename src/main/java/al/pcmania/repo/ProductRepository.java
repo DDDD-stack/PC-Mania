@@ -15,6 +15,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @EntityGraph(attributePaths = "brand")
     Optional<Product> findBySlug(String slug);
 
+    @EntityGraph(attributePaths = "brand")
+    List<Product> findBySlugIn(Collection<String> slugs);
+
     boolean existsBySlug(String slug);
 
     @Query("select p.id from Product p where p.slug = :slug")

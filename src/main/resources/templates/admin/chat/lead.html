@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Kontakt nga asistenti')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('chat')}"></nav>
+<main class="container py-3" style="max-width: 900px">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a href="/admin/chat/leads" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0" th:text="${l.wantedItem}"></h1>
+        <span class="badge fs-6" th:classappend="'status-' + ${l.status}" th:text="${l.status.label}"></span>
+        <span class="text-body-secondary small ms-auto" th:text="${@fmt.dateTime(l.createdAt)}"></span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>Kërkesa</strong></div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-5">Kërkon</dt><dd class="col-7 fw-bold" th:text="${l.wantedItem}"></dd>
+                        <dt class="col-5">Buxheti</dt><dd class="col-7" th:text="${l.budgetLek != null} ? ${@fmt.price(l.budgetLek)} : 'Nuk e tha'"></dd>
+                        <dt class="col-5">Furnizuesi (PSU)</dt><dd class="col-7" th:text="${l.psuWatts != null} ? ${l.psuWatts} + ' W' : 'Nuk e tha'"></dd>
+                        <dt class="col-5">Klienti</dt><dd class="col-7" th:text="${l.name}"></dd>
+                        <dt class="col-5">Telefoni</dt><dd class="col-7"><a th:href="'tel:' + ${l.phone}" th:text="${l.phone}"></a></dd>
+                    </dl>
+                    <div th:if="${l.notes}" class="mt-2">
+                        <div class="text-body-secondary small">Shënime nga biseda</div>
+                        <div style="white-space: pre-line" th:text="${l.notes}"></div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <a class="btn btn-sm btn-outline-dark" th:href="'tel:' + ${l.phone}"><i class="bi bi-telephone"></i> Telefono</a>
+                        <a class="btn btn-sm btn-success" th:if="${customerWhatsapp}" th:href="${customerWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+                        <a class="btn btn-sm btn-outline-secondary" th:if="${sessionId}" th:href="@{/admin/chat/sessions/{id}(id=${sessionId})}"><i class="bi bi-chat-dots"></i> Biseda</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <form class="card h-100" th:action="@{/admin/chat/leads/{id}(id=${l.id})}" method="post">
+                <div class="card-header"><strong>Statusi</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <select class="form-select" name="status">
+                            <option th:each="s : ${leadStatuses}" th:value="${s}" th:text="${s.label}" th:selected="${s == l.status}"></option>
+                        </select>
+                        <div class="form-text">E re → Kontaktuar kur i telefonon → E mbyllur kur bleu ose hoqi dorë.</div>
+                    </div>
+                    <button class="btn btn-primary w-100" type="submit">Ruaj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <form class="mt-3 text-end" th:action="@{/admin/chat/leads/{id}/delete(id=${l.id})}" method="post" data-confirm="Ta fshij këtë kontakt?">
+        <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i> Fshi</button>
+    </form>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

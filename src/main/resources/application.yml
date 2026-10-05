@@ -100,3 +100,10 @@ app:
   # The key built into the phone app, which then opens without a sign-in. At least 32 characters;
   # blank switches it off and the app has to sign in with the admin username and password instead.
   mobile-api-key: ${MOBILE_API_KEY:}
+  # The customer assistant (the chat bubble on every public page). Off without the key, which never
+  # leaves the server. See ChatProperties for the rest; the defaults there are the guardrails.
+  chat:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${CHAT_MODEL:claude-haiku-4-5-20251001}
+    # Spend in a calendar month past which the bubble becomes the WhatsApp link until next month.
+    monthly-cap-usd: ${CHAT_MONTHLY_CAP_USD:25}

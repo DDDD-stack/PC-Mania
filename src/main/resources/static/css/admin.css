@@ -19,6 +19,7 @@ body { background: #f4f5f7; }
 .badge.status-REVIEWING { background: #fd7e14; }
 .badge.status-EXPIRED { background: #adb5bd; }
 .badge.status-CONVERTED { background: #0d6efd; }
+.badge.status-CONTACTED { background: #0dcaf0; color: #000; }
 
 .save-bar {
     position: sticky; bottom: 0; z-index: 10;

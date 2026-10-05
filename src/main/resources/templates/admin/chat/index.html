@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Asistenti')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('chat')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <h1 class="h4 mb-0 me-auto">Asistenti</h1>
+        <a class="btn btn-sm btn-outline-dark" href="/admin/chat/leads"><i class="bi bi-telephone-outbound"></i> Kontaktet për t'u telefonuar
+            <span class="badge text-bg-danger" th:if="${newLeads > 0}" th:text="${newLeads}"></span></a>
+    </div>
+
+    <div th:unless="${configured}" class="alert alert-secondary small">
+        <i class="bi bi-info-circle me-1"></i> Asistenti është i fikur: vendosni <code>ANTHROPIC_API_KEY</code> në Render që të shfaqet në faqe.
+    </div>
+    <div th:if="${configured and overCap}" class="alert alert-warning small">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> Kufiri mujor i shpenzimit u arrit: në faqe shfaqet lidhja e WhatsApp-it në vend të asistentit deri muajin tjetër.
+        Rriteni me <code>CHAT_MONTHLY_CAP_USD</code> nëse duhet.
+    </div>
+
+    <!-- The demand signal: what people ask for that the shop does not have. -->
+    <div class="card mb-3 border-danger">
+        <div class="card-header bg-danger-subtle"><i class="bi bi-graph-up-arrow me-1"></i><strong>Më të kërkuarat që nuk i kemi</strong>
+            <span class="small text-body-secondary">– nga kontaktet që la asistenti, grupuar sipas modelit</span></div>
+        <div class="table-responsive" th:unless="${notInStock.empty}">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light"><tr><th>Kërkojnë</th><th class="text-center">Herë</th><th class="text-end">Buxheti maks.</th><th>Kërkuar së fundi</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="r : ${notInStock}">
+                    <td class="fw-semibold"><span th:text="${r.label}"></span>
+                        <span th:if="${r.gpu == null}" class="badge text-bg-light border ms-1" title="Nuk përputhet me asnjë model të katalogut">tekst i lirë</span></td>
+                    <td class="text-center"><span class="badge text-bg-danger" th:text="${r.count}"></span></td>
+                    <td class="text-end text-nowrap" th:text="${r.maxBudgetLek != null} ? ${@fmt.price(r.maxBudgetLek)} : '—'"></td>
+                    <td class="small text-nowrap" th:text="${@fmt.dateTime(r.lastAskedAt)}"></td>
+                    <td class="text-end"><a class="small" href="/admin/chat/leads?status=NEW">kontaktet</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body text-body-secondary small" th:if="${notInStock.empty}">Ende asnjë kërkesë për diçka që mungon.</div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>Të kërkuara që i kemi në stok</strong></div>
+                <ul class="list-group list-group-flush" th:unless="${inStock.empty}">
+                    <li class="list-group-item d-flex gap-2 align-items-center" th:each="r : ${inStock}">
+                        <span th:text="${r.label}"></span><span class="badge text-bg-success ms-auto" th:text="${r.count}"></span>
+                    </li>
+                </ul>
+                <div class="card-body text-body-secondary small" th:if="${inStock.empty}">Asnjë.</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><strong>Shpenzimi këtë muaj</strong> <span class="small text-body-secondary" th:text="${usage.month}"></span></div>
+                <div class="card-body">
+                    <div class="kpi"><span th:text="${#numbers.formatDecimal(usage.costUsd(), 1, 2)}"></span> <small class="text-body-secondary fs-6">/ <span th:text="${#numbers.formatDecimal(capUsd, 1, 0)}"></span> USD</small></div>
+                    <div class="progress my-2" style="height: 8px">
+                        <div class="progress-bar" th:classappend="${overCap} ? 'bg-danger' : 'bg-success'"
+                             th:style="'width:' + ${capPercent} + '%'"></div>
+                    </div>
+                    <div class="small text-body-secondary">
+                        <span th:text="${usage.replies}"></span> përgjigje ·
+                        <span th:text="${@fmt.num(usage.inputTokens)}"></span> token hyrje (<span th:text="${@fmt.num(usage.cacheReadTokens)}"></span> nga cache) ·
+                        <span th:text="${@fmt.num(usage.outputTokens)}"></span> token dalje
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="h5 mt-4">Bisedat</h2>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white">
+            <thead class="table-light"><tr><th>Kur</th><th>Fillon me</th><th class="text-center">Mesazhe</th><th>Produkte të treguara</th><th></th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${rows}">
+                <td class="text-nowrap small"><a th:href="@{/admin/chat/sessions/{id}(id=${r.session.id})}" th:text="${@fmt.dateTime(r.session.lastMessageAt)}"></a></td>
+                <td><a class="text-decoration-none" th:href="@{/admin/chat/sessions/{id}(id=${r.session.id})}" th:text="${r.opening != null} ? ${#strings.abbreviate(r.opening, 90)} : '—'"></a></td>
+                <td class="text-center" th:text="${r.session.messageCount}"></td>
+                <td class="small">
+                    <a th:each="p, st : ${r.products}" th:href="@{/admin/products/{id}(id=${p.id})}" th:text="${p.title} + (${st.last} ? '' : ', ')"></a>
+                    <span th:if="${r.products.empty}" class="text-body-secondary">—</span>
+                </td>
+                <td class="text-end"><span th:if="${r.leadCaptured}" class="badge text-bg-success"><i class="bi bi-telephone"></i> kontakt</span></td>
+            </tr>
+            <tr th:if="${rows.empty}"><td colspan="5" class="text-center text-body-secondary py-4">Ende asnjë bisedë.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <nav th:if="${page.totalPages > 1}">
+        <ul class="pagination pagination-sm">
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? active">
+                <a class="page-link" th:href="@{/admin/chat(page=${i})}" th:text="${i + 1}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

@@ -1,11 +1,13 @@
 package al.pcmania.web.admin;
 
 import al.pcmania.domain.Enums.BuildStatus;
+import al.pcmania.domain.Enums.LeadStatus;
 import al.pcmania.domain.Enums.OrderStatus;
 import al.pcmania.domain.Enums.TradeStatus;
 import al.pcmania.domain.Enums.WishStatus;
 import al.pcmania.domain.Order;
 import al.pcmania.repo.BuildRequestRepository;
+import al.pcmania.repo.ChatLeadRepository;
 import al.pcmania.repo.OrderRepository;
 import al.pcmania.repo.TradeRequestRepository;
 import al.pcmania.repo.WishRequestRepository;
@@ -24,6 +26,7 @@ public class AdminLiveController {
     private final BuildRequestRepository builds;
     private final WishRequestRepository wishes;
     private final TradeRequestRepository trades;
+    private final ChatLeadRepository leads;
 
     @GetMapping("/admin/live")
     Map<String, Object> live() {
@@ -32,6 +35,7 @@ public class AdminLiveController {
                 "newBuilds", builds.countByStatus(BuildStatus.NEW),
                 "newWishes", wishes.countByStatus(WishStatus.NEW),
                 "newTrades", trades.countByStatus(TradeStatus.NEW),
+                "newLeads", leads.countByStatus(LeadStatus.NEW),
                 "latestOrderId", orders.findTopByOrderByIdDesc().map(Order::getId).orElse(0L));
     }
 }

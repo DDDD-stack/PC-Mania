@@ -39,6 +39,8 @@ public class ApiSecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
+                        // The customer assistant: anonymous, same-origin only (see corsSource), its own rate limits.
+                        .requestMatchers("/api/chat", "/api/chat/**").permitAll()
                         .anyRequest().hasRole("ADMIN"))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Tokens travel in the Authorization header, never in cookies, so CSRF does not apply.
@@ -64,6 +66,10 @@ public class ApiSecurityConfig {
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         cors.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // The assistant is for this site's own pages: no origin is allowed, so another site cannot embed
+        // it and spend the shop's API budget. Registered first, as the first matching pattern wins.
+        source.registerCorsConfiguration("/api/chat/**", new CorsConfiguration());
+        source.registerCorsConfiguration("/api/chat", new CorsConfiguration());
         source.registerCorsConfiguration("/api/**", cors);
         return source;
     }

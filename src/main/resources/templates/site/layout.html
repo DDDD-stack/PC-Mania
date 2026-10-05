@@ -43,7 +43,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous" rel="stylesheet">
     <link th:href="@{/css/site.css}" rel="stylesheet">
 </head>
-<body>
+<body th:classappend="${chatConfigured} ? 'has-chat'">
 
 <header class="site-header sticky-top">
     <nav class="navbar navbar-dark">
@@ -133,8 +133,10 @@
 </footer>
 
 <button type="button" class="to-top" id="toTop" aria-label="Kthehu lart"><i class="bi bi-arrow-up"></i></button>
+<th:block th:if="${chatConfigured}"><div th:replace="~{site/chat :: widget}"></div></th:block>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
 <script th:src="@{/js/site.js}" defer></script>
+<script th:if="${chatAvailable}" th:src="@{/js/chat.js}" defer></script>
 <th:block th:replace="${scripts}"></th:block>
 </body>
 </html>

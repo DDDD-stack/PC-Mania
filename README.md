@@ -102,6 +102,9 @@ variable the hosted deployment uses).
 | `FACEBOOK_URL` | `https://www.facebook.com/` | Shop's Facebook page |
 | `COURIER_SHIPPING_LEK` | `500` | Courier fee (0 for products marked "Transport falas") |
 | `COOKIE_SECURE` | `false` | Set to `true` behind TLS so the admin session cookie is never sent in clear |
+| `ANTHROPIC_API_KEY` | *(blank)* | Turns on the customer assistant (the chat bubble). Blank: no bubble, no `/api/chat`. Never leaves the server |
+| `CHAT_MODEL` | `claude-haiku-4-5-20251001` | The Claude model the assistant answers with |
+| `CHAT_MONTHLY_CAP_USD` | `25` | Spend in a calendar month past which the bubble becomes the WhatsApp link until next month |
 
 ## Deployment notes
 
@@ -255,6 +258,41 @@ customers, the request is flagged "Telefono"/"Kontaktoje". Proof media is checke
 into `stored_file` without being held in memory, capped at 150 MB in total (beyond that the form asks for
 WhatsApp - the Supabase free database is 500 MB), and deleted 30 days after the request closes; quotes
 past their expiry close as EXPIRED. Both run hourly in `TradeService.housekeeping`.
+
+**GPU catalogue.** `gpu_catalog` holds one row per graphics card model: VRAM, power (TDP, minimum
+PSU, connectors), reference length, a 1–20 performance tier, DLSS/FSR/ray tracing, driver status,
+mining risk and typical frame rates (esports 1080p, AAA 1080p, AAA 1440p). It is seeded from
+`src/main/resources/data/gpu-catalog.json` by `R__Seed_gpu_catalog`, a repeatable Flyway migration
+that upserts on slug and runs again whenever the file changes; Admin › Katalogu GPU edits rows
+between releases and flags ones with empty fields. A product points at a row through
+`product.gpu_model_id`. The product form's **Titulli** is a combobox over the catalogue (name and
+aliases, tolerant of missing spaces, so "3060ti" finds the RTX 3060 Ti): picking a row stamps the
+model and prefills VRAM, memory type, TDP, minimum PSU, connectors and length as spec rows plus an
+Albanian short description, never overwriting a field already filled in; each prefilled value carries
+a "nga katalogu" marker until edited. Saving a graphics card without a model shows a warning, because
+the assistant only recommends products it can reason about. Per-card overrides (the exact length of
+a partner card, OC clocks) stay in the product's specs; `checkFit` prefers a "Gjatësia" spec over the
+catalogue's reference length.
+
+**Customer assistant.** With `ANTHROPIC_API_KEY` set, every public page shows a chat bubble (full
+screen on a phone). `POST /api/chat` answers over server-sent events (`session`, `status` while a
+tool runs, `delta` text, `products` cards, then `done`, `limit` or `error`); `GET /api/chat/history`
+replays a conversation after a page load. The model (`ChatProperties.model`, Claude Haiku 4.5) answers
+only through six tools against our own database, none of which calls the internet or returns
+`cost_lek`: `searchStock`, `getProduct`, `compareProducts`, `recommendUpgrade` (the customer's card is
+resolved with the same matcher as the autofill; only higher tiers their PSU can run are offered),
+`checkFit` (PSU and case length → OK / TIGHT / NO_FIT) and `createLead`. The system prompt's rules
+are in `ChatPrompt` verbatim: Albanian, nothing stated that did not come from a tool, ask about the
+power supply before any card over 450 W, say so when the customer's card is already as good as the
+stock, no supplier costs, no invented delivery times or discounts. Conversations, messages (with the
+tools called and the products surfaced) and leads are kept in `chat_session`, `chat_message` and
+`chat_lead`; Admin › Asistenti shows the transcripts, the leads inbox (E re → Kontaktuar → E mbyllur)
+and, first, the demand report: what customers asked for that is not in stock, grouped by catalogue
+model. Guardrails: 25 customer messages per conversation (then the WhatsApp link), 4 tool-call rounds
+and 1024 output tokens per reply, 30 messages an hour per client address, and a monthly spend cap
+(`CHAT_MONTHLY_CAP_USD`, tracked in `chat_usage` from the token counts the API reports) past which
+the bubble becomes the WhatsApp link. The key and the model calls stay on the server; the browser
+only ever sees `/api/chat`, which allows no cross-origin use.
 
 **Logo and icons.** The chip mark is drawn by `tools/logo.py`, which writes the favicons, the Apple
 touch icon, the manifest icons and `images/logo-mark.svg` from one set of coordinates. Edit it and run

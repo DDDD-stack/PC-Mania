@@ -9,6 +9,7 @@ import al.pcmania.domain.GpuCatalog;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
 import al.pcmania.repo.ChatLeadRepository;
+import al.pcmania.repo.ChatSessionRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.GpuCatalogService;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,7 @@ public class ChatTools {
     private final ProductRepository products;
     private final GpuCatalogService catalog;
     private final ChatLeadRepository leads;
+    private final ChatSessionRepository sessions;
 
     // ---- What the model sees ----
 
@@ -229,13 +231,15 @@ public class ChatTools {
 
     /** Records a customer to call back. Marks the session so the admin sees which conversations converted. */
     @Transactional
-    public LeadResult createLead(ChatSession session, String name, String phone, String wantedItem, Integer budgetLek,
+    public LeadResult createLead(Long sessionId, String name, String phone, String wantedItem, Integer budgetLek,
                                  Integer psuWatts, String notes) {
         if (!StringUtils.hasText(name) || !StringUtils.hasText(phone) || !StringUtils.hasText(wantedItem)) {
             return new LeadResult(false, null, "Duhen emri, telefoni dhe çfarë kërkon klienti.");
         }
         String digits = phone.replaceAll("\\D", "");
         if (digits.length() < 8) return new LeadResult(false, null, "Numri i telefonit nuk duket i plotë. Pyet përsëri.");
+        ChatSession session = sessions.findById(sessionId).orElse(null);
+        if (session == null) return new LeadResult(false, null, "Biseda nuk u gjet.");
         ChatLead lead = new ChatLead();
         lead.setSession(session);
         lead.setName(name.trim());

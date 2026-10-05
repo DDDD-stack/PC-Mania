@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--/* The assistant's shell on every public page: a bubble bottom-right that opens the panel (full screen
+       on a phone). chat.js does the talking; without it, or when the assistant is over its monthly cap, the
+       bubble is the shop's WhatsApp link instead. */-->
+<th:block th:fragment="widget">
+    <a th:unless="${chatAvailable}" class="pm-chat-fab pm-chat-fab-wa" th:href="${whatsappGeneral}" target="_blank" rel="noopener" aria-label="Na shkruani në WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+    <th:block th:if="${chatAvailable}">
+        <button type="button" class="pm-chat-fab" id="pmChatFab" aria-haspopup="dialog" aria-controls="pmChat" aria-expanded="false" aria-label="Hap asistentin">
+            <i class="bi bi-chat-dots-fill"></i>
+            <span class="pm-chat-fab-label">Pyet asistentin</span>
+        </button>
+        <section class="pm-chat" id="pmChat" role="dialog" aria-modal="false" aria-labelledby="pmChatTitle" hidden
+                 th:data-whatsapp="${whatsappGeneral}">
+            <header class="pm-chat-head">
+                <div class="pm-chat-avatar"><img th:src="@{/favicon.svg}" alt="" width="26" height="26"></div>
+                <div class="pm-chat-titles">
+                    <div class="pm-chat-title" id="pmChatTitle">Asistenti PCMania</div>
+                    <div class="pm-chat-sub">Përgjigjet automatikisht nga stoku ynë · për porosi na shkruani në WhatsApp</div>
+                </div>
+                <button type="button" class="btn-close pm-chat-close" id="pmChatClose" aria-label="Mbyll"></button>
+            </header>
+            <div class="pm-chat-log" id="pmChatLog" aria-live="polite" aria-busy="false"></div>
+            <div class="pm-chat-typing" id="pmChatTyping" hidden>
+                <span class="pm-chat-dots"><i></i><i></i><i></i></span>
+                <span class="pm-chat-typing-text" id="pmChatTypingText">Po shkruan…</span>
+            </div>
+            <form class="pm-chat-form" id="pmChatForm" autocomplete="off">
+                <label class="visually-hidden" for="pmChatInput">Mesazhi</label>
+                <textarea class="pm-chat-input" id="pmChatInput" rows="1" maxlength="1500" placeholder="Shkruaj këtu…" required></textarea>
+                <button class="pm-chat-send" id="pmChatSend" type="submit" aria-label="Dërgo"><i class="bi bi-send-fill"></i></button>
+            </form>
+            <div class="pm-chat-foot">
+                Asistent automatik: mund të gabojë. Çmimet dhe stoku vijnë nga faqja jonë.
+                <a th:href="${whatsappGeneral}" target="_blank" rel="noopener">Fol me një person</a>
+            </div>
+        </section>
+        <template id="pmChatCardTpl">
+            <a class="pm-chat-card" target="_blank" rel="noopener">
+                <img alt="" width="56" height="56" loading="lazy">
+                <span class="pm-chat-card-body">
+                    <span class="pm-chat-card-title"></span>
+                    <span class="pm-chat-card-meta"><span class="pm-chat-card-price"></span> · <span class="pm-chat-card-cond"></span></span>
+                </span>
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </template>
+    </th:block>
+</th:block>
+
+</body>
+</html>
