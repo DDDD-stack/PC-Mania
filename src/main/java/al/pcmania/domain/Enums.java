@@ -27,7 +27,9 @@ public final class Enums {
     }
 
     public enum PaymentMethod {
-        CASH_ON_DELIVERY("Para në dorë në dorëzim"), BANK_TRANSFER("Transfertë bankare");
+        CASH_ON_DELIVERY("Para në dorë në dorëzim"), BANK_TRANSFER("Transfertë bankare"),
+        /** Not chargeable yet: see PaymentProvider. Checkout shows it greyed out and refuses it. */
+        CARD_ONLINE("Pagesa me kartë");
         public final String label;
         PaymentMethod(String label) { this.label = label; }
         public String getLabel() { return label; }

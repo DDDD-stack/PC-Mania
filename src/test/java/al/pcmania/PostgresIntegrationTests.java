@@ -126,6 +126,28 @@ class PostgresIntegrationTests {
     }
 
     @Test
+    void cardPaymentIsRefusedWhileThereIsNoBankIntegration() throws Exception {
+        Product p = product(1);
+        long before = orderRepo.count();
+        mvc.perform(post("/porosit/" + p.getSlug())
+                        .param("customerName", "Test Klient")
+                        .param("customerPhone", "069 123 4567")
+                        .param("city", "Tiranë")
+                        .param("deliveryMethod", "PICKUP_TIRANA")
+                        .param("paymentMethod", "CARD_ONLINE")
+                        .param("quantity", "1"))
+                // The form comes back with the error instead of redirecting to the success page.
+                .andExpect(status().isOk());
+
+        // A disabled radio only stops an honest browser, so the refusal has to hold server-side:
+        // no order, and the unit is still on the shelf.
+        assertEquals(before, orderRepo.count());
+        Product after = products.findById(p.getId()).orElseThrow();
+        assertEquals(1, after.getQuantity());
+        assertEquals(ProductStatus.ACTIVE, after.getStatus());
+    }
+
+    @Test
     void offlineSaleIsRecordedAsADeliveredOrder() {
         Product p = product(1);
         Order o = orders.recordOfflineSale(p.getId(), 1, 50_000, null, "Facebook");

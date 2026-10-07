@@ -8,6 +8,7 @@ import al.pcmania.service.NotFoundException;
 import al.pcmania.service.OrderService;
 import al.pcmania.service.RateLimiter;
 import al.pcmania.service.SeoService;
+import al.pcmania.service.payment.PaymentProvider;
 import al.pcmania.web.view.ProductDetail;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -36,6 +37,7 @@ public class CheckoutController {
     private final OrderService orders;
     private final SeoService seo;
     private final RateLimiter rateLimiter;
+    private final PaymentProvider payments;
 
     @GetMapping("/{slug}")
     String form(@PathVariable String slug, Model model, RedirectAttributes flash) {
@@ -50,6 +52,11 @@ public class CheckoutController {
         ProductDetail p = catalog.detail(slug).orElseThrow(NotFoundException::new);
         if (!p.isAvailable()) return unavailable(p, flash);
         if (form.getQuantity() > p.quantity()) errors.rejectValue("quantity", "max", "Në stok ka vetëm " + p.quantity() + " copë");
+        // The card option is shown greyed out while there is no bank integration; a posted value still
+        // has to be refused, because a disabled input only stops the honest browser.
+        if (form.getPaymentMethod() == PaymentMethod.CARD_ONLINE && !payments.isEnabled()) {
+            errors.rejectValue("paymentMethod", "unavailable", "Pagesa me kartë nuk është aktive ende. Zgjidhni një mënyrë tjetër.");
+        }
         if (StringUtils.hasText(form.getWebsite())) return "redirect:/"; // honeypot tripped
         if (errors.hasErrors()) return render(p, form, model);
         if (!rateLimiter.tryAcquire("order:" + request.getRemoteAddr(), 5, Duration.ofHours(1))) {
@@ -88,6 +95,7 @@ public class CheckoutController {
         model.addAttribute("cities", CITIES);
         model.addAttribute("deliveryMethods", DeliveryMethod.values());
         model.addAttribute("paymentMethods", PaymentMethod.values());
+        model.addAttribute("cardPaymentEnabled", payments.isEnabled());
         model.addAttribute("courierShipping", orders.shippingFor(DeliveryMethod.COURIER, p.transportIncluded()));
         return "site/checkout";
     }

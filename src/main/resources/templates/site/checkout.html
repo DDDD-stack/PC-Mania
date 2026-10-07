@@ -97,6 +97,15 @@
                     <strong>Transfertë bankare</strong>
                     <div class="small text-body-secondary ms-4">Ju dërgojmë të dhënat pas konfirmimit</div>
                 </label>
+                <!--/* Shown so customers know card payment is coming, disabled because it is not wired
+                       to anything yet. The server refuses it too: see CheckoutController. */-->
+                <label class="choice-card" th:classappend="${!cardPaymentEnabled} ? 'opacity-50'">
+                    <input class="form-check-input" type="radio" th:field="*{paymentMethod}" value="CARD_ONLINE"
+                           th:disabled="${!cardPaymentEnabled}">
+                    <strong>Pagesa me kartë</strong>
+                    <span class="badge text-bg-secondary ms-1" th:if="${!cardPaymentEnabled}">së shpejti</span>
+                    <div class="small text-body-secondary ms-4">Po presim lidhjen me bankën</div>
+                </label>
             </div>
         </div>
 
