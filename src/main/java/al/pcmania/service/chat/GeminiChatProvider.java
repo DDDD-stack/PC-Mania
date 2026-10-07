@@ -141,6 +141,9 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
             throw new ProviderUnavailableException("Gemini unreachable: " + e.getMessage(), false, e);
         }
         if (res.status() == 429) throw new ProviderUnavailableException("Gemini rate limit (429)", true);
+        // 503 is "high demand, try later" on the free tier, not a fault of ours: count it with the rate
+        // limits so a busy afternoon does not read as a broken assistant.
+        if (res.status() == 503) throw new ProviderUnavailableException("Gemini busy (503)", true);
         if (!res.ok()) {
             log.warn("Gemini answered {}: {}", res.status(), abbreviate(res.errorBody()));
             throw new ProviderUnavailableException("Gemini answered " + res.status() + ": " + abbreviate(res.errorBody()), false);

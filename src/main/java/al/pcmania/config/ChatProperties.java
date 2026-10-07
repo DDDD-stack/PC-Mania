@@ -28,7 +28,7 @@ public record ChatProperties(
 
     public record Gemini(
             String apiKey,
-            @DefaultValue("gemini-2.5-flash") String model,
+            @DefaultValue("gemini-3.8-flash") String model,
             /** Free tier allows 15 on Flash; 12 leaves headroom for retries and clock drift. */
             @DefaultValue("12") int requestsPerMinute,
             /** The free tier's daily cap, shown in the admin against today's count. */

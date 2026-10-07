@@ -30,7 +30,7 @@ class GeminiChatProviderTest {
 
     private GeminiChatProvider provider(String key, int rpm) {
         ChatProperties props = new ChatProperties("gemini", 25, 4, 1024, 30,
-                new ChatProperties.Gemini(key, "gemini-2.5-flash", rpm, 1500),
+                new ChatProperties.Gemini(key, "gemini-3.8-flash", rpm, 1500),
                 new ChatProperties.Anthropic(null, "claude-haiku-4-5-20251001", 25, 1, 5, .1, 1.25));
         return new GeminiChatProvider(props, prompt, usage, http, json);
     }
@@ -61,7 +61,7 @@ class GeminiChatProviderTest {
         assertEquals(List.of("msi-3060-ti"), out.surfacedSlugs());
         assertEquals(2, http.sent.size());
         ScriptedHttp.Sent first = http.sent.get(0);
-        assertEquals(GeminiChatProvider.BASE_URL + "gemini-2.5-flash:streamGenerateContent?alt=sse", first.url());
+        assertEquals(GeminiChatProvider.BASE_URL + "gemini-3.8-flash:streamGenerateContent?alt=sse", first.url());
         assertEquals("gk-test", first.headers().get("x-goog-api-key"));
         JsonNode body = json.readTree(first.body());
         assertTrue(body.path("systemInstruction").path("parts").get(0).path("text").asText().contains("NEVER ask for a name"));
@@ -115,6 +115,17 @@ class GeminiChatProviderTest {
         assertTrue(assertThrows(ProviderUnavailableException.class,
                 () -> tight.stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000))).isRateLimited());
         assertEquals(before, http.sent.size());
+    }
+
+    @Test
+    void busyIsTreatedAsTransientNotAsAFault() {
+        // Gemini's free tier answers 503 "high demand" under load. Counting that as an error made a
+        // busy afternoon look the same as a broken assistant.
+        http.status(503, "{\"error\":{\"code\":503,\"status\":\"UNAVAILABLE\"}}");
+        ProviderUnavailableException e = assertThrows(ProviderUnavailableException.class,
+                () -> provider("gk-test", 12).stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000)));
+        assertTrue(e.isRateLimited());
+        verify(usage).rateLimitHit("gemini");
     }
 
     @Test
