@@ -127,6 +127,28 @@ class GpuCatalogTests {
         mvc.perform(get("/admin/api/gpu-catalog/search").param("q", "3060")).andExpect(status().is3xxRedirection());
     }
 
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void aNewProductLinksItselfToTheCatalogue() throws Exception {
+        assertEquals("GeForce RTX 3070 Ti", linkedModelOf("Gigabyte RTX 3070TI"));
+        assertEquals("GeForce GTX 1660", linkedModelOf("GTX 1660 6GB"));
+        assertEquals("GeForce RTX 2060 6GB", linkedModelOf("RTX 2060 6GB"));
+        assertEquals("GeForce GTX 1660 Super", linkedModelOf("Palit GTX 1660 Super StormX"));
+        assertEquals("GeForce RTX 3070", linkedModelOf("ASUS RTX 3070 Dual"));
+        assertNull(linkedModelOf("Tastiere mekanike RGB"));
+    }
+
+    private String linkedModelOf(String model) throws Exception {
+        String title = model + " " + UUID.randomUUID().toString().replaceAll("[^a-z]", "");
+        mvc.perform(post("/admin/products").with(csrf())
+                        .param("title", title).param("categorySlug", "karta-grafike").param("condition", "USED")
+                        .param("priceLek", "25000").param("costLek", "20000").param("quantity", "1").param("status", "ACTIVE"))
+                .andExpect(status().is3xxRedirection());
+        Product saved = tx.execute(s -> products.findAll().stream().filter(x -> x.getTitle().equals(title)).findFirst()
+                .map(x -> { if (x.getGpuModel() != null) x.getGpuModel().getName(); return x; }).orElseThrow());
+        return saved.getGpuModel() == null ? null : saved.getGpuModel().getName();
+    }
     @Test
     @WithMockUser(roles = "ADMIN")
     void productFormStampsTheModel() throws Exception {

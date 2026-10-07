@@ -12,6 +12,7 @@ import al.pcmania.web.Fmt;
 import al.pcmania.web.admin.ProductForm;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductAdminService {
 
     private static final Safelist DESCRIPTION_HTML = Safelist.basic().addTags("h3", "h4");
@@ -37,6 +39,7 @@ public class ProductAdminService {
     private final OrderItemRepository orderItems;
     private final GpuCatalogRepository gpuCatalog;
     private final ImageStorage images;
+    private final GpuCatalogService catalog;
 
     public Product get(Long id) {
         return products.findById(id).orElseThrow(NotFoundException::new);
@@ -55,6 +58,14 @@ public class ProductAdminService {
             return cb.and(p.toArray(Predicate[]::new));
         };
         return products.findAll(spec, pageable);
+    }
+
+    private void autoLinkCatalogue(Product p) {
+        if (p.getGpuModel() != null || !StringUtils.hasText(p.getTitle())) return;
+        catalog.resolve(p.getTitle()).ifPresent(match -> {
+            p.setGpuModel(match);
+            log.info("Linked \"{}\" to catalogue entry {}", p.getTitle(), match.getName());
+        });
     }
 
     @Transactional
@@ -105,6 +116,7 @@ public class ProductAdminService {
         p.setTradeEligible(form.isTradeEligible());
         p.setMaxTradeValueLek(form.isTradeEligible() ? form.getMaxTradeValueLek() : null);
         p.setGpuModel(form.getGpuModelId() == null ? null : gpuCatalog.findById(form.getGpuModelId()).orElse(null));
+        if (id == null) autoLinkCatalogue(p);
 
         String wanted = StringUtils.hasText(form.getSlug()) ? form.getSlug() : (p.getSlug() != null ? p.getSlug() : Slugs.of(p.getTitle()));
         if (!wanted.equals(p.getSlug())) p.setSlug(uniqueSlug(wanted));
@@ -165,6 +177,7 @@ public class ProductAdminService {
         p.setStatus(ProductStatus.DRAFT);
         p.setTestNotes("Marrë me këmbim " + t.getRequestNumber() + " (vlera e dhënë: " + Fmt.lek(t.getQuotedValueLek()) + ").");
         p.setSlug(uniqueSlug(p.getTitle()));
+        autoLinkCatalogue(p);
         return products.save(p);
     }
 
