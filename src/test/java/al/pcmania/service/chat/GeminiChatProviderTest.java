@@ -30,7 +30,7 @@ class GeminiChatProviderTest {
 
     private GeminiChatProvider provider(String key, int rpm) {
         ChatProperties props = new ChatProperties("gemini", 25, 4, 1024, 30,
-                new ChatProperties.Gemini(key, "gemini-3.8-flash", rpm, 1500),
+                new ChatProperties.Gemini(key, "gemini-flash-latest", rpm, 1500),
                 new ChatProperties.Anthropic(null, "claude-haiku-4-5-20251001", 25, 1, 5, .1, 1.25));
         return new GeminiChatProvider(props, prompt, usage, http, json);
     }
@@ -61,7 +61,7 @@ class GeminiChatProviderTest {
         assertEquals(List.of("msi-3060-ti"), out.surfacedSlugs());
         assertEquals(2, http.sent.size());
         ScriptedHttp.Sent first = http.sent.get(0);
-        assertEquals(GeminiChatProvider.BASE_URL + "gemini-3.8-flash:streamGenerateContent?alt=sse", first.url());
+        assertEquals(GeminiChatProvider.BASE_URL + "gemini-flash-latest:streamGenerateContent?alt=sse", first.url());
         assertEquals("gk-test", first.headers().get("x-goog-api-key"));
         JsonNode body = json.readTree(first.body());
         assertTrue(body.path("systemInstruction").path("parts").get(0).path("text").asText().contains("NEVER ask for a name"));

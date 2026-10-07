@@ -113,7 +113,7 @@ app:
       # Pinned deliberately. 2.5-flash was retired under us and every call 404d, which is what put the
       # assistant on the guided finder. "gemini-flash-latest" follows Google automatically if you would
       # rather not be pinned - the trade is silent behaviour changes instead of a visible break.
-      model: ${GEMINI_MODEL:gemini-3.8-flash}
+      model: ${GEMINI_MODEL:gemini-flash-latest}
       # Flash's free tier allows 15 requests a minute; the limiter stays under it.
       requests-per-minute: ${GEMINI_RPM:12}
     anthropic:

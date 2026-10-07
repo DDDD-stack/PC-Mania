@@ -30,7 +30,7 @@ class AnthropicChatProviderTest {
 
     private AnthropicChatProvider provider(String key) {
         ChatProperties props = new ChatProperties("anthropic", 25, 4, 1024, 30,
-                new ChatProperties.Gemini(null, "gemini-3.8-flash", 12, 1500),
+                new ChatProperties.Gemini(null, "gemini-flash-latest", 12, 1500),
                 new ChatProperties.Anthropic(key, "claude-haiku-4-5-20251001", 25, 1, 5, .1, 1.25));
         return new AnthropicChatProvider(props, prompt, usage, http, json, spend);
     }
