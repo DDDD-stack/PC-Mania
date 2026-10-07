@@ -55,7 +55,7 @@ public class CatalogController {
         String path = "/kategori/" + slug;
 
         Seo pageSeo = seo.category(category, filter.page());
-        // Filtered/sorted variants are duplicates of the category page for search engines.
+
         if (filter.hasFilters() || filter.sort() != CatalogFilter.Sort.TE_REJAT) {
             pageSeo = pageSeo.withNoindex().withCanonical(seo.abs(path));
         }

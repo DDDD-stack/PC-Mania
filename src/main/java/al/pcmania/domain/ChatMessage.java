@@ -7,7 +7,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/** One turn of a conversation: what the customer typed, or what the assistant answered. */
 @Entity
 @Table(name = "chat_message")
 @Getter
@@ -23,10 +22,10 @@ public class ChatMessage {
     private ChatRole role;
     @Column(columnDefinition = "TEXT")
     private String content;
-    /** For assistant turns: the tools called and the product slugs they surfaced, as JSON. Null otherwise. */
+
     @Column(columnDefinition = "TEXT")
     private String toolCallsJson;
-    /** For assistant turns: the provider that wrote it (gemini, anthropic, guided). */
+
     private String providerUsed;
     private LocalDateTime createdAt;
 

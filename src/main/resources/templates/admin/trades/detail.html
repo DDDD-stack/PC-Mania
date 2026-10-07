@@ -15,7 +15,7 @@
     </div>
 
     <div class="row g-3">
-        <!--/* Left: what they give, and the proof */-->
+
         <div class="col-lg-7">
             <div class="card mb-3">
                 <div class="card-header"><strong>Prova</strong></div>
@@ -67,7 +67,6 @@
             </div>
         </div>
 
-        <!--/* Right: what they want, and what to do next */-->
         <div class="col-lg-5">
             <div class="card mb-3">
                 <div class="card-header"><strong>Produkti që kërkon</strong></div>
@@ -87,7 +86,6 @@
                 </div>
             </div>
 
-            <!--/* Quote shown */-->
             <div class="card mb-3" th:if="${t.quotedValueLek != null}">
                 <div class="card-header"><strong>Oferta</strong></div>
                 <div class="card-body small">
@@ -99,12 +97,10 @@
                 </div>
             </div>
 
-            <!--/* NEW -> REVIEWING */-->
             <form th:if="${t.status.name() == 'NEW'}" class="mb-3" th:action="@{/admin/trades/{id}/reviewing(id=${t.id})}" method="post">
                 <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-eye me-1"></i>Po e shqyrtoj</button>
             </form>
 
-            <!--/* Quote (also re-quote while quoted) */-->
             <form th:if="${t.status.name() == 'NEW' || t.status.name() == 'REVIEWING' || t.status.name() == 'QUOTED'}"
                   class="card mb-3" th:action="@{/admin/trades/{id}/quote(id=${t.id})}" method="post"
                   th:attr="data-price=${t.product != null} ? ${t.product.priceLek} : 0, data-max=${t.product != null and t.product.maxTradeValueLek != null} ? ${t.product.maxTradeValueLek} : ''" id="quoteForm">
@@ -129,13 +125,11 @@
                 </div>
             </form>
 
-            <!--/* QUOTED -> ACCEPTED */-->
             <form th:if="${t.status.name() == 'QUOTED'}" class="mb-3" th:action="@{/admin/trades/{id}/accept(id=${t.id})}" method="post"
                   data-confirm="Klienti e pranoi ofertën?">
                 <button class="btn btn-success w-100" type="submit"><i class="bi bi-check2-circle me-1"></i>Klienti e pranoi</button>
             </form>
 
-            <!--/* ACCEPTED -> order */-->
             <form th:if="${t.status.name() == 'ACCEPTED' && t.product != null}" class="card mb-3 border-success" th:action="@{/admin/trades/{id}/convert(id=${t.id})}" method="post">
                 <div class="card-header bg-success-subtle"><strong>Krijo porosinë nga këmbimi</strong></div>
                 <div class="card-body">
@@ -161,7 +155,6 @@
                 </div>
             </form>
 
-            <!--/* CONVERTED: the order, and the traded-in item as incoming stock */-->
             <div th:if="${t.status.name() == 'CONVERTED'}" class="card mb-3">
                 <div class="card-header"><strong>U bë porosi</strong></div>
                 <div class="card-body">
@@ -179,7 +172,6 @@
             </div>
             <div th:if="${t.status.name() == 'EXPIRED'}" class="alert alert-secondary">Oferta skadoi pa përgjigje.</div>
 
-            <!--/* Decline while open */-->
             <form th:if="${t.status.open}" class="card" th:action="@{/admin/trades/{id}/decline(id=${t.id})}" method="post">
                 <div class="card-body">
                     <label class="form-label small mb-1">Refuzo me arsye</label>

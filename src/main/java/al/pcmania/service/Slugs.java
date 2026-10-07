@@ -7,7 +7,6 @@ public final class Slugs {
 
     private Slugs() {}
 
-    /** "Kartë Grafike RTX 3060 12GB" -> "karte-grafike-rtx-3060-12gb" */
     public static String of(String text) {
         String s = Normalizer.normalize(text == null ? "" : text, Normalizer.Form.NFD)
                 .replaceAll("\\p{M}", "")

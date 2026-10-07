@@ -6,7 +6,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/** Someone who asked to be called when an upcoming item arrives. */
 @Entity
 @Getter
 @Setter

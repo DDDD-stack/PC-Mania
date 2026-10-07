@@ -14,7 +14,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.function.Function;
 
-/** JSON shapes for the mobile admin API. Unlike the public site, these include cost and margin. */
 public final class ApiDtos {
 
     private ApiDtos() {}
@@ -92,7 +91,6 @@ public final class ApiDtos {
                               String customerPhone, int budgetLek, String useCase, String notes, String adminNotes,
                               Integer quotedTotalLek, String whatsappUrl, LocalDateTime createdAt) {}
 
-    /** Null fields are left unchanged, except adminNotes where an empty string clears the field. */
     public record BuildPatch(String status, Integer quotedTotalLek, String adminNotes) {}
 
     public record ProductPatch(String status, Integer quantity, Integer priceLek, Integer costLek,
@@ -115,7 +113,6 @@ public final class ApiDtos {
     public record InterestDto(Long id, String customerName, String customerPhone, boolean notified,
                               String whatsappUrl, LocalDateTime createdAt) {}
 
-    /** Null fields are left unchanged. `condition` and `status` are enum names. */
     public record UpcomingPatch(String title, String teaser, String categorySlug, Integer expectedPriceLek,
                                 String expectedLabel, String condition, String status, Integer sortOrder) {}
 

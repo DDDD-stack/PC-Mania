@@ -13,11 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * The demand signal: what customers asked the assistant for, grouped, with whether the shop has it.
- * A lead's {@code wantedItem} is resolved to a catalogue row with the same matcher as the autofill
- * ("rtx 3070", "RTX3070 8gb" and "3070" become one line); text that matches no row is grouped as typed.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -29,7 +24,6 @@ public class ChatDemand {
     private final GpuCatalogService catalog;
     private final ProductRepository products;
 
-    /** Most asked for first; the caller splits off what is not in stock. */
     public List<Row> report() {
         Map<String, List<ChatLead>> groups = new LinkedHashMap<>();
         Map<String, GpuCatalog> resolved = new HashMap<>();

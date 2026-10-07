@@ -9,16 +9,11 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * In-memory sliding-window limiter for public forms. Orders reserve stock immediately,
- * so this stops one client from reserving the whole catalogue with fake orders.
- */
 @Service
 public class RateLimiter {
 
     private final Map<String, Deque<Instant>> hits = new ConcurrentHashMap<>();
 
-    /** Records a hit and returns false if the key already used {@code max} hits within {@code window}. */
     public boolean tryAcquire(String key, int max, Duration window) {
         Instant now = Instant.now();
         Deque<Instant> q = hits.computeIfAbsent(key, k -> new ArrayDeque<>());

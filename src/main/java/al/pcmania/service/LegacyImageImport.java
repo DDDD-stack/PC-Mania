@@ -13,13 +13,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-/**
- * Carries photos written to disk by earlier versions into the database, once.
- *
- * It runs on every start but only copies files whose key is not there yet, so after the first time
- * it costs one directory listing. Nothing is deleted from disk: the folder stays as a backup until
- * the operator is satisfied the move worked.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j

@@ -50,13 +50,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** "Nderro" trade-ins, end to end on a real Postgres. */
 @SpringBootTest
 @AutoConfigureMockMvc
 class TradeInTests {
 
     private static final EmbeddedPostgres PG = LocalPostgres.startTemporary();
-    /** A value that must never appear on a public page. */
+
     private static final int SECRET_CAP = 4_321_987;
 
     @DynamicPropertySource
@@ -78,8 +77,6 @@ class TradeInTests {
     @Autowired FileStorage files;
     @Autowired TransactionTemplate tx;
 
-    // ---- Customer side ----
-
     @Test
     void aTradeRequestIsAQuoteNotAnOrder() throws Exception {
         Product p = tradeProduct(1);
@@ -98,7 +95,6 @@ class TradeInTests {
         assertEquals("069 123 4567", t.getCustomerPhone());
         assertNull(t.getCustomerEmail());
 
-        // Nothing ordered, nothing reserved.
         assertEquals(ordersBefore, orders.count());
         Product after = products.findById(p.getId()).orElseThrow();
         assertEquals(1, after.getQuantity());
@@ -111,13 +107,12 @@ class TradeInTests {
     void exactlyOneContactIsKeptAndItMustMatchTheChosenMethod() throws Exception {
         Product p = tradeProduct(1);
         long before = trades.count();
-        // Email chosen but only a phone given: refused.
+
         mvc.perform(form(p, "EMAIL").file(jpeg()).param("customerPhone", "069 123 4567").param("customerEmail", ""))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Shkruani një email të vlefshëm")));
         assertEquals(before, trades.count());
 
-        // Email chosen and given: the phone that was also typed is not stored.
         String location = mvc.perform(form(p, "EMAIL").file(jpeg()).param("customerPhone", "069 123 4567").param("customerEmail", "klient@example.com"))
                 .andExpect(status().is3xxRedirection()).andReturn().getResponse().getRedirectedUrl();
         TradeRequest t = trades.findByRequestNumber(numberFrom(location)).orElseThrow();
@@ -144,11 +139,11 @@ class TradeInTests {
     @Test
     void mediaIsRecognisedByItsBytesNotItsName() throws Exception {
         Product p = tradeProduct(1);
-        // A text file named .mp4 is refused...
+
         MockMultipartFile fake = new MockMultipartFile("media", "furmark.mp4", "video/mp4", "not a video at all".getBytes(StandardCharsets.UTF_8));
         mvc.perform(form(p).file(fake)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("video MP4/MOV ose foto JPG/PNG")));
-        // ...and an MP4 header is taken as video whatever the name.
+
         byte[] mp4 = new byte[2048];
         System.arraycopy("\0\0\0\u0018ftypisom".getBytes(StandardCharsets.ISO_8859_1), 0, mp4, 0, 12);
         String location = mvc.perform(form(p).file(new MockMultipartFile("media", "clip.bin", "application/octet-stream", mp4)))
@@ -208,8 +203,6 @@ class TradeInTests {
                 .andExpect(content().string(containsString("Nderrim")));
     }
 
-    // ---- Operator side ----
-
     @Test
     @WithMockUser(roles = "ADMIN")
     void quoteAcceptConvertAndTakeTheItemIntoStock() throws Exception {
@@ -218,7 +211,7 @@ class TradeInTests {
 
         mvc.perform(get("/admin/trades")).andExpect(status().isOk()).andExpect(content().string(containsString(t.getRequestNumber())));
         mvc.perform(get("/admin/trades/" + t.getId())).andExpect(status().isOk())
-                .andExpect(content().string(containsString("4.321.987"))); // the cap is shown to the operator
+                .andExpect(content().string(containsString("4.321.987")));
         mvc.perform(get("/admin/trades/" + t.getId() + "/media")).andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", "image/jpeg"));
 
@@ -251,7 +244,6 @@ class TradeInTests {
         assertEquals(ProductStatus.RESERVED, reserved.getStatus());
         mvc.perform(get("/admin/orders/" + o.getId())).andExpect(status().isOk()).andExpect(content().string(containsString("−12.000 Lekë")));
 
-        // Incoming stock until the item is listed.
         mvc.perform(get("/admin")).andExpect(content().string(containsString("Stok i ardhur nga këmbimet")));
         mvc.perform(post("/admin/trades/" + t.getId() + "/stock").with(csrf())).andExpect(status().is3xxRedirection());
         Product stock = products.findById(trades.findById(t.getId()).orElseThrow().getStockProductId()).orElseThrow();
@@ -309,8 +301,6 @@ class TradeInTests {
         assertNull(TradeMedia.detect(new ByteArrayInputStream("hello, world".getBytes(StandardCharsets.UTF_8))));
     }
 
-    // ---- Helpers ----
-
     private Product tradeProduct(int quantity) {
         return tx.execute(s -> {
             Product p = new Product();
@@ -328,7 +318,6 @@ class TradeInTests {
         });
     }
 
-    /** A phone-contact submission. Each one comes from its own address, or the 5-an-hour limit would trip. */
     private MockMultipartHttpServletRequestBuilder form(Product p) {
         MockMultipartHttpServletRequestBuilder b = form(p, "PHONE");
         b.param("customerPhone", "069 123 4567");

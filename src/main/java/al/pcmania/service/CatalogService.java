@@ -18,7 +18,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Read side of the public shop. Returns only cost-free view objects. */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -33,7 +32,7 @@ public class CatalogService {
     private final CategoryRepository categories;
 
     public record CategoryTile(Category category, long count) {
-        /** Flagged by the operator, or simply nothing active to show. */
+
         public boolean isEmpty() {
             return category.isOutOfStock() || count == 0;
         }
@@ -41,7 +40,6 @@ public class CatalogService {
 
     public record Facets(List<Brand> brands, Map<String, List<String>> specs) {}
 
-    /** Categories shown publicly (navigation, home, sitemap). */
     public List<Category> categories() {
         return categories.findByVisibleTrueOrderBySortOrderAsc();
     }
@@ -52,7 +50,6 @@ public class CatalogService {
         return categories().stream().map(c -> new CategoryTile(c, counts.getOrDefault(c.getSlug(), 0L))).toList();
     }
 
-    /** Public lookup: hidden categories are treated as non-existent. Served from the cached list, not a query. */
     public Optional<Category> category(String slug) {
         return categories().stream().filter(c -> c.getSlug().equals(slug)).findFirst();
     }
@@ -97,12 +94,10 @@ public class CatalogService {
                 p.categorySlug(), ProductStatus.ACTIVE, p.id(), PageRequest.of(0, limit)));
     }
 
-    /** What can be asked about on the "Nderro" page: offered for trade and in stock. */
     public List<ProductCard> tradeable() {
         return cards(products.findByTradeEligibleTrueAndStatusAndQuantityGreaterThanOrderByListedAtDesc(ProductStatus.ACTIVE, 0));
     }
 
-    /** Cards for the given slugs, whatever their status: the assistant shows what it talked about. */
     public List<ProductCard> cardsBySlugs(Collection<String> slugs) {
         return slugs.isEmpty() ? List.of() : cards(products.findBySlugIn(slugs));
     }
@@ -126,7 +121,7 @@ public class CatalogService {
             if (!f.conditions().isEmpty()) p.add(root.get("condition").in(f.conditions()));
             if (f.trade()) p.add(cb.isTrue(root.get("tradeEligible")));
             if (!f.brands().isEmpty()) p.add(root.join("brand").get("slug").in(f.brands()));
-            // One EXISTS per spec key: values within a key are OR-ed, different keys are AND-ed.
+
             f.specs().forEach((key, vals) -> {
                 Subquery<Long> sq = query.subquery(Long.class);
                 var s = sq.from(ProductSpec.class);
@@ -147,7 +142,6 @@ public class CatalogService {
         return list.stream().map(p -> ProductCard.of(p, primary.get(p.getId()))).toList();
     }
 
-    /** Orders "8 GB" before "12 GB" by comparing leading numbers numerically. */
     static final Comparator<String> NATURAL = Comparator
             .comparing((Function<String, Double>) CatalogService::leadingNumber, Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(String.CASE_INSENSITIVE_ORDER);

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Customers' requests for products the shop should bring in ("Kërko një produkt"). */
 @Service
 @RequiredArgsConstructor
 public class WishService {

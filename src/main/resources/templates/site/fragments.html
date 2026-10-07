@@ -2,12 +2,10 @@
 <html lang="sq" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<!--/* Product card for grids. Expects a ProductCard (never the entity). */-->
 <div th:fragment="card(p)" class="col reveal">
     <a th:replace="~{site/fragments :: cardLink(${p})}"></a>
 </div>
 
-<!--/* The card itself, without the grid column, for layouts that add something underneath. */-->
 <a th:fragment="cardLink(p)" class="product-card" th:href="@{/produkt/{s}(s=${p.slug})}">
     <div class="product-thumb">
         <img data-fade th:src="${@img.medium(p.imageFilename)}" th:srcset="${@img.srcset(p.imageFilename)}"
@@ -27,7 +25,6 @@
     </div>
 </a>
 
-<!--/* What counts as proof for a trade-in ("Nderro"), on the overview and on the form. */-->
 <div th:fragment="tradeProofRules" class="trade-proof">
     <h2 class="h6 fw-bold mb-2"><i class="bi bi-camera-video me-1"></i>Prova që na duhet</h2>
     <ul class="small mb-2 ps-3">

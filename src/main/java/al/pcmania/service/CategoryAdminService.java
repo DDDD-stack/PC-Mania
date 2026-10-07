@@ -26,7 +26,6 @@ public class CategoryAdminService {
         return categories.findAllByOrderBySortOrderAsc();
     }
 
-    /** Product counts per category slug: all products, and active ones only. */
     public Map<String, long[]> counts() {
         Map<String, Long> active = products.countByCategory(ProductStatus.ACTIVE).stream()
                 .collect(Collectors.toMap(r -> (String) r[0], r -> (Long) r[1]));
@@ -73,7 +72,6 @@ public class CategoryAdminService {
         return c;
     }
 
-    /** Categories are only removable while empty; otherwise the products would lose their category. */
     @CacheEvict(cacheNames = CacheConfig.CATEGORIES, allEntries = true)
     @Transactional
     public boolean delete(Long id) {

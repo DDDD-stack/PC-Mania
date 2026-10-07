@@ -2,9 +2,6 @@
 <html lang="sq" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<!--/* The assistant's shell on every public page: a bubble bottom-right that opens the panel (full screen on
-       a phone). chat.js does the talking. Whatever provider is on, "Kërkim i shpejtë" switches to the guided
-       finder, and the contact form is the site's own: it posts to /api/lead and never touches a model. */-->
 <th:block th:fragment="widget">
     <button type="button" class="pm-chat-fab" id="pmChatFab" aria-haspopup="dialog" aria-controls="pmChat" aria-expanded="false" aria-label="Hap asistentin">
         <i class="bi bi-chat-dots-fill"></i>
@@ -46,7 +43,7 @@
             <i class="bi bi-chevron-right"></i>
         </a>
     </template>
-    <!--/* The contact form: the only place a name and phone are typed, posted straight to /api/lead. */-->
+
     <template id="pmChatLeadTpl">
         <form class="pm-chat-lead" method="post" action="/api/lead">
             <div class="pm-chat-lead-title"><i class="bi bi-telephone me-1"></i>Lër të dhënat dhe të telefonojmë</div>

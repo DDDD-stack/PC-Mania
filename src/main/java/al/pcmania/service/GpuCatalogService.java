@@ -17,20 +17,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-/**
- * The GPU catalogue: reading, the matcher behind the admin autofill and the assistant's
- * {@code recommendUpgrade}, and the admin's edits.
- */
 @Service
 @RequiredArgsConstructor
 public class GpuCatalogService {
 
-    /** A search hit, best first. */
     public record Match(GpuCatalog gpu, int score) {}
 
     private final GpuCatalogRepository repo;
 
-    /** Every row, fastest first. Cached: the table is small and the autofill queries it per keystroke. */
     @Cacheable(CacheConfig.GPU_CATALOG)
     public List<GpuCatalog> all() {
         return repo.findAllByOrderByTierDescNameAsc();
@@ -44,11 +38,6 @@ public class GpuCatalogService {
         return id == null ? Optional.empty() : repo.findById(id);
     }
 
-    /**
-     * Case-insensitive match on the name and the aliases, tolerant of missing spaces: "3060ti" finds
-     * "RTX 3060 Ti", and a whole product title such as "MSI RTX 3060 Ti Ventus 8GB" finds it too,
-     * because the longest alias contained in the title wins. Best matches first, at most {@code limit}.
-     */
     public List<Match> search(String query, int limit) {
         String q = normalize(query);
         if (q.length() < 2) return List.of();
@@ -63,25 +52,15 @@ public class GpuCatalogService {
         return hits.size() > limit ? hits.subList(0, limit) : hits;
     }
 
-    /** The single best match for free text, or empty when nothing is a confident match. */
     public Optional<GpuCatalog> resolve(String query) {
         List<Match> hits = search(query, 2);
         if (hits.isEmpty()) return Optional.empty();
         Match best = hits.get(0);
-        // A tie between two different cards (e.g. "2060" against RTX 2060 and RTX 2060 Super is not a
-        // tie: the exact alias scores higher) means the text was too vague to pick one.
+
         if (hits.size() > 1 && hits.get(1).score() == best.score()) return Optional.empty();
         return Optional.of(best.gpu());
     }
 
-    /*
-     * Scoring, highest first: the query equals the name or an alias (1000); the name or an alias
-     * starts with the query (800 + matched length); the name or an alias contains the query (600 +
-     * length); the query contains the name or an alias, as a product title does (400 + how far into
-     * the query the term reaches, then its length). The reach matters more than the length: inside
-     * "msirtx3060tiventus" the alias "3060ti" reaches past "rtx3060", so the Ti wins although the
-     * other alias is longer.
-     */
     private static int score(GpuCatalog g, String q) {
         int best = 0;
         List<String> terms = new ArrayList<>();
@@ -103,7 +82,6 @@ public class GpuCatalogService {
         return best;
     }
 
-    /** Lower case, letters and digits only: "RTX 3060 Ti" and "rtx3060ti" compare equal. */
     public static String normalize(String s) {
         if (s == null) return "";
         StringBuilder b = new StringBuilder(s.length());
@@ -113,7 +91,6 @@ public class GpuCatalogService {
         return b.toString();
     }
 
-    /** The Albanian blurb the autofill proposes for a product of this model. */
     public static String shortDescriptionSq(GpuCatalog g) {
         StringBuilder s = new StringBuilder(g.getName());
         List<String> intro = new ArrayList<>();

@@ -16,7 +16,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/** Admin > Katalogu GPU: the reference rows the autofill and the assistant work from. Plain; used rarely. */
 @Controller
 @RequestMapping("/admin/gpu-catalog")
 @RequiredArgsConstructor

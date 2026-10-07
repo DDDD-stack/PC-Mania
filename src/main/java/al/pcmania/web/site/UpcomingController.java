@@ -18,7 +18,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Duration;
 
-/** The "Së shpejti" page: stock on its way, where the only action is leaving a phone number. */
 @Controller
 @RequiredArgsConstructor
 public class UpcomingController {

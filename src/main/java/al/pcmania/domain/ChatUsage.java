@@ -9,10 +9,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/**
- * What the assistant has cost in one calendar month ("2026-10"), kept in the database so the cap
- * survives the free instance sleeping and redeploying. Cost is in millionths of a dollar.
- */
 @Entity
 @Table(name = "chat_usage")
 @Getter

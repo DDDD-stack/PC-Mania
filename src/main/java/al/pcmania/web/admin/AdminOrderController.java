@@ -68,7 +68,6 @@ public class AdminOrderController {
         return "redirect:/admin/orders/" + id;
     }
 
-    /** Sale agreed outside the site (Facebook, in person): recorded as a delivered order for reporting. */
     @PostMapping("/products/{productId}/offline-sale")
     String offlineSale(@PathVariable Long productId, @RequestParam int quantity, @RequestParam int priceLek,
                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,

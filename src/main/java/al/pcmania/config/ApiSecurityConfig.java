@@ -24,10 +24,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Stateless bearer-token security for the mobile admin API under /api. Evaluated before the
- * session/form-login chain in {@link SecurityConfig}, which handles everything else.
- */
 @Configuration
 public class ApiSecurityConfig {
 
@@ -39,11 +35,11 @@ public class ApiSecurityConfig {
                 .authorizeHttpRequests(a -> a
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         .requestMatchers("/api/v1/auth/login").permitAll()
-                        // The customer assistant: anonymous, same-origin only (see corsSource), its own rate limits.
+
                         .requestMatchers("/api/chat", "/api/chat/**", "/api/lead", "/api/finder/**").permitAll()
                         .anyRequest().hasRole("ADMIN"))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Tokens travel in the Authorization header, never in cookies, so CSRF does not apply.
+
                 .csrf(c -> c.disable())
                 .cors(c -> c.configurationSource(corsSource()))
                 .formLogin(f -> f.disable())
@@ -58,7 +54,6 @@ public class ApiSecurityConfig {
                 .build();
     }
 
-    /** Lets the app's web preview (a different origin) call the API. Safe: no cookies are involved. */
     private static UrlBasedCorsConfigurationSource corsSource() {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOriginPatterns(List.of("*"));
@@ -66,8 +61,7 @@ public class ApiSecurityConfig {
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         cors.setAllowCredentials(false);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // The assistant is for this site's own pages: no origin is allowed, so another site cannot embed
-        // it and spend the shop's API budget. Registered first, as the first matching pattern wins.
+
         source.registerCorsConfiguration("/api/chat/**", new CorsConfiguration());
         source.registerCorsConfiguration("/api/chat", new CorsConfiguration());
         source.registerCorsConfiguration("/api/lead", new CorsConfiguration());

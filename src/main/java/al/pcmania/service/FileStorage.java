@@ -20,13 +20,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Keeps uploaded files in the database, keyed by the path they are served at.
- *
- * The hosted service starts from its container image on every deploy, so anything written to the
- * filesystem there is gone the next time it is released. Product photos and the Android build both
- * have to outlive a deploy, and the database is the only storage this application already has.
- */
 @Service
 @RequiredArgsConstructor
 public class FileStorage {
@@ -34,7 +27,6 @@ public class FileStorage {
     private final StoredFileRepository files;
     private final JdbcTemplate jdbc;
 
-    /** Writes a file, replacing whatever was under that key. Image dimensions are recorded here. */
     @Transactional
     public void put(String key, String contentType, byte[] bytes, String label) {
         StoredFile f = files.findByFileKey(key, StoredFile.class).orElseGet(StoredFile::new);
@@ -50,10 +42,6 @@ public class FileStorage {
         files.save(f);
     }
 
-    /**
-     * Writes a new file from a stream without holding it in memory: a trade-in proof video is tens of
-     * megabytes, and the hosted instance has 512 MB in all. The key must not exist yet.
-     */
     @Transactional
     public void putStream(String key, String contentType, InputStream data, long size, String label) {
         if (size > Integer.MAX_VALUE) throw new IllegalArgumentException("File too large");
@@ -99,7 +87,6 @@ public class FileStorage {
         files.deleteByFileKey(key);
     }
 
-    /** Width and height read from the image header, or null when the bytes are not a readable image. */
     private static int[] pixelSize(byte[] bytes) {
         try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             Iterator<ImageReader> readers = in == null ? null : ImageIO.getImageReaders(in);

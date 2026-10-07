@@ -31,13 +31,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/**
- * "Nderro": part-exchange an old GPU, CPU or RAM against a product in stock. The form asks for a quote;
- * it does not order or reserve anything.
- *
- * The form is sent by script so the upload can show progress; such requests (X-Requested-With) get JSON
- * back - where to go next, or the errors per field. Without script it is an ordinary form post.
- */
 @Controller
 @RequiredArgsConstructor
 @Slf4j
@@ -111,7 +104,6 @@ public class TradeController {
         return "site/trade-sent";
     }
 
-    /** Exactly one contact, the one chosen: the other field is ignored, whatever it holds. */
     static void validateContact(TradeForm form, BindingResult errors) {
         if (form.getContactMethod() == ContactMethod.EMAIL) {
             if (!StringUtils.hasText(form.getCustomerEmail()) || !EMAIL.matcher(form.getCustomerEmail().trim()).matches()) {

@@ -8,17 +8,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
 
-/**
- * Category listing filters, bound from query params:
- * min, max, gjendja (condition), marka (brand slug), spec ("Key:Value"), rendit (sort), faqe (1-based page).
- */
 public record CatalogFilter(
         Integer min,
         Integer max,
         Set<Condition> conditions,
         Set<String> brands,
         Map<String, Set<String>> specs,
-        /** Only products that accept a trade-in ("Nderrim"). */
+
         boolean trade,
         Sort sort,
         int page) {
@@ -73,7 +69,6 @@ public record CatalogFilter(
                 + specs.values().stream().mapToInt(Set::size).sum();
     }
 
-    /** Relative URL for the same filters on another page. */
     public String pageUrl(String path, int page) {
         MultiValueMap<String, String> q = params(true);
         if (page > 1) q.add("faqe", String.valueOf(page));

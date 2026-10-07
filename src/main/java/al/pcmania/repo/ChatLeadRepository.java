@@ -13,6 +13,6 @@ public interface ChatLeadRepository extends JpaRepository<ChatLead, Long> {
     Page<ChatLead> findByStatusOrderByCreatedAtDesc(LeadStatus status, Pageable pageable);
     long countByStatus(LeadStatus status);
     List<ChatLead> findBySessionIdOrderByCreatedAtAsc(Long sessionId);
-    /** Every lead, for the demand report: grouping happens in Java because the matcher does. */
+
     List<ChatLead> findAllByOrderByCreatedAtDesc();
 }

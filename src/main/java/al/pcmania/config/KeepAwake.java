@@ -16,29 +16,13 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.ZoneId;
 
-/**
- * Keeps the site awake on Render's free plan during the hours people shop, and lets it sleep overnight.
- *
- * A free service goes to sleep after 15 minutes without inbound traffic, and the next visitor then waits
- * about a minute. The free plan gives 750 instance hours a month per workspace; running around the clock
- * would use nearly all of them, so the default window (06:00-01:00 Tirana time, 19 hours) uses about
- * 80%: 589 hours in a 31-day month, leaving room for the odd visitor who wakes it at night.
- *
- * Every 10 minutes inside the window the service requests its own public /healthz. The request goes out
- * over the internet and back in through Render's edge, so it counts as inbound traffic, which Render's
- * internal health checks do not. Once asleep the service cannot wake itself: the GitHub Actions workflow
- * .github/workflows/wake-up.yml requests the site at 06:00 every morning.
- *
- * Only runs when the public address is https (i.e. deployed); change the window with KEEP_AWAKE_FROM /
- * KEEP_AWAKE_UNTIL (HH:mm, Tirana time), or turn it off with KEEP_AWAKE=false, e.g. on a paid plan.
- */
 @Component
 @EnableScheduling
 @Slf4j
 public class KeepAwake {
 
     static final ZoneId ZONE = ZoneId.of("Europe/Tirane");
-    /** Render sleeps after 15 minutes without traffic; 10 leaves room for a slow or failed request. */
+
     static final Duration INTERVAL = Duration.ofMinutes(10);
     static final int FREE_HOURS_PER_MONTH = 750;
 
@@ -73,14 +57,13 @@ public class KeepAwake {
                     HttpResponse.BodyHandlers.discarding());
             log.debug("Keep-awake ping: {}", res.statusCode());
         } catch (Exception e) {
-            // Never fatal: the next ping comes in ten minutes, well inside Render's fifteen.
+
             log.warn("Keep-awake ping failed: {}", e.toString());
         }
     }
 
-    /** Whether {@code now} is in [from, until), where a window like 06:00-01:00 runs past midnight. */
     static boolean inWindow(LocalTime now, LocalTime from, LocalTime until) {
-        if (from.equals(until)) return true; // same time twice: all day
+        if (from.equals(until)) return true;
         return from.isBefore(until)
                 ? !now.isBefore(from) && now.isBefore(until)
                 : !now.isBefore(from) || now.isBefore(until);

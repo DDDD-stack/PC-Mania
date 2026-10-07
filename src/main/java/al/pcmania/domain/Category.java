@@ -16,11 +16,9 @@ public class Category {
     private int sortOrder;
     private String iconClass;
 
-    /** Hidden categories disappear from the shop entirely (navigation, home, sitemap; the page 404s). */
     @Column(name = "is_visible")
     private boolean visible = true;
 
-    /** Listed as usual but flagged "Pa stok", with a notice on the category page. */
     @Column(name = "is_out_of_stock")
     private boolean outOfStock;
 }

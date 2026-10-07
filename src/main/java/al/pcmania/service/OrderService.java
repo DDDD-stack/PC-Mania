@@ -31,10 +31,8 @@ import java.time.Year;
 @RequiredArgsConstructor
 public class OrderService {
 
-    /** Thrown when the product was sold or reserved between page load and submit. */
     public static class OutOfStockException extends RuntimeException {}
 
-    /** Published after commit so the operator gets an email. */
     public record OrderPlaced(Long orderId) {}
 
     private final OrderRepository orders;
@@ -49,10 +47,9 @@ public class OrderService {
         return method == DeliveryMethod.COURIER && !transportIncluded ? props.courierShippingLek() : 0;
     }
 
-    /** Creates an order for a single product and reserves the stock. */
     @Transactional
     public Order place(String productSlug, CheckoutForm form) {
-        // Row lock + refresh so concurrent orders can't oversell.
+
         Long productId = products.findIdBySlug(productSlug).orElseThrow(NotFoundException::new);
         Product p = lock(productId);
         int qty = form.getQuantity();
@@ -81,10 +78,6 @@ public class OrderService {
         return o;
     }
 
-    /**
-     * Records a sale made outside the website (e.g. agreed on Facebook) as a delivered order,
-     * so the dashboard's margin and days-to-sell figures include it.
-     */
     @Transactional
     public Order recordOfflineSale(Long productId, int qty, int priceLek, LocalDate date, String buyer) {
         Product p = lock(productId);
@@ -113,11 +106,6 @@ public class OrderService {
         return orders.save(o);
     }
 
-    /**
-     * The order for an accepted trade-in: the requested product, with the agreed trade value taken off
-     * the total (subtotal + shipping - trade credit). It starts confirmed - the customer has already said
-     * yes - and reserves the stock like any order. The credit may not exceed what is owed.
-     */
     @Transactional
     public Order placeFromTrade(TradeRequest t, TradeService.OrderDetails details) {
         if (!StringUtils.hasText(details.phone())) throw new IllegalArgumentException("Shkruani telefonin e klientit.");
@@ -179,10 +167,6 @@ public class OrderService {
         o.setAdminNotes(StringUtils.hasText(notes) ? notes.trim() : null);
     }
 
-    /**
-     * Locks the product row and reloads its state. A plain locking query is not enough: with open-session-in-view
-     * the product may already be managed (loaded earlier in the request) and Hibernate would return stale state.
-     */
     private Product lock(Long productId) {
         Product p = em.find(Product.class, productId);
         if (p == null) throw new NotFoundException();

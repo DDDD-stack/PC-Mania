@@ -8,10 +8,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The floor of the provider chain: no model, always available. Answers by handing the panel over to the
- * guided finder, with a line explaining why when it is standing in for a busy provider.
- */
 @Component
 @RequiredArgsConstructor
 public class GuidedFinderProvider implements ChatProvider {
@@ -37,7 +33,6 @@ public class GuidedFinderProvider implements ChatProvider {
         stream(out, false);
     }
 
-    /** {@code fallback} is true when another provider should have answered. */
     public void stream(ChatStream out, boolean fallback) {
         out.notice(fallback ? BUSY : INTRO);
         out.finder(finder.step(Map.of()));

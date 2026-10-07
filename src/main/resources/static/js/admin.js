@@ -1,4 +1,4 @@
-/* PCMania admin – toasts, button loading states and live new-order alerts. */
+
 (() => {
   const stack = () => {
     let el = document.querySelector('.toast-stack');
@@ -36,7 +36,6 @@
     wire(t);
   };
 
-  // Spinner + disabled state on the button that submitted a form (prevents double submits).
   document.addEventListener('submit', (e) => {
     const form = e.target;
     if (e.defaultPrevented || form.hasAttribute('data-no-loading') || form.method.toLowerCase() === 'get') return;
@@ -50,7 +49,6 @@
   window.addEventListener('pageshow', () =>
     document.querySelectorAll('.is-loading').forEach((b) => { b.disabled = false; b.classList.remove('is-loading'); }));
 
-  // Live counters: badge the navbar and announce orders that arrive while a page is open.
   const baseTitle = document.title;
   let lastOrderId = null;
   const setBadge = (selector, countSelector, n) => document.querySelectorAll(selector).forEach((el) => {
@@ -74,7 +72,7 @@
       }
       lastOrderId = data.latestOrderId;
     } catch {
-      // Offline for a moment – try again next tick.
+
     }
   };
   if (document.querySelector('[data-live-orders]')) {

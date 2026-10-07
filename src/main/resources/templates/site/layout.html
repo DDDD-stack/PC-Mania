@@ -13,7 +13,6 @@
     <link rel="apple-touch-icon" th:href="@{/apple-touch-icon.png}">
     <link rel="manifest" th:href="@{/manifest.json}">
 
-    <!-- Open Graph (Facebook link previews) -->
     <meta property="og:site_name" th:content="${site.siteName}">
     <meta property="og:locale" content="sq_AL">
     <meta property="og:type" th:content="${seo.type}">
@@ -30,7 +29,7 @@
         <meta property="product:price:amount" th:content="${seo.priceLek}">
         <meta property="product:price:currency" content="ALL">
     </th:block>
-    <!-- Twitter / X -->
+
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" th:content="${seo.title}">
     <meta name="twitter:description" th:content="${seo.description}">

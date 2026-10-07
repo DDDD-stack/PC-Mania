@@ -10,10 +10,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Admin-side entity. Never hand this to public templates: it carries costLek.
- * Public pages use {@link al.pcmania.web.view.ProductCard} / {@link al.pcmania.web.view.ProductDetail}.
- */
 @Entity
 @Getter
 @Setter
@@ -42,15 +38,11 @@ public class Product {
     @Column(name = "is_mining_free")
     private boolean miningFree;
     private boolean transportIncluded;
-    /** Offered for "Nderro": customers can trade in an old part against it. */
+
     private boolean tradeEligible;
-    /** The most the operator would give in trade against this product. Internal, like costLek. */
+
     private Integer maxTradeValueLek;
-    /**
-     * The catalogue row this card is a model of, stamped by the admin autofill. Null for products that
-     * are not graphics cards, or that were saved without picking one: the assistant then cannot
-     * recommend them.
-     */
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "gpu_model_id")
     private GpuCatalog gpuModel;
@@ -72,7 +64,6 @@ public class Product {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 
-    /** Applies a status change and keeps listedAt / soldAt consistent. */
     public void changeStatus(ProductStatus newStatus) {
         if (newStatus == ProductStatus.ACTIVE && listedAt == null) listedAt = LocalDateTime.now();
         if (newStatus == ProductStatus.SOLD && soldAt == null) soldAt = LocalDateTime.now();

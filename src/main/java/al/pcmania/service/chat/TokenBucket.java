@@ -1,10 +1,5 @@
 package al.pcmania.service.chat;
 
-/**
- * A requests-per-minute limiter for a provider's free tier: a bucket of {@code perMinute} tokens that
- * refills continuously at that rate. A request takes one token or is refused, and a refused request
- * falls through to the guided finder rather than waiting.
- */
 public class TokenBucket {
 
     private final double capacity;
@@ -28,7 +23,6 @@ public class TokenBucket {
         return true;
     }
 
-    /** Whether a request would be let through right now, without taking a token. */
     public synchronized boolean hasToken() {
         long now = System.nanoTime() / 1_000_000;
         return Math.min(capacity, tokens + (now - last) * refillPerMs) >= 1;

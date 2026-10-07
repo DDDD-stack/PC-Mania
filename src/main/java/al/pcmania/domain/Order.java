@@ -35,15 +35,15 @@ public class Order {
     private OrderStatus status = OrderStatus.NEW;
     private int subtotalLek;
     private int shippingLek;
-    /** subtotal + shipping - tradeCredit. */
+
     private int totalLek;
-    /** The accepted trade-in this order was made from, if any. */
+
     private Long tradeRequestId;
-    /** Value of the traded-in item, taken off the total. */
+
     private int tradeCreditLek;
     private String adminNotes;
     private LocalDateTime createdAt;
-    /** When the order reached DELIVERED; the "sold" moment for reporting. */
+
     private LocalDateTime deliveredAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)

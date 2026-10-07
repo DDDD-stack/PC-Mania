@@ -30,7 +30,6 @@ class KeepAwakeTest {
         assertFalse(KeepAwake.inWindow(LocalTime.of(7, 0), eight, ten));
     }
 
-    /** The default window is the 80% budget: 19 h a day, 589 h in a 31-day month, under 600 of 750. */
     @Test
     void defaultWindowStaysWithinEightyPercentOfTheFreeHours() {
         assertEquals(19.0, KeepAwake.hoursPerDay(SIX, ONE));

@@ -29,27 +29,20 @@ import java.time.LocalDateTime;
 import java.time.Year;
 import java.util.UUID;
 
-/**
- * "Nderro": trade-in quote requests. Submitting one never creates an order or reserves the product;
- * the operator values the item by hand from the proof, and only an accepted quote becomes an order.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TradeService {
 
-    /** How long a quote stands unless the operator says otherwise. */
     public static final int DEFAULT_QUOTE_DAYS = 7;
-    /** Proof media is kept this long after a request closes, then deleted to free the database. */
+
     static final Duration KEEP_MEDIA_AFTER_CLOSE = Duration.ofDays(30);
     static final String MEDIA_PREFIX = "trade/";
 
-    /** A problem with the uploaded proof, shown next to the upload field. */
     public static class MediaException extends IllegalArgumentException {
         public MediaException(String message) { super(message); }
     }
 
-    /** Details an order needs that a trade-in request does not collect. */
     public record OrderDetails(String phone, String city, String address, DeliveryMethod delivery, PaymentMethod payment) {}
 
     private final TradeRequestRepository repo;
@@ -61,12 +54,9 @@ public class TradeService {
     private final NotificationService notifications;
     private final ApplicationEventPublisher events;
 
-    /** Whether a product can be asked about: offered for trade and still for sale. */
     public static boolean tradeable(Product p) {
         return p.isTradeEligible() && p.getStatus() == ProductStatus.ACTIVE && p.getQuantity() > 0;
     }
-
-    // ---- Customer ----
 
     @Transactional
     public TradeRequest submit(String productSlug, TradeForm form, MultipartFile media) throws IOException {
@@ -83,7 +73,7 @@ public class TradeService {
         t.setProductTitleSnapshot(p.getTitle());
         t.setCustomerName(form.getCustomerName().trim());
         t.setContactMethod(form.getContactMethod());
-        // Exactly one contact is kept: the one the customer chose.
+
         if (form.getContactMethod() == ContactMethod.EMAIL) t.setCustomerEmail(form.getCustomerEmail().trim());
         else t.setCustomerPhone(form.getCustomerPhone().trim());
         t.setItemType(form.getItemType());
@@ -123,8 +113,6 @@ public class TradeService {
         t.setMediaType(kind.type());
     }
 
-    // ---- Operator ----
-
     public TradeRequest get(Long id) {
         return repo.findWithProductById(id).orElseThrow(NotFoundException::new);
     }
@@ -136,11 +124,6 @@ public class TradeService {
         t.setStatus(TradeStatus.REVIEWING);
     }
 
-    /**
-     * Records the agreed value and starts the expiry clock. Email customers are sent the quote; phone
-     * customers, or anyone the email could not reach, are flagged "call" in the admin list instead.
-     * Returns whether an email went out.
-     */
     @Transactional
     public boolean quote(Long id, int valueLek, String notes, Integer days) {
         TradeRequest t = get(id);
@@ -181,7 +164,6 @@ public class TradeService {
         t.setStatus(TradeStatus.ACCEPTED);
     }
 
-    /** Turns an accepted trade-in into an order for the product it was made against. */
     @Transactional
     public Order convert(Long id, OrderDetails details) {
         TradeRequest t = get(id);
@@ -193,10 +175,6 @@ public class TradeService {
         return o;
     }
 
-    /**
-     * Takes the traded-in item into stock as a Draft product, its cost the trade credit given, so it can
-     * be photographed, priced and listed like anything else. Returns the new product's id.
-     */
     @Transactional
     public Long takeIntoStock(Long id) {
         TradeRequest t = get(id);
@@ -216,9 +194,6 @@ public class TradeService {
         t.setMediaFilename(null);
     }
 
-    // ---- Housekeeping ----
-
-    /** Hourly: unanswered quotes lapse, and proof media goes 30 days after a request closes. */
     @Scheduled(cron = "0 20 * * * *", zone = "Europe/Tirane")
     @Transactional
     public void housekeeping() {

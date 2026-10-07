@@ -41,6 +41,5 @@ public class CheckoutForm {
     @Max(10)
     private int quantity = 1;
 
-    /** Honeypot: hidden from humans, bots tend to fill it. */
     private String website;
 }

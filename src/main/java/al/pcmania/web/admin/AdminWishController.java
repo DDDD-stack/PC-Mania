@@ -16,7 +16,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.EnumMap;
 import java.util.Map;
 
-/** "Lista e dëshirave": what customers have asked the shop to bring in. Web admin only, not in the phone app. */
 @Controller
 @RequestMapping("/admin/wishes")
 @RequiredArgsConstructor

@@ -12,11 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/**
- * Writes the leads the site's own form posts to /api/lead. This is the only place a customer's name
- * and phone are taken, and no model is involved: the assistant can at most ask the site to show the
- * form.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j

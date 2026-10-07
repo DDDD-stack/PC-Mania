@@ -16,6 +16,10 @@
 <main class="container py-5 text-center">
     <h1 class="display-6 fw-bold" th:text="${status}">Gabim</h1>
     <p class="lead">Diçka shkoi keq. Ju lutem provoni përsëri ose na shkruani në WhatsApp.</p>
+    <p class="text-body-secondary" th:if="${errorCode}">
+        Kodi i gabimit: <code class="user-select-all" th:text="${errorCode}"></code><br>
+        <span class="small">Dërgojeni këtë kod në WhatsApp dhe gjejmë menjëherë se çfarë ndodhi.</span>
+    </p>
     <a class="btn btn-accent btn-lg" href="/">Kryefaqja</a>
 </main>
 </body>

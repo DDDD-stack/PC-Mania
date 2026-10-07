@@ -57,10 +57,6 @@ public class ProductAdminService {
         return products.findAll(spec, pageable);
     }
 
-    /**
-     * Partial update from the mobile app: any null argument is left unchanged. The slug is deliberately
-     * left alone even when the title changes, so links already shared on Facebook keep working.
-     */
     @Transactional
     public Product quickUpdate(Long id, ProductStatus status, Integer quantity, Integer priceLek, Integer costLek,
                                String title, Condition condition, String shortDescription) {
@@ -110,7 +106,6 @@ public class ProductAdminService {
         p.setMaxTradeValueLek(form.isTradeEligible() ? form.getMaxTradeValueLek() : null);
         p.setGpuModel(form.getGpuModelId() == null ? null : gpuCatalog.findById(form.getGpuModelId()).orElse(null));
 
-        // Slugs are only generated once: changing them later breaks links already shared on Facebook.
         String wanted = StringUtils.hasText(form.getSlug()) ? form.getSlug() : (p.getSlug() != null ? p.getSlug() : Slugs.of(p.getTitle()));
         if (!wanted.equals(p.getSlug())) p.setSlug(uniqueSlug(wanted));
 
@@ -155,10 +150,6 @@ public class ProductAdminService {
         return products.save(p);
     }
 
-    /**
-     * A Draft listing for a traded-in item: cost = the trade credit given, price a placeholder at the
-     * same value until the operator prices it. Goes in the item type's category if it exists.
-     */
     @Transactional
     public Product createDraftFromTradeIn(TradeRequest t, String fallbackCategory) {
         Product p = new Product();
@@ -184,7 +175,6 @@ public class ProductAdminService {
         return list.size();
     }
 
-    /** Returns false if the product is referenced by orders (hide it instead, to keep reporting intact). */
     @Transactional
     public boolean delete(Long id) {
         if (orderItems.existsByProductId(id)) return false;
@@ -204,7 +194,6 @@ public class ProductAdminService {
         syncPrimary(p);
     }
 
-    /** Reorders images to match the given ids; the first image becomes the primary one. */
     @Transactional
     public void reorderImages(Long id, List<Long> imageIds) {
         Product p = get(id);

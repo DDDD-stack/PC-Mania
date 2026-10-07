@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/** A {@link StreamingHttp} that answers from a script and remembers every request it was sent. */
 public class ScriptedHttp implements StreamingHttp {
 
     public record Sent(String url, Map<String, String> headers, String body) {}
@@ -18,7 +17,6 @@ public class ScriptedHttp implements StreamingHttp {
     public final List<Sent> sent = new ArrayList<>();
     private final Deque<Scripted> script = new ArrayDeque<>();
 
-    /** A 200 whose body is these SSE lines. */
     public ScriptedHttp stream(String... lines) {
         script.add(new Scripted(200, List.of(lines), null, null));
         return this;

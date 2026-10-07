@@ -27,7 +27,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.EnumMap;
 import java.util.Map;
 
-/** "Këmbimet": the trade-in inbox. Values are entered by hand after watching the proof. */
 @Controller
 @RequestMapping("/admin/trades")
 @RequiredArgsConstructor
@@ -64,7 +63,6 @@ public class AdminTradeController {
         return "admin/trades/detail";
     }
 
-    /** The proof video or photo, for the player on the detail page. Range requests let the video seek. */
     @GetMapping("/{id}/media")
     ResponseEntity<Resource> media(@PathVariable Long id) {
         TradeRequest t = trades.get(id);

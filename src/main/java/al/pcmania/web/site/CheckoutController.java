@@ -23,7 +23,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.time.Duration;
 import java.util.List;
 
-/** Single-item "buy now" checkout. No account required. */
 @Controller
 @RequestMapping("/porosit")
 @RequiredArgsConstructor
@@ -52,12 +51,11 @@ public class CheckoutController {
         ProductDetail p = catalog.detail(slug).orElseThrow(NotFoundException::new);
         if (!p.isAvailable()) return unavailable(p, flash);
         if (form.getQuantity() > p.quantity()) errors.rejectValue("quantity", "max", "Në stok ka vetëm " + p.quantity() + " copë");
-        // The card option is shown greyed out while there is no bank integration; a posted value still
-        // has to be refused, because a disabled input only stops the honest browser.
+
         if (form.getPaymentMethod() == PaymentMethod.CARD_ONLINE && !payments.isEnabled()) {
             errors.rejectValue("paymentMethod", "unavailable", "Pagesa me kartë nuk është aktive ende. Zgjidhni një mënyrë tjetër.");
         }
-        if (StringUtils.hasText(form.getWebsite())) return "redirect:/"; // honeypot tripped
+        if (StringUtils.hasText(form.getWebsite())) return "redirect:/";
         if (errors.hasErrors()) return render(p, form, model);
         if (!rateLimiter.tryAcquire("order:" + request.getRemoteAddr(), 5, Duration.ofHours(1))) {
             model.addAttribute("formError", "Keni dërguar shumë porosi në pak kohë. Ju lutem na kontaktoni në WhatsApp.");

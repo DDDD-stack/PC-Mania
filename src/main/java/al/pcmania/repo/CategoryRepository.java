@@ -11,7 +11,6 @@ import java.util.Optional;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findAllByOrderBySortOrderAsc();
 
-    /** Categories shown on the public site. Cached: every public page shows them; see CacheConfig. */
     @Cacheable(CacheConfig.CATEGORIES)
     List<Category> findByVisibleTrueOrderBySortOrderAsc();
 

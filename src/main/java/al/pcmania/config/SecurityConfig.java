@@ -36,8 +36,7 @@ public class SecurityConfig {
                         }))
                 .addFilterBefore(attempts.filter(), UsernamePasswordAuthenticationFilter.class)
                 .logout(l -> l.logoutUrl("/admin/logout").logoutSuccessUrl("/admin/login?logout"))
-                // Public forms are anonymous and often left open for hours in the Facebook in-app browser;
-                // CSRF there protects nothing and would only produce expired-token errors.
+
                 .csrf(c -> c.ignoringRequestMatchers("/porosit/**", "/pc-me-porosi", "/kerko-produkt", "/nderro/**"))
                 .headers(h -> h
                         .frameOptions(f -> f.sameOrigin())

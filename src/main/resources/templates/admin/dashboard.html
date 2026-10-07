@@ -21,7 +21,6 @@
             <i class="bi bi-chat-dots"></i> <span th:text="${newLeads}"></span> <span th:text="${newLeads == 1} ? 'kontakt nga asistenti' : 'kontakte nga asistenti'"></span></a>
     </div>
 
-    <!-- Traded-in items not listed yet: stock on its way in -->
     <div class="card mb-3 border-warning" th:unless="${incomingTradeIns.empty}">
         <div class="card-header bg-warning-subtle"><i class="bi bi-box-arrow-in-down me-1"></i><strong>Stok i ardhur nga këmbimet</strong>
             <span class="small text-body-secondary">– pajisje të marra me këmbim, ende pa u listuar</span></div>
@@ -35,7 +34,6 @@
         </ul>
     </div>
 
-    <!-- KPI tiles -->
     <div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-2 mb-4">
         <div class="col"><div class="card card-body h-100">
             <div class="kpi-label">Stoku (copë)</div>
@@ -69,7 +67,6 @@
         </div></div>
     </div>
 
-    <!-- Price bands: the core question -->
     <div class="card mb-4">
         <div class="card-header d-flex flex-wrap align-items-center gap-2">
             <strong class="me-auto">Sipas brezit të çmimit</strong>
@@ -127,7 +124,7 @@
     </div>
 
     <div class="row g-4">
-        <!-- Aging -->
+
         <div class="col-xl-5">
             <div class="card h-100">
                 <div class="card-header"><strong>Stoku sipas vjetërsisë</strong> <small class="text-body-secondary">(aktivë, më të vjetrit lart)</small></div>
@@ -157,7 +154,6 @@
             </div>
         </div>
 
-        <!-- Sold items -->
         <div class="col-xl-7">
             <div class="card h-100">
                 <div class="card-header d-flex align-items-center">

@@ -126,7 +126,6 @@
             const progress = document.getElementById('uploadProgress');
             const bar = progress.querySelector('.progress-bar');
 
-            // Contact: show only the field for the chosen method.
             const showContact = () => {
                 const chosen = form.querySelector('[data-contact-choice]:checked')?.value || 'PHONE';
                 form.querySelectorAll('[data-contact-field]').forEach(g => {
@@ -141,7 +140,6 @@
             const isVideo = f => f.type.startsWith('video/') || /\.(mp4|mov)$/i.test(f.name);
             const fmtMb = b => (b / MB).toFixed(1).replace('.', ',') + ' MB';
 
-            // Size check before anything is sent: a 300 MB video should be refused now, not after uploading.
             const checkMedia = () => {
                 const f = media.files[0];
                 media.classList.remove('is-invalid');

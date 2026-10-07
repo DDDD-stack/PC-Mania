@@ -10,7 +10,6 @@ import java.util.List;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     boolean existsByProductId(Long productId);
 
-    /** Whether another not-yet-finished order still holds units of this product. */
     @Query("""
             select count(i) > 0 from OrderItem i
             where i.product.id = :productId and i.order.id <> :orderId

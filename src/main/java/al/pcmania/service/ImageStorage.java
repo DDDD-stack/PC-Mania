@@ -32,10 +32,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Turns an upload into three JPEG variants and hands them to {@link FileStorage},
- * which serves them at /img/p/{size}/{filename}.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -50,9 +46,7 @@ public class ImageStorage {
     private final FileStorage storage;
 
     static {
-        // Registers the WebP reader (TwelveMonkeys). ImageIO discovers plugins through the class loader
-        // that first initialised it, which inside Spring Boot's packaged jar cannot see the libraries
-        // in BOOT-INF/lib; scanning again from here, on the application's class loader, finds them.
+
         ImageIO.scanForPlugins();
     }
 
@@ -60,27 +54,23 @@ public class ImageStorage {
         return "/img/p/" + size.name() + "/" + filename;
     }
 
-    /** Storage key for a variant. Deliberately mirrors {@link #url} without the /img/p prefix. */
     public static String key(Size size, String filename) {
         return "img/" + size.name() + "/" + filename;
     }
 
-    /** Validates, resizes and stores an upload; returns the stored filename. */
     public String store(MultipartFile file) {
         Path tmp = null;
         try {
             tmp = Files.createTempFile("upload-", ".img");
             file.transferTo(tmp);
             String filename = UUID.randomUUID().toString().replace("-", "") + ".jpg";
-            // The original is decoded once, into the largest variant, and the smaller ones are scaled
-            // from that. Decoding it per variant tripled the work, which on the hosted service's
-            // fraction of a CPU made every upload crawl.
+
             BufferedImage decoded = decode(tmp);
             int maxSide = Math.max(decoded.getWidth(), decoded.getHeight());
             BufferedImage largest = Thumbnails.of(decoded)
-                    .size(Math.min(Size.full.px, maxSide), Math.min(Size.full.px, maxSide)) // never upscale
+                    .size(Math.min(Size.full.px, maxSide), Math.min(Size.full.px, maxSide))
                     .asBufferedImage();
-            decoded = null; // the full decode is the big allocation; let it go before encoding
+            decoded = null;
             for (Size s : Size.values()) {
                 int target = Math.min(s.px, maxSide);
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -121,7 +111,6 @@ public class ImageStorage {
 
     private final Map<String, int[]> dimensionCache = new ConcurrentHashMap<>();
 
-    /** Width/height of a stored variant, recorded when it was uploaded (cached). Null if missing. */
     public int[] dimensions(Size size, String filename) {
         return dimensionCache.computeIfAbsent(size + "/" + filename, k ->
                 storage.dimensions(key(size, filename))
@@ -130,18 +119,8 @@ public class ImageStorage {
                         .orElse(null));
     }
 
-    /**
-     * Longest side a photo is decoded at before resizing, at least. Anything twice this or larger is
-     * read with subsampling, which skips pixels while decoding instead of building the full image.
-     *
-     * Without it a 50-megapixel phone photo needs over 400 MB of heap to decode - more than the
-     * hosted instance has in total - and the upload fails. Only photos of 4800 px and up are
-     * affected, and they still arrive at 2400 px or more: 1.5 times the largest variant, so the
-     * final downscale has detail to average over. A 12 MP photo is decoded exactly as before.
-     */
     static final int DECODE_MIN_SIDE = 2400;
 
-    /** Reads an upload into memory the right way up, subsampled if very large, flattened onto white. */
     static BufferedImage decode(Path file) throws IOException {
         try (ImageInputStream in = ImageIO.createImageInputStream(file.toFile())) {
             Iterator<ImageReader> readers = in == null ? null : ImageIO.getImageReaders(in);
@@ -156,7 +135,7 @@ public class ImageStorage {
                 int step = longest / DECODE_MIN_SIDE;
                 if (step > 1) param.setSourceSubsampling(step, step, 0, 0);
                 BufferedImage img = reader.read(0, param);
-                // Phones store portrait photos sideways plus an EXIF note saying how to turn them.
+
                 Orientation orientation = exifOrientation(file);
                 if (orientation != null && orientation != Orientation.TOP_LEFT) {
                     img = ExifFilterUtils.getFilterForOrientation(orientation).apply(img);
@@ -168,14 +147,6 @@ public class ImageStorage {
         }
     }
 
-    /**
-     * EXIF orientation, read from the file's own bytes; null if there is none. Unreadable metadata must
-     * not fail an upload whose pixels are fine.
-     *
-     * Not through ImageReader.getImageMetadata(): the JDK's JPEG reader throws "JFIF APP0 must be first
-     * marker after SOI" for photos whose EXIF block comes before the JFIF header - a legal order, and
-     * what Samsung's gallery writes after an edit - and such portrait photos ended up sideways.
-     */
     static Orientation exifOrientation(Path file) {
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(file)))) {
             byte[] exif = exifBlock(in);
@@ -188,18 +159,17 @@ public class ImageStorage {
 
     private static final byte[] EXIF_HEADER = {'E', 'x', 'i', 'f', 0, 0};
 
-    /** The EXIF block as ExifUtils expects it (the "Exif" header, two zero bytes, then the TIFF data), from a JPEG or WebP file; null if absent. */
     private static byte[] exifBlock(DataInputStream in) throws IOException {
         byte[] head = new byte[12];
         in.readFully(head);
         if ((head[0] & 0xff) == 0xff && (head[1] & 0xff) == 0xd8) {
-            // JPEG: walk the segments before the image data. head[2..11] already holds the first one's start.
+
             DataInputStream rest = new DataInputStream(new SequenceInputStream(
                     new ByteArrayInputStream(head, 2, 10), in));
             while (true) {
                 int marker = rest.readUnsignedShort();
-                while (marker == 0xffff) marker = 0xff00 | rest.readUnsignedByte(); // fill bytes
-                if ((marker & 0xff00) != 0xff00 || marker == 0xffda || marker == 0xffd9) return null; // image data: no EXIF
+                while (marker == 0xffff) marker = 0xff00 | rest.readUnsignedByte();
+                if ((marker & 0xff00) != 0xff00 || marker == 0xffda || marker == 0xffd9) return null;
                 int length = rest.readUnsignedShort() - 2;
                 if (length < 0) return null;
                 if (marker == 0xffe1 && length > EXIF_HEADER.length) {
@@ -213,7 +183,7 @@ public class ImageStorage {
         }
         if (head[0] == 'R' && head[1] == 'I' && head[2] == 'F' && head[3] == 'F'
                 && head[8] == 'W' && head[9] == 'E' && head[10] == 'B' && head[11] == 'P') {
-            // WebP: RIFF chunks, each a four-letter name, a little-endian size and a payload padded to even length.
+
             byte[] name = new byte[4];
             while (true) {
                 in.readFully(name);
@@ -233,7 +203,6 @@ public class ImageStorage {
         return null;
     }
 
-    /** JPEG has no alpha channel: paint transparent PNGs onto white instead of black. */
     private static BufferedImage flattenOnWhite(BufferedImage img) {
         if (!img.getColorModel().hasAlpha()) return img;
         BufferedImage rgb = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);

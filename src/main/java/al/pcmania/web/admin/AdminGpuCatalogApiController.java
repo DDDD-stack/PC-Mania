@@ -11,10 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * JSON behind the product form's title combobox. Lives under /admin, so the admin session guards it
- * like every other admin page (the bearer-token chain only covers /api).
- */
 @RestController
 @RequestMapping("/admin/api/gpu-catalog")
 @RequiredArgsConstructor
@@ -26,7 +22,6 @@ public class AdminGpuCatalogApiController {
         }
     }
 
-    /** Everything the autofill needs for one row, plus the blurb it proposes as the short description. */
     public record Detail(Long id, String name, String vendor, Integer vramGb, String memoryType, Integer tdpWatts,
                          Integer psuMinWatts, String pcieConnectors, Integer lengthMm, Integer tier, String shortDescription) {
         static Detail of(GpuCatalog g) {

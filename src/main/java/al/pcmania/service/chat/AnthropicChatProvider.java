@@ -18,18 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Anthropic's Messages API, streaming, over plain HTTP. Built and tested but off until
- * {@code ANTHROPIC_API_KEY} is set and {@code CHAT_PROVIDER=anthropic}: switching is only that.
- *
- * Wire format: {@code POST /v1/messages} with {@code stream: true}, headers {@code x-api-key} and
- * {@code anthropic-version: 2023-06-01}; {@code system} as text blocks and {@code tools} with JSON Schema
- * {@code input_schema}, both marked {@code cache_control: ephemeral} so repeat turns read them from the
- * cache. The SSE events are {@code message_start} (input token counts), {@code content_block_start}
- * (a text block or a {@code tool_use} block with id and name), {@code content_block_delta} ({@code text_delta}
- * or {@code input_json_delta} with partial JSON), {@code message_delta} (stop reason, output tokens) and
- * {@code error}. Tool results go back as {@code tool_result} blocks in a user message.
- */
 @Component
 @Slf4j
 public class AnthropicChatProvider extends LlmChatProvider<AnthropicChatProvider.Conversation> {
@@ -73,7 +61,6 @@ public class AnthropicChatProvider extends LlmChatProvider<AnthropicChatProvider
         return NAME;
     }
 
-    /** Needs the key, and stays under the month's spend cap. */
     @Override
     public boolean isAvailable() {
         return props.anthropic().keyConfigured() && !spend.overCap();
@@ -101,7 +88,7 @@ public class AnthropicChatProvider extends LlmChatProvider<AnthropicChatProvider
         List<ToolDef> defs = tools.definitions();
         for (int i = 0; i < defs.size(); i++) {
             ObjectNode t = tool(defs.get(i));
-            toolNodes.add(i == defs.size() - 1 ? cached(t) : t); // the breakpoint on the last stable block
+            toolNodes.add(i == defs.size() - 1 ? cached(t) : t);
         }
         body.set("tools", toolNodes);
         body.set("messages", conv.messages);
@@ -213,8 +200,6 @@ public class AnthropicChatProvider extends LlmChatProvider<AnthropicChatProvider
         conv.messages.add(message("user", blocks));
     }
 
-    // ---- Wire helpers ----
-
     private ObjectNode textBlock(String text) {
         return json.createObjectNode().put("type", "text").put("text", text);
     }
@@ -249,7 +234,6 @@ public class AnthropicChatProvider extends LlmChatProvider<AnthropicChatProvider
         }
     }
 
-    /** A {@link ToolDef} as an Anthropic tool with a JSON Schema input. */
     ObjectNode tool(ToolDef d) {
         ObjectNode properties = json.createObjectNode();
         d.params().forEach((name, p) -> {

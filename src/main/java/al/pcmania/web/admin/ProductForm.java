@@ -48,14 +48,14 @@ public class ProductForm {
     private String testNotes;
     private boolean miningFree;
     private boolean transportIncluded;
-    /** Offered for "Nderro" trade-ins. */
+
     private boolean tradeEligible;
-    /** Internal cap on what to give in trade against this product; never shown publicly. */
+
     @Min(0)
     private Integer maxTradeValueLek;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate listedAt;
-    /** Catalogue row picked in the title combobox; null when the operator did not pick one. */
+
     private Long gpuModelId;
     private List<String> specKeys = new ArrayList<>();
     private List<String> specValues = new ArrayList<>();

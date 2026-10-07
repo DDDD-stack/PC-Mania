@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Blocks an IP from logging in for 15 minutes after 5 failed admin logins. */
 @Service
 public class LoginAttemptService {
 

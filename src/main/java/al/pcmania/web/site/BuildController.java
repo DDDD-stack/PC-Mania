@@ -18,7 +18,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Duration;
 
-/** Custom PC build quote request. */
 @Controller
 @RequiredArgsConstructor
 public class BuildController {

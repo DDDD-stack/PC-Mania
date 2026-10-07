@@ -8,10 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
-/**
- * The conversation's cookie: an opaque token, HttpOnly so scripts never read it, scoped to /api so it
- * rides only on the assistant's own requests, and Secure behind TLS like the admin session cookie.
- */
 @Component
 public class ChatCookie {
 

@@ -25,6 +25,5 @@ public class BuildRequestForm {
     @Size(max = 2000)
     private String notes;
 
-    /** Honeypot. */
     private String website;
 }

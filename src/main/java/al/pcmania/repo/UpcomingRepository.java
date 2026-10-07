@@ -25,11 +25,9 @@ public interface UpcomingRepository extends JpaRepository<UpcomingProduct, Long>
 
     boolean existsBySlug(String slug);
 
-    /** Cached: every public page asks whether to show the "Së shpejti" link; see CacheConfig. */
     @Cacheable(CacheConfig.UPCOMING_COUNTS)
     long countByStatus(UpcomingStatus status);
 
-    /** Interest counts for a set of teasers, so a list page needs one extra query rather than one per row. */
     @Query("""
             select i.upcoming.id, count(i)
             from UpcomingInterest i

@@ -141,12 +141,10 @@
             e.target.value === 'te-rejat' ? url.searchParams.delete('rendit') : url.searchParams.set('rendit', e.target.value);
             location.href = url.toString();
         });
-        // On desktop the sidebar is always visible: apply checkbox changes immediately.
         const form = document.getElementById('filterForm');
         form.addEventListener('change', e => {
             if (window.matchMedia('(min-width: 992px)').matches && e.target.type === 'checkbox') form.requestSubmit();
         });
-        // Don't send empty price fields.
         form.addEventListener('submit', () => form.querySelectorAll('input[type=number]').forEach(i => i.disabled = !i.value));
     </script>
 </th:block>

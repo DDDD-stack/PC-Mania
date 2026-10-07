@@ -7,7 +7,6 @@ public final class Links {
 
     private Links() {}
 
-    /** wa.me link to a customer's Albanian phone number (06x… becomes 3556x…), or null if the number is unusable. */
     public static String whatsappTo(String phone, String text) {
         if (phone == null) return null;
         String digits = phone.replaceAll("\\D", "");

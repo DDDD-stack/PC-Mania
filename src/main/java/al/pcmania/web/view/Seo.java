@@ -1,13 +1,5 @@
 package al.pcmania.web.view;
 
-/**
- * Per-page head metadata. All URLs are absolute.
- *
- * @param type        og:type ("website" or "product")
- * @param imageWidth  og:image:width, lets Facebook render the preview on the very first share
- * @param priceLek    product:price:amount for product pages
- * @param jsonLd      pre-serialised JSON-LD, already safe for embedding in a script tag
- */
 public record Seo(
         String title,
         String description,

@@ -20,19 +20,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.io.IOException;
 import java.util.Optional;
 
-/**
- * Hands out the Android admin build from the website.
- *
- * The phone does not have to be plugged into the computer to get a new version: open /admin/app
- * on the phone, sign in as admin and tap download. Behind /admin/**, so only a signed-in operator
- * can reach the file.
- */
 @Controller
 @RequestMapping("/admin/app")
 @RequiredArgsConstructor
 public class AdminAppController {
 
-    /** A single slot: uploading a build replaces the one before it. */
     private static final String KEY = "app/pcmania-admin.apk";
     private static final String APK_TYPE = "application/vnd.android.package-archive";
     private static final String DOWNLOAD_NAME = "PCMania-Admin.apk";
@@ -71,7 +63,7 @@ public class AdminAppController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment().filename(DOWNLOAD_NAME).build().toString())
                 .contentType(MediaType.parseMediaType(APK_TYPE))
-                // Never cached: the whole point of the page is to hand over the newest build.
+
                 .cacheControl(CacheControl.noStore())
                 .body(found.get().getData());
     }

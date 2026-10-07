@@ -19,7 +19,6 @@ class ImageStorageTest {
     @TempDir
     Path dir;
 
-    /** Phones store portrait photos sideways with an EXIF note; the stored photo must be upright. */
     @Test
     void appliesExifRotation() throws IOException {
         Path file = dir.resolve("rotated.jpg");
@@ -28,18 +27,12 @@ class ImageStorageTest {
         }
         BufferedImage img = ImageStorage.decode(file);
 
-        // Stored 200x100 with red on the left; turned upright it is 100x200 with red on top.
         assertEquals(100, img.getWidth());
         assertEquals(200, img.getHeight());
         assertTrue(isRed(img.getRGB(50, 20)), "top should be red");
         assertFalse(isRed(img.getRGB(50, 180)), "bottom should be blue");
     }
 
-    /**
-     * Samsung's gallery writes the EXIF block before the JFIF header. The JDK's JPEG metadata reader
-     * refuses that order ("JFIF APP0 must be first marker after SOI"), and relying on it left such
-     * portrait photos sideways on the live site.
-     */
     @Test
     void appliesExifRotationWhenExifComesBeforeJfif() throws IOException {
         BufferedImage img = ImageStorage.decode(fixture("/exif-before-jfif.jpg"));
@@ -62,17 +55,16 @@ class ImageStorageTest {
         assertNull(ImageStorage.exifOrientation(fixture("/lossless.webp")));
     }
 
-    /** Very large photos are read subsampled, so a 50 MP upload does not exhaust the heap. */
     @Test
     void subsamplesVeryLargePhotosButNotOrdinaryOnes() throws IOException {
         assertEquals(2500, longestSide(ImageStorage.decode(jpeg(5000, 3000))));
-        assertEquals(4000, longestSide(ImageStorage.decode(jpeg(4000, 3000)))); // 12 MP: untouched
+        assertEquals(4000, longestSide(ImageStorage.decode(jpeg(4000, 3000))));
         assertEquals(800, longestSide(ImageStorage.decode(jpeg(800, 600))));
     }
 
     @Test
     void flattensTransparencyOntoWhite() throws IOException {
-        BufferedImage png = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB); // fully transparent
+        BufferedImage png = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
         Path file = dir.resolve("clear.png");
         ImageIO.write(png, "png", file.toFile());
         BufferedImage img = ImageStorage.decode(file);
@@ -80,10 +72,6 @@ class ImageStorageTest {
         assertEquals(0xffffff, img.getRGB(5, 5) & 0xffffff);
     }
 
-    /**
-     * Pictures saved from Facebook or Google are WebP, often under a .jpg name. They must decode, and
-     * the transparent half must come out white like any other transparent upload.
-     */
     @Test
     void readsWebpEvenWhenNamedJpg() throws IOException {
         BufferedImage img = ImageStorage.decode(fixture("/saved-from-web-really-webp.jpg"));

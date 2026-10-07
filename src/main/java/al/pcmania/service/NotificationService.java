@@ -27,22 +27,15 @@ import org.springframework.util.StringUtils;
 
 import java.time.format.DateTimeFormatter;
 
-/**
- * Emails the operator about new orders and build requests. Runs after commit and asynchronously,
- * so a mail server problem never breaks checkout. Without MAIL_HOST configured it only logs.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationService {
 
-    /** Published after a build request is saved. */
     public record BuildRequested(Long buildRequestId) {}
 
-    /** Published after a customer asks the shop to bring something in. */
     public record WishRequested(Long wishRequestId) {}
 
-    /** Published after a trade-in quote request is saved. */
     public record TradeRequested(Long tradeRequestId) {}
 
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -194,11 +187,6 @@ public class NotificationService {
         send(props.notifyEmail(), subject, body);
     }
 
-    /**
-     * Emails a quote to a customer who chose email: the value offered, what the product then costs and
-     * when the offer lapses. Sent from the no-reply address. Returns false when nothing went out (mail
-     * not configured, or the send failed), so the operator knows to contact them another way.
-     */
     public boolean sendTradeQuote(TradeRequest t) {
         int price = t.getProduct().getPriceLek();
         String shipping = t.getProduct().isTransportIncluded() ? "transporti falas" : "pa transportin";
@@ -227,7 +215,6 @@ public class NotificationService {
         return send(t.getCustomerEmail(), "PCMania – oferta për këmbimin " + t.getRequestNumber(), body);
     }
 
-    /** Returns whether the email was handed to the mail server. */
     private boolean send(String to, String subject, String body) {
         JavaMailSender sender = mailSender.getIfAvailable();
         if (!StringUtils.hasText(mailHost) || sender == null || !StringUtils.hasText(to)) {

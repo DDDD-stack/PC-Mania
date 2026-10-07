@@ -19,19 +19,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Gemini through the Generative Language REST API, streaming with {@code alt=sse}. The free tier's
- * limits are handled here: a token bucket under the per-minute cap, and a 429 or a refused token
- * becomes a {@link ProviderUnavailableException} so the chain falls through to the guided finder
- * instead of showing an error.
- *
- * Wire format (generativelanguage.googleapis.com, v1beta): the request carries {@code systemInstruction},
- * {@code contents[]} with roles {@code user} and {@code model}, {@code tools[0].functionDeclarations[]}
- * and {@code generationConfig}; each SSE {@code data:} line is a GenerateContentResponse whose
- * {@code candidates[0].content.parts[]} hold {@code text} or {@code functionCall{name,args}} parts. A
- * function's result goes back as a {@code functionResponse{name,response}} part. The model's parts are
- * echoed back verbatim on the next round, which keeps any {@code thoughtSignature} they carry.
- */
 @Component
 @Slf4j
 public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conversation> {
@@ -39,7 +26,6 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
     public static final String NAME = "gemini";
     static final String BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-    /** The request's {@code contents} array, built up as the loop runs. */
     public static final class Conversation {
         final String system;
         final ArrayNode contents;
@@ -114,7 +100,7 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
                         try {
                             chunk = json.readTree(line.substring(5).trim());
                         } catch (JsonProcessingException e) {
-                            return; // a keep-alive or a partial line
+                            return;
                         }
                         JsonNode candidate = chunk.path("candidates").path(0);
                         for (JsonNode part : candidate.path("content").path("parts")) {
@@ -127,7 +113,7 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
                                 JsonNode fc = part.get("functionCall");
                                 calls.add(new Call(fc.path("id").isMissingNode() ? null : fc.get("id").asText(),
                                         fc.path("name").asText(), fc.path("args").isObject() ? fc.get("args") : json.createObjectNode()));
-                                modelParts.add(part); // verbatim, thoughtSignature included
+                                modelParts.add(part);
                             }
                         }
                         if (candidate.hasNonNull("finishReason")) finish[0] = candidate.get("finishReason").asText();
@@ -141,8 +127,7 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
             throw new ProviderUnavailableException("Gemini unreachable: " + e.getMessage(), false, e);
         }
         if (res.status() == 429) throw new ProviderUnavailableException("Gemini rate limit (429)", true);
-        // 503 is "high demand, try later" on the free tier, not a fault of ours: count it with the rate
-        // limits so a busy afternoon does not read as a broken assistant.
+
         if (res.status() == 503) throw new ProviderUnavailableException("Gemini busy (503)", true);
         if (!res.ok()) {
             log.warn("Gemini answered {}: {}", res.status(), abbreviate(res.errorBody()));
@@ -178,8 +163,6 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
         conv.contents.add(content("user", parts));
     }
 
-    // ---- Wire helpers ----
-
     private ObjectNode textPart(String text) {
         return json.createObjectNode().put("text", text);
     }
@@ -189,7 +172,6 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
         return (ObjectNode) json.createObjectNode().put("role", role).set("parts", parts);
     }
 
-    /** Streamed text arrives in pieces; the echoed model turn keeps it as one part. */
     private void mergeText(ArrayNode parts, String t) {
         if (!parts.isEmpty() && parts.get(parts.size() - 1).has("text") && !parts.get(parts.size() - 1).has("thoughtSignature")) {
             ObjectNode last = (ObjectNode) parts.get(parts.size() - 1);
@@ -199,7 +181,6 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
         }
     }
 
-    /** A {@link ToolDef} as a Gemini function declaration (OpenAPI-style schema, upper-case types). */
     ObjectNode declaration(ToolDef d) {
         ObjectNode properties = json.createObjectNode();
         d.params().forEach((name, p) -> {
@@ -231,7 +212,6 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
         return s.length() > 300 ? s.substring(0, 300) + "…" : s;
     }
 
-    /** For tests and the admin: the schema type names a ParamSpec maps to. */
     static String geminiType(ParamSpec p) {
         return p.type().toUpperCase(Locale.ROOT);
     }

@@ -9,11 +9,6 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Map;
 
-/**
- * An upload over the server's limit fails before any controller runs. The trade-in form checks sizes in
- * the browser first, so this only answers someone who got past that: with the form's own JSON shape for
- * the scripted upload, or a plain message otherwise.
- */
 @ControllerAdvice
 public class UploadLimitAdvice {
 

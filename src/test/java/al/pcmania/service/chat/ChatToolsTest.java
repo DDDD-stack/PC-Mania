@@ -21,7 +21,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-/** The six tools, against an in-memory stock: what the assistant is allowed to see and conclude. */
 class ChatToolsTest {
 
     private final ProductRepository products = mock(ProductRepository.class);
@@ -39,7 +38,7 @@ class ChatToolsTest {
 
     @BeforeEach
     void stock() {
-        // Fastest first, as the repository query orders them.
+
         when(products.findInStockWithGpuModel(ProductStatus.ACTIVE)).thenReturn(List.of(p3080, p3060ti, p6600));
         for (Product p : List.of(p6600, p3060ti, p3080)) when(products.findWithGpuModelBySlug(p.getSlug())).thenReturn(Optional.of(p));
         when(products.findWithGpuModelBySlug(anyString())).thenAnswer(inv -> List.of(p6600, p3060ti, p3080).stream()
@@ -62,7 +61,6 @@ class ChatToolsTest {
                 tools.searchStock(30_000, null, ChatTools.UseCase.AAA_1440P, null, null, null).stream().map(ChatTools.StockItem::slug).toList());
     }
 
-    /** The hard rule: nothing the model sees carries the shop's cost. */
     @Test
     void toolResultsNeverCarryCost() throws Exception {
         ObjectMapper json = new ObjectMapper();
@@ -100,7 +98,7 @@ class ChatToolsTest {
     void comparisonUsesTiersAndFrameRates() {
         ChatTools.Comparison c = tools.compareProducts("sapphire-rx-6600", "msi-rtx-3060-ti").orElseThrow();
         assertEquals(3, c.tierDelta());
-        // (300/240 + 92/68 + 64/45) / 3 - 1 = about 34%
+
         assertEquals(34, c.performanceGapPercent());
         assertTrue(c.note().contains("MSI RTX 3060 Ti Ventus është afërsisht 34% më e shpejtë"), c.note());
         ChatTools.Comparison reverse = tools.compareProducts("msi-rtx-3060-ti", "sapphire-rx-6600").orElseThrow();
@@ -147,7 +145,6 @@ class ChatToolsTest {
         assertEquals(ChatTools.Fit.NO_FIT, no.verdict());
         assertTrue(no.reasons().get(0).contains("kërkon të paktën 600 W"));
 
-        // The exact length from the product's specs beats the catalogue's reference length.
         p3080.getSpecs().add(new ProductSpec(p3080, "Gjatësia", "320 mm", 2));
         ChatTools.FitCheck tight = tools.checkFit("asus-rtx-3080", 850, 325).orElseThrow();
         assertEquals(320, tight.cardLengthMm());
@@ -157,7 +154,6 @@ class ChatToolsTest {
         assertTrue(tools.checkFit("nuk-ekziston", 500, null).isEmpty());
     }
 
-    /** The contact form is the site's: the tool only signals, and never takes a name or a phone. */
     @Test
     void contactFormIsOnlyASignal() {
         ChatTools.LeadFormSignal sig = tools.requestContactForm("RTX 4070", 80_000, 650);
@@ -175,8 +171,6 @@ class ChatToolsTest {
         assertEquals(6, tools.searchStock(null, null, null, null, null, null).size());
         assertEquals(200, tools.searchStock(null, null, null, null, null, null).get(0).lengthMm());
     }
-
-    // ---- Fixtures ----
 
     private static GpuCatalog gpu(String slug, String name, GpuVendor vendor, int vram, int tier, int psu, int length, int esports, int aaa1080, int aaa1440) {
         GpuCatalog g = new GpuCatalog();

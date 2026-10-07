@@ -20,12 +20,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * The six tools the assistant can call. Every one reads our own database and nothing else; the
- * records they return are what the model sees, so none of them carries {@code costLek},
- * {@code maxTradeValueLek} or anything else that is internal, and none of them takes or returns a name,
- * a phone number or an address: the contact form is the site's own and posts to /api/lead directly.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -35,18 +29,14 @@ public class ChatTools {
 
     public enum Fit { OK, TIGHT, NO_FIT }
 
-    /** Statuses a customer may ask about by slug: listed, or recently listed and now reserved/sold. */
     private static final Set<ProductStatus> PUBLIC = EnumSet.of(ProductStatus.ACTIVE, ProductStatus.RESERVED, ProductStatus.SOLD);
-    /** The spec key the admin autofill writes the exact card length under. */
+
     private static final Pattern LENGTH_SPEC = Pattern.compile("(?i)^(gjat[eë]sia|length)$");
     private static final Pattern LEADING_NUMBER = Pattern.compile("(\\d+)");
 
     private final ProductRepository products;
     private final GpuCatalogService catalog;
 
-    // ---- What the model sees ----
-
-    /** A card in stock, as searchStock lists it. */
     public record StockItem(String slug, String title, int priceLek, String condition, Integer warrantyDays,
                             Integer vramGb, Integer tier, Integer psuMinWatts, String pcieConnectors, Integer lengthMm,
                             String testNotes, boolean isMiningFree, boolean transportIncluded, String gpuModel,
@@ -61,16 +51,10 @@ public class ChatTools {
         }
     }
 
-    /** searchStock's answer: the matches (at most {@link #MAX_RESULTS}) and a note when there are none. */
     public record StockSearch(List<StockItem> items, String note) {}
 
-    /**
-     * What requestContactForm returns: a signal for the site to show its own contact form, prefilled
-     * with what the customer wants. It carries no personal details and stores nothing.
-     */
     public record LeadFormSignal(String action, String wantedItem, Integer budgetLek, Integer psuWatts, String note) {}
 
-    /** The catalogue side of a product, for getProduct and compareProducts. */
     public record GpuInfo(String name, String vendor, Integer releaseYear, String architecture, Integer vramGb,
                           String memoryType, Integer memoryBusBits, Integer tdpWatts, Integer psuMinWatts,
                           String pcieConnectors, Integer lengthMm, Integer tier, String supportsDlss, boolean frameGeneration,
@@ -91,7 +75,6 @@ public class ChatTools {
 
     public record Spec(String key, String value) {}
 
-    /** One product in full, for getProduct. */
     public record ProductInfo(String slug, String title, String brand, int priceLek, String condition, String status,
                               boolean inStock, int quantity, Integer warrantyDays, String shortDescription,
                               String testNotes, boolean isMiningFree, boolean transportIncluded, boolean tradeEligible,
@@ -115,12 +98,8 @@ public class ChatTools {
     public record FitCheck(String slug, Fit verdict, Fit psuVerdict, Fit lengthVerdict, Integer psuMinWatts,
                            Integer cardLengthMm, List<String> reasons) {}
 
-    // ---- The tools ----
-
-    /** The most a search returns: enough to choose from, few enough for a short reply. */
     public static final int MAX_RESULTS = 6;
 
-    /** ACTIVE products with a catalogue row, fastest first, narrowed by whatever the customer has said. */
     public List<StockItem> searchStock(Integer budgetMinLek, Integer budgetMaxLek, UseCase useCase, Integer minVramGb,
                                        Integer maxPsuWatts, GpuVendor vendor) {
         List<StockItem> out = new ArrayList<>();
@@ -142,7 +121,6 @@ public class ChatTools {
         return product(slug).map(ProductInfo::of);
     }
 
-    /** Both products side by side, with how far apart they are on the catalogue's tiers and frame rates. */
     public Optional<Comparison> compareProducts(String slugA, String slugB) {
         Optional<Product> a = product(slugA), b = product(slugB);
         if (a.isEmpty() || b.isEmpty()) return Optional.empty();
@@ -156,11 +134,6 @@ public class ChatTools {
         return Optional.of(new Comparison(ProductInfo.of(a.get()), ProductInfo.of(b.get()), tierDelta, gap, note));
     }
 
-    /**
-     * What in stock is a step up from the customer's current card. The card is resolved with the same
-     * matcher as the admin autofill; only products with a higher tier qualify, and never one whose
-     * minimum power supply exceeds what the customer has.
-     */
     public UpgradeAdvice recommendUpgrade(String currentCardQuery, Integer psuWatts, Integer budgetLek) {
         Optional<GpuCatalog> current = catalog.resolve(currentCardQuery);
         if (current.isEmpty()) {
@@ -191,7 +164,6 @@ public class ChatTools {
         return new UpgradeAdvice(GpuInfo.of(cur), options, note);
     }
 
-    /** Whether a card in stock works with the customer's power supply and fits their case. */
     public Optional<FitCheck> checkFit(String slug, Integer psuWatts, Integer caseLengthMm) {
         return product(slug).map(p -> {
             GpuCatalog g = p.getGpuModel();
@@ -234,17 +206,11 @@ public class ChatTools {
         });
     }
 
-    /**
-     * The only way the assistant takes a request: it returns a signal and the site shows its own form,
-     * which posts the name and phone straight to /api/lead. Nothing personal passes through here.
-     */
     public LeadFormSignal requestContactForm(String wantedItem, Integer budgetLek, Integer psuWatts) {
         if (!StringUtils.hasText(wantedItem)) throw new IllegalArgumentException("Duhet çfarë kërkon klienti.");
         return new LeadFormSignal("show_lead_form", wantedItem.trim(), budgetLek, psuWatts,
                 "Formulari i kontaktit u shfaq poshtë përgjigjes. Thuaji klientit ta plotësojë dhe se dyqani do ta telefonojë. Mos kërko emër apo telefon.");
     }
-
-    // ---- Helpers ----
 
     private Optional<Product> product(String slug) {
         if (!StringUtils.hasText(slug)) return Optional.empty();
@@ -255,7 +221,6 @@ public class ChatTools {
         return p.getStatus() == ProductStatus.ACTIVE && p.getQuantity() > 0;
     }
 
-    /** Average of the per-use-case frame-rate ratios, as a rounded percentage: positive when {@code b} is faster. */
     static Integer performanceGap(GpuCatalog a, GpuCatalog b) {
         if (a == null || b == null) return null;
         double sum = 0;
@@ -269,7 +234,6 @@ public class ChatTools {
         return n == 0 ? null : (int) Math.round(sum / n);
     }
 
-    /** The exact length from the product's specs when the operator entered one, else the catalogue's reference. */
     static Integer cardLength(Product p) {
         for (ProductSpec s : p.getSpecs()) {
             if (LENGTH_SPEC.matcher(s.getSpecKey().trim()).matches()) {

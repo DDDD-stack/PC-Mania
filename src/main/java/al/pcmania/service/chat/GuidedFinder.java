@@ -10,18 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The guided finder: four questions, then {@code searchStock} with the answers. No model, nothing to
- * rate-limit, always available. The widget drives it through {@code GET /api/finder/step}, sending the
- * answers it has so far; the answer is the next question or the results.
- */
 @Service
 @RequiredArgsConstructor
 public class GuidedFinder {
 
     public record Option(String value, String label) {}
 
-    /** The next question, or the results when every question is answered. */
     public record Step(String key, int number, int total, String question, String kind, List<Option> options,
                        Integer min, Integer max, Integer stepSize, Integer defaultValue, Map<String, String> answers,
                        boolean done, List<StockItem> results, String resultNote, boolean showLeadForm, String wantedItem,
@@ -102,7 +96,6 @@ public class GuidedFinder {
         };
     }
 
-    /** For callers that need the list of answers a step carries, in order. */
     public static List<String> keys() {
         return new ArrayList<>(List.of("use", "res", "budget", "psu"));
     }

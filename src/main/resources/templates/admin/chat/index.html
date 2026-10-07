@@ -20,8 +20,6 @@
         <span th:if="${provider == 'guided'}">– pa model: vetëm kërkimi i shpejtë. Vendosni <code>CHAT_PROVIDER=gemini</code> dhe një çelës për asistentin.</span>
     </div>
 
-    <!--/* Why the provider last refused. Without it a bad key, a wrong model name and a quiet day all
-           look identical from here, while customers quietly get the quick search instead. */-->
     <div class="alert alert-danger small" th:if="${lastError != null}">
         <i class="bi bi-exclamation-octagon me-1"></i>
         <strong>Asistenti dështoi së fundmi</strong>
@@ -30,7 +28,6 @@
         <div class="mt-1 text-body-secondary">Derisa kjo të rregullohet, klientëve u përgjigjet kërkimi i shpejtë.</div>
     </div>
 
-    <!-- The demand signal: what people ask for that the shop does not have. -->
     <div class="card mb-3 border-danger">
         <div class="card-header bg-danger-subtle"><i class="bi bi-graph-up-arrow me-1"></i><strong>Më të kërkuarat që nuk i kemi</strong>
             <span class="small text-body-secondary">– nga kontaktet që la asistenti, grupuar sipas modelit</span></div>

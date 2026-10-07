@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
-/** Formatting helpers exposed to templates as {@code @fmt}. */
 @Component("fmt")
 public class Fmt {
 
@@ -22,7 +21,6 @@ public class Fmt {
         return new DecimalFormat("#,##0", symbols).format(n);
     }
 
-    /** 125000 -> "125.000 Lekë" */
     public static String lek(Number amount) {
         return amount == null ? "" : grouped(amount) + " Lekë";
     }

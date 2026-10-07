@@ -1,6 +1,5 @@
 package al.pcmania.service.chat;
 
-/** A provider could not take the request: rate limited, over its cap, unreachable or misconfigured. */
 public class ProviderUnavailableException extends Exception {
 
     private final boolean rateLimited;
@@ -15,7 +14,6 @@ public class ProviderUnavailableException extends Exception {
         this.rateLimited = rateLimited;
     }
 
-    /** True for a 429 or the local limiter: the request was fine, the quota was not. */
     public boolean isRateLimited() {
         return rateLimited;
     }

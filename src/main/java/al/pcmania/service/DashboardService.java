@@ -16,17 +16,11 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-/**
- * Margin, turnover and aging figures. A "sale" is an order item in a DELIVERED order; its cost and price come from
- * the order-item snapshots, and days-to-sell runs from the product's listedAt to the order's deliveredAt.
- * Volumes for a single-operator shop are small, so everything is computed in memory.
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DashboardService {
 
-    /** Price bands by unit sale price, in Lek. Upper bound is exclusive; null means open-ended. */
     public static final List<Band> BANDS = List.of(
             new Band("0 – 100k", 0, 100_000),
             new Band("100k – 150k", 100_000, 150_000),
@@ -69,12 +63,10 @@ public class DashboardService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime monthStart = now.toLocalDate().withDayOfMonth(1).atStartOfDay();
 
-        // Unsold stock: available units on any non-sold product, valued at current cost.
         List<Product> unsold = products.findByStatusNot(ProductStatus.SOLD);
         int stockUnits = unsold.stream().mapToInt(Product::getQuantity).sum();
         long stockCost = unsold.stream().mapToLong(p -> (long) p.getQuantity() * p.getCostLek()).sum();
 
-        // Units already taken out of stock by orders not yet delivered (still physically ours).
         List<OrderItem> openItems = orders.findWithItemsByStatusIn(List.of(OrderStatus.NEW, OrderStatus.CONFIRMED, OrderStatus.SHIPPED))
                 .stream().flatMap(o -> o.getItems().stream()).toList();
         int reservedUnits = openItems.stream().mapToInt(OrderItem::getQuantity).sum();
@@ -120,7 +112,6 @@ public class DashboardService {
                 builds.countByStatus(al.pcmania.domain.Enums.BuildStatus.NEW));
     }
 
-    /** Margin is revenue-weighted; days-to-sell is averaged per unit. */
     static Totals totals(List<SoldItem> items) {
         int units = items.stream().mapToInt(SoldItem::quantity).sum();
         long revenue = items.stream().mapToLong(SoldItem::getRevenue).sum();

@@ -15,12 +15,11 @@ public record AppProperties(
         String facebookUrl,
         int courierShippingLek,
         Admin admin,
-        /** Built into the phone app so it needs no sign-in; blank turns that off. See {@link MobileAppKey}. */
+
         String mobileApiKey) {
 
     public record Admin(String username, String password) {}
 
-    /** Base URL without trailing slash. */
     public String base() {
         return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }

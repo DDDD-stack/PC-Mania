@@ -7,6 +7,7 @@ import al.pcmania.domain.Enums.ChatRole;
 import al.pcmania.repo.ChatMessageRepository;
 import al.pcmania.repo.ChatSessionRepository;
 import al.pcmania.service.CatalogService;
+import al.pcmania.service.ErrorCode;
 import al.pcmania.service.ImageStorage;
 import al.pcmania.service.RateLimiter;
 import al.pcmania.web.Fmt;
@@ -23,18 +24,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/**
- * One customer message in, one reply out. Guardrails first (session length, per-address rate), then
- * the message is stripped of contact details, stored, and handed to the chosen provider; when that
- * provider is unavailable or rate-limited the guided finder answers instead and the fallback is
- * counted. Nothing is held open against the database while a provider works: the customer's message
- * is saved before, the reply after.
- */
 @Service
 @Slf4j
 public class ChatService {
 
-    /** A product the reply mentions, as the widget draws it under the text. */
     public record Card(String slug, String title, String price, String condition, String image, String url) {}
 
     record ToolCallsJson(List<Map<String, Object>> calls, List<String> products) {}
@@ -74,7 +67,6 @@ public class ChatService {
         this.json = json;
     }
 
-    /** The provider {@code CHAT_PROVIDER} names; an unknown name means the finder. */
     public ChatProvider primary() {
         ChatProvider p = providers.get(props.provider() == null ? "" : props.provider().trim().toLowerCase());
         if (p == null) {
@@ -84,7 +76,6 @@ public class ChatService {
         return p;
     }
 
-    /** The session behind a browser's cookie, or a fresh one when the cookie is missing or unknown. */
     public ChatSession session(String token) {
         if (token != null && token.length() >= 32 && token.length() <= 64) {
             Optional<ChatSession> existing = sessions.findBySessionToken(token);
@@ -95,7 +86,6 @@ public class ChatService {
         return sessions.save(s);
     }
 
-    /** The session for a cookie that exists, without creating one. */
     public Optional<ChatSession> existingSession(String token) {
         if (token == null || token.length() < 32 || token.length() > 64) return Optional.empty();
         return sessions.findBySessionToken(token);
@@ -109,7 +99,6 @@ public class ChatService {
         return session.getMessageCount() >= props.maxMessagesPerSession();
     }
 
-    /** Cards for the slugs an assistant message surfaced, for replaying a transcript. */
     public List<Card> cardsOf(ChatMessage m) {
         if (m.getToolCallsJson() == null) return List.of();
         try {
@@ -119,7 +108,6 @@ public class ChatService {
         }
     }
 
-    /** Answers into {@code out} and completes it. Runs on the chat executor, off the request thread. */
     public void reply(ChatSession session, String rawMessage, String clientAddress, ChatStream out) {
         try {
             String text = rawMessage == null ? "" : rawMessage.strip();
@@ -140,7 +128,6 @@ public class ChatService {
             if (stripped.stripped()) out.notice(PII_NOTICE);
             String message = stripped.text();
 
-            // The customer's message is on record before any provider is asked, whatever happens next.
             List<ChatMessage> history = new ArrayList<>();
             tx.executeWithoutResult(s -> {
                 ChatSession fresh = sessions.findById(session.getId()).orElseThrow();
@@ -164,14 +151,14 @@ public class ChatService {
             log.info("Assistant reply: session {} by {} with {} tool calls in {} ms", session.getId(), provider,
                     out.toolCalls().size(), System.currentTimeMillis() - started);
         } catch (RuntimeException e) {
-            log.error("Assistant reply failed for session {}", session.getId(), e);
-            out.event("error", Map.of("message", "Diçka shkoi keq. Provo përsëri ose na shkruaj në WhatsApp."));
+            String code = ErrorCode.next();
+            log.error("Assistant reply failed for session {} ({})", session.getId(), code, e);
+            out.event("error", Map.of("message", "Diçka shkoi keq. Provo përsëri ose na shkruaj në WhatsApp.", "code", code));
         } finally {
             out.complete();
         }
     }
 
-    /** The chain: the chosen provider, then the finder. Returns who answered. */
     private String answer(ChatSession session, String message, List<ChatMessage> history, ChatStream out) {
         ChatProvider p = primary();
         if (p != guided) {
@@ -214,11 +201,6 @@ public class ChatService {
         });
     }
 
-    /**
-     * The surfaced products the reply actually talks about: a tool may list six cards while the reply
-     * names two. A product counts as mentioned when its slug or its whole title is in the text, or most
-     * of the title's words are (models tend to shorten "MSI RTX 3060 Ti Ventus 2X 8GB OC").
-     */
     static List<Card> mentioned(String text, List<Card> cards) {
         String t = text.toLowerCase(Locale.ROOT);
         List<Card> out = new ArrayList<>();

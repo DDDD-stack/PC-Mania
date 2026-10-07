@@ -11,12 +11,6 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * One graphics card model with the reference data the assistant reasons over. Products point at a
- * row through {@link Product#getGpuModel()}; per-card overrides (the exact length of a partner card,
- * factory overclocks) stay in the product's {@link ProductSpec} rows. Seeded from
- * {@code data/gpu-catalog.json} and editable in Admin > Katalogu GPU.
- */
 @Entity
 @Table(name = "gpu_catalog")
 @Getter
@@ -29,7 +23,7 @@ public class GpuCatalog {
     private String name;
     @Enumerated(EnumType.STRING)
     private GpuVendor vendor;
-    /** Comma-separated search terms matched alongside the name ("3060 ti,3060ti"). */
+
     private String aliases;
     private Integer releaseYear;
     private String architecture;
@@ -39,9 +33,9 @@ public class GpuCatalog {
     private Integer tdpWatts;
     private Integer psuMinWatts;
     private String pcieConnectors;
-    /** Reference length; partner cards vary. */
+
     private Integer lengthMm;
-    /** 1-20 performance rank, higher is faster. */
+
     private Integer tier;
     @Enumerated(EnumType.STRING)
     private UpscalerVersion supportsDlss;
@@ -61,7 +55,6 @@ public class GpuCatalog {
     private Integer fpsAaa1440p;
     private String notesSq;
 
-    /** The alias list as separate, trimmed terms. */
     public List<String> aliasList() {
         List<String> out = new ArrayList<>();
         if (aliases == null) return out;
@@ -72,7 +65,6 @@ public class GpuCatalog {
         return out;
     }
 
-    /** Fields the assistant needs that are still empty, by their admin label; shown as a warning in the list. */
     public List<String> missingFields() {
         List<String> m = new ArrayList<>();
         if (vramGb == null) m.add("VRAM");

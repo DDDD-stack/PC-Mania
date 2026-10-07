@@ -17,7 +17,6 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/** Gemini's wire format, request and response, and the free-tier handling, with the network scripted. */
 class GeminiChatProviderTest {
 
     private final ObjectMapper json = new ObjectMapper();
@@ -71,13 +70,12 @@ class GeminiChatProviderTest {
         assertEquals("OBJECT", decl.get(0).path("parameters").path("type").asText());
         assertEquals("INTEGER", decl.get(0).path("parameters").path("properties").path("budgetMaxLek").path("type").asText());
         assertEquals("currentCardQuery", decl.get(3).path("parameters").path("required").get(0).asText());
-        // History: user, model, then the new message as user.
+
         assertEquals(3, body.path("contents").size());
         assertEquals("user", body.path("contents").get(0).path("role").asText());
         assertEquals("model", body.path("contents").get(1).path("role").asText());
         assertEquals("Kam 40 mijë", body.path("contents").get(2).path("parts").get(0).path("text").asText());
 
-        // Second request: the model's call echoed verbatim (signature kept) and the functionResponse after it.
         JsonNode second = json.readTree(http.sent.get(1).body()).path("contents");
         assertEquals(5, second.size());
         JsonNode modelTurn = second.get(3);
@@ -106,7 +104,6 @@ class GeminiChatProviderTest {
         assertFalse(assertThrows(ProviderUnavailableException.class,
                 () -> provider("", 12).stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000))).isRateLimited());
 
-        // The local limiter: one token a minute, the second request is refused before any network call.
         GeminiChatProvider tight = provider("gk-test", 1);
         http.stream("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Po.\"}],\"role\":\"model\"},\"finishReason\":\"STOP\"}]}");
         assertDoesNotThrow(() -> tight.stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000)));
@@ -119,8 +116,7 @@ class GeminiChatProviderTest {
 
     @Test
     void busyIsTreatedAsTransientNotAsAFault() {
-        // Gemini's free tier answers 503 "high demand" under load. Counting that as an error made a
-        // busy afternoon look the same as a broken assistant.
+
         http.status(503, "{\"error\":{\"code\":503,\"status\":\"UNAVAILABLE\"}}");
         ProviderUnavailableException e = assertThrows(ProviderUnavailableException.class,
                 () -> provider("gk-test", 12).stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000)));
@@ -133,7 +129,7 @@ class GeminiChatProviderTest {
         http.status(500, "boom");
         assertFalse(assertThrows(ProviderUnavailableException.class,
                 () -> provider("gk", 12).stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000))).isRateLimited());
-        // The body travels with the error: that string is what Admin > Asistenti shows the operator.
+
         verify(usage).error(eq("gemini"), contains("boom"));
         http.fail("connection reset");
         assertThrows(ProviderUnavailableException.class,

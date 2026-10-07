@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/** Polled by the admin pages every 30 s to badge the navbar and announce new orders. Session-authenticated. */
 @RestController
 @RequiredArgsConstructor
 public class AdminLiveController {

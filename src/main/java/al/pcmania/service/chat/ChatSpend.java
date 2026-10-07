@@ -12,11 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
-/**
- * What the Anthropic provider has cost this month, priced from the token counts the API reports and
- * kept in {@code chat_usage}. Past the configured cap the provider reports itself unavailable and the
- * chain falls through.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -25,7 +20,6 @@ public class ChatSpend {
     private final ChatUsageRepository repo;
     private final ChatProperties props;
 
-    /** Every public page may ask this, so the answer is kept for a minute between reads of the table. */
     private volatile Boolean overCapCached;
     private volatile long overCapCheckedAt;
 
@@ -58,7 +52,6 @@ public class ChatSpend {
         return cached;
     }
 
-    /** Adds one request's tokens. Its own transaction: a failure here must not lose the reply itself. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(long input, long output, long cacheRead, long cacheWrite) {
         String month = currentMonth();
@@ -83,7 +76,6 @@ public class ChatSpend {
         }
     }
 
-    /** Dollars per million tokens is the same number as micro-dollars per token. */
     long cost(long input, long output, long cacheRead, long cacheWrite) {
         ChatProperties.Anthropic a = props.anthropic();
         return Math.round(input * a.inputUsdPerMtok() + output * a.outputUsdPerMtok()

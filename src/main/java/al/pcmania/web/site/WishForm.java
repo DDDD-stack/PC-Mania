@@ -14,7 +14,6 @@ public class WishForm {
     @Max(value = 10000000, message = "Buxheti nuk është i vlefshëm")
     private Integer maxPriceLek;
 
-    /** Null: any condition. */
     private Condition condition;
 
     @Size(max = 1000)
@@ -28,6 +27,5 @@ public class WishForm {
     @Pattern(regexp = CheckoutForm.PHONE_REGEX, message = "Numri i telefonit nuk është i vlefshëm")
     private String customerPhone;
 
-    /** Honeypot. */
     private String website;
 }

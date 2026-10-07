@@ -28,7 +28,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminProductController {
 
-    /** The category whose products the GPU catalogue describes. */
     static final String GPU_CATEGORY = "karta-grafike";
 
     private final ProductAdminService service;
@@ -72,7 +71,6 @@ public class AdminProductController {
         if (errors.hasErrors()) return form(id == null ? null : service.get(id), form, model);
         Product p = service.save(id, form);
 
-        // Photos picked on the "new product" page travel with the form, so a listing can be created in one step.
         List<MultipartFile> uploads = newImages == null ? List.of() : newImages.stream().filter(f -> !f.isEmpty()).toList();
         String imageNote = "";
         if (!uploads.isEmpty()) {
@@ -84,7 +82,7 @@ public class AdminProductController {
             }
         }
         flash.addFlashAttribute("success", (id == null ? "Produkti u krijua." : "Ndryshimet u ruajtën.") + imageNote);
-        // The assistant only recommends cards it can reason about, i.e. ones stamped with a catalogue row.
+
         if (p.getGpuModel() == null && GPU_CATEGORY.equals(p.getCategorySlug())) {
             flash.addFlashAttribute("warning", "Pa model nga katalogu, asistenti nuk do ta rekomandojë këtë produkt.");
         }
@@ -116,7 +114,6 @@ public class AdminProductController {
         return "redirect:" + localPath(referer, "/admin/products");
     }
 
-    /** Path+query of the referer if it points into the product admin, to avoid open redirects. */
     static String localPath(String referer, String fallback) {
         try {
             URI uri = URI.create(referer);

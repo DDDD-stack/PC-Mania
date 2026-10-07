@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-/** The Anthropic path compiles and works against a scripted network, although no key is configured in production. */
 class AnthropicChatProviderTest {
 
     private final ObjectMapper json = new ObjectMapper();

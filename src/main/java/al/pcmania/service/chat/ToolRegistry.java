@@ -15,20 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * The six tools, defined once as neutral {@link ToolDef}s over {@link ChatTools}, and the dispatch from
- * a model's call to a result. None takes or returns a name, a phone number or an address: when the
- * assistant wants to take a request it calls {@code requestContactForm}, which only returns a signal
- * for the site to show its own form.
- */
 @Component
 @Slf4j
 public class ToolRegistry {
 
-    /** Every tool answers with JSON; the slugs it surfaced and any UI action ride beside it. */
     public record Execution(String name, String resultJson, boolean error, List<String> productSlugs, JsonNode action) {}
 
-    /** What the customer sees while a tool runs. */
     public static String statusOf(String toolName) {
         return switch (toolName) {
             case "searchStock" -> "Po shikoj stokun…";
@@ -58,7 +50,6 @@ public class ToolRegistry {
         return Optional.ofNullable(defs.get(name));
     }
 
-    /** Runs one call. Bad input never throws: the model gets a message it can act on. */
     public Execution execute(String name, JsonNode args) {
         ToolDef def = defs.get(name);
         if (def == null) return fail(name, "Mjet i panjohur: " + name);
@@ -148,7 +139,6 @@ public class ToolRegistry {
                         }));
     }
 
-    /** A tool's own validation message, returned to the model as an error result. */
     record Error(String error) {}
 
     private Execution fail(String name, String message) {
@@ -163,7 +153,6 @@ public class ToolRegistry {
         }
     }
 
-    /** The products a result talks about, so the reply can show them as cards. */
     static List<String> slugsOf(Object result) {
         List<String> out = new ArrayList<>();
         if (result instanceof StockSearch s) s.items().forEach(i -> out.add(i.slug()));
@@ -175,8 +164,6 @@ public class ToolRegistry {
         else if (result instanceof FitCheck f) out.add(f.slug());
         return out;
     }
-
-    // ---- Input helpers: tolerant of the model sending a number as a string or an empty value ----
 
     static Integer intOf(JsonNode in, String field) {
         JsonNode v = in == null ? null : in.get(field);
@@ -204,7 +191,7 @@ public class ToolRegistry {
         try {
             return Enum.valueOf(type, s.trim().toUpperCase().replace(' ', '_'));
         } catch (IllegalArgumentException e) {
-            return null; // an unknown value just does not filter
+            return null;
         }
     }
 }

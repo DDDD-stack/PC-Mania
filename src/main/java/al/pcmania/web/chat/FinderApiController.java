@@ -13,11 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-/**
- * {@code GET /api/finder/step}: the guided finder's state machine. The widget sends the answers it has
- * ({@code use}, {@code res}, {@code budget}, {@code psu}) and gets the next question, or the results as
- * product cards once all four are answered.
- */
 @RestController
 @RequiredArgsConstructor
 public class FinderApiController {

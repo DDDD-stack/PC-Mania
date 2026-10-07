@@ -32,7 +32,7 @@ public class AdminHomeController {
         model.addAttribute("newLeads", leads.countByStatus(LeadStatus.NEW));
         model.addAttribute("openTrades", trades.countByStatusIn(
                 Arrays.stream(TradeStatus.values()).filter(TradeStatus::isOpen).toList()));
-        // Converted trade-ins whose item has not been listed yet: stock that is on its way in.
+
         model.addAttribute("incomingTradeIns", trades.findByStatusAndStockProductIdIsNullOrderByClosedAtAsc(TradeStatus.CONVERTED));
         return "admin/dashboard";
     }

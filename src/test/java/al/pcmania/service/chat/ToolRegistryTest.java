@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** The neutral descriptors and the dispatch: what every provider is handed, and what a call produces. */
 class ToolRegistryTest {
 
     private final ObjectMapper json = new ObjectMapper();
@@ -76,7 +75,7 @@ class ToolRegistryTest {
         ToolRegistry.Execution badNumber = registry.execute("checkFit", json.readTree("{\"slug\":\"x\",\"psuWatts\":\"99999999999999\"}"));
         assertTrue(badNumber.error());
         assertTrue(badNumber.resultJson().contains("nuk është numër"), badNumber.resultJson());
-        // Text where a number was expected is simply no filter.
+
         when(tools.checkFit(eq("x"), isNull(), isNull())).thenReturn(Optional.empty());
         assertTrue(registry.execute("checkFit", json.readTree("{\"slug\":\"x\",\"psuWatts\":\"shumë\"}")).resultJson().contains("Nuk ka produkt"));
     }

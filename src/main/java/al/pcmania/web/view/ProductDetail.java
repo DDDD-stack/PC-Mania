@@ -7,7 +7,6 @@ import al.pcmania.domain.ProductImage;
 
 import java.util.List;
 
-/** Public, cost-free projection of a product for the detail page. */
 public record ProductDetail(
         Long id,
         String slug,
@@ -25,7 +24,7 @@ public record ProductDetail(
         String testNotes,
         boolean miningFree,
         boolean transportIncluded,
-        /** Offered for "Nderro". The internal trade-value cap never comes here. */
+
         boolean tradeEligible,
         List<Spec> specs,
         List<String> images) {
@@ -41,7 +40,6 @@ public record ProductDetail(
                 p.getImages().stream().map(ProductImage::getFilename).toList());
     }
 
-    /** Can be asked about for a trade-in right now. */
     public boolean isTradeable() {
         return tradeEligible && isAvailable();
     }

@@ -10,11 +10,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 
-/**
- * The one system prompt every provider sends, from {@code prompts/assistant-sq.txt}, plus the shop
- * facts that come from configuration (shipping fee, phone) so the prompt never contradicts the site.
- * Nothing in it changes per request, which is what lets a provider cache it.
- */
 @Component
 public class ChatPrompt {
 

@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Contact details never reach a provider; prices and model numbers do. */
 class PiiStripperTest {
 
     @Test

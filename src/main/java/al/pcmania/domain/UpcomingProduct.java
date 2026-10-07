@@ -8,11 +8,6 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-/**
- * A "Së shpejti" teaser: stock that is on its way but cannot be ordered yet. Customers leave a phone
- * number instead of buying, and the operator calls them once it arrives. Linking {@code product}
- * lets the teaser point at the real listing once it is published.
- */
 @Entity
 @Getter
 @Setter
@@ -25,7 +20,7 @@ public class UpcomingProduct {
     private String teaser;
     private String categorySlug;
     private Integer expectedPriceLek;
-    /** Free text such as "Brenda javës" or "Fundi i shtatorit" — vague on purpose, shipments slip. */
+
     private String expectedLabel;
 
     @Enumerated(EnumType.STRING)

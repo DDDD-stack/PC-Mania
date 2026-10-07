@@ -125,7 +125,6 @@ public class SeoService {
                 toJson(List.of(product, breadcrumbs)), false);
     }
 
-    /** wa.me deep link prefilled with the product title, price and URL. */
     public String whatsappLink(ProductDetail p) {
         String text = "Përshëndetje! Jam i interesuar për: " + p.title() + " (" + Fmt.lek(p.priceLek()) + ")\n"
                 + abs("/produkt/" + p.slug());
@@ -151,7 +150,7 @@ public class SeoService {
 
     private String toJson(Object o) {
         try {
-            // Prevent "</script>" inside values from terminating the script element.
+
             return json.writeValueAsString(o).replace("</", "<\\/");
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);

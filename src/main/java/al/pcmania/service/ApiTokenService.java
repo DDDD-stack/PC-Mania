@@ -19,10 +19,6 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
 
-/**
- * Issues and verifies opaque bearer tokens for the mobile app. Tokens expire after 60 days without use,
- * and only their SHA-256 hash is stored, so a database leak does not expose usable tokens.
- */
 @Service
 @RequiredArgsConstructor
 public class ApiTokenService {
@@ -34,7 +30,6 @@ public class ApiTokenService {
     private final AdminUserRepository admins;
     private final PasswordEncoder encoder;
 
-    /** Returns a new raw token, or empty if the credentials are wrong. */
     @Transactional
     public Optional<String> login(String username, String password, String deviceName) {
         Optional<AdminUser> user = admins.findByUsername(username == null ? "" : username.trim())
@@ -55,7 +50,6 @@ public class ApiTokenService {
         return Optional.of(raw);
     }
 
-    /** Resolves a raw token to its user, sliding the idle expiry forward. */
     @Transactional
     public Optional<AdminUser> authenticate(String raw) {
         if (raw == null || raw.isBlank()) return Optional.empty();
@@ -64,7 +58,7 @@ public class ApiTokenService {
                 tokens.delete(t);
                 return Optional.empty();
             }
-            // Avoid a write on every request; minute resolution is plenty for idle expiry.
+
             if (t.getLastUsedAt().isBefore(LocalDateTime.now().minusMinutes(5))) t.setLastUsedAt(LocalDateTime.now());
             return Optional.of(t.getAdminUser());
         });

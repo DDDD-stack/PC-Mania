@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** The finder's four questions and what it asks the stock for at the end. */
 class GuidedFinderTest {
 
     private final ChatTools tools = mock(ChatTools.class);
@@ -31,7 +30,7 @@ class GuidedFinderTest {
         GuidedFinder.Step s4 = finder.step(Map.of("use", "aaa", "res", "1440p", "budget", "150000"));
         assertEquals("psu", s4.key());
         assertEquals(4, s4.options().size());
-        // A bad answer is as good as none: the question is asked again.
+
         assertEquals("res", finder.step(Map.of("use", "aaa", "res", "4k")).key());
     }
 

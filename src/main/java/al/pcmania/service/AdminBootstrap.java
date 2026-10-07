@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 
-/** Creates the single admin account on first start. */
 @Component
 @RequiredArgsConstructor
 @Slf4j

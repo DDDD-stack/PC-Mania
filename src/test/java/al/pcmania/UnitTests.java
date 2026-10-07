@@ -39,7 +39,7 @@ class UnitTests {
         assertEquals(Set_of(Condition.USED), f.conditions());
         assertTrue(f.hasSpec("VRAM", "8 GB"));
         assertEquals(2, f.specs().size());
-        assertEquals(6, f.activeCount()); // price range + condition + brand + 3 spec values
+        assertEquals(6, f.activeCount());
         String url = f.pageUrl("/kategori/karta-grafike", 3);
         assertTrue(url.contains("spec=VRAM:12%20GB"), url);
         assertTrue(url.endsWith("rendit=cmimi-rritje&faqe=3"), url);
@@ -69,8 +69,8 @@ class UnitTests {
     void totalsWeightMarginByRevenueAndDaysByUnit() throws Exception {
         LocalDateTime t = LocalDateTime.now();
         var items = List.of(
-                new DashboardService.SoldItem(1L, "A", 1L, "a", 2, 80, 100, t, t, 10L),  // profit 40, rev 200
-                new DashboardService.SoldItem(2L, "B", 2L, "b", 1, 900, 1000, t, t, 40L), // profit 100, rev 1000
+                new DashboardService.SoldItem(1L, "A", 1L, "a", 2, 80, 100, t, t, 10L),
+                new DashboardService.SoldItem(2L, "B", 2L, "b", 1, 900, 1000, t, t, 40L),
                 new DashboardService.SoldItem(3L, "C", null, "c", 1, 50, 60, null, t, null));
         var m = DashboardService.class.getDeclaredMethod("totals", List.class);
         m.setAccessible(true);
@@ -79,11 +79,36 @@ class UnitTests {
         assertEquals(1260, totals.revenue());
         assertEquals(150, totals.profit());
         assertEquals(100.0 * 150 / 1260, totals.marginPct(), 1e-9);
-        assertEquals(20.0, totals.avgDaysToSell(), 1e-9); // (10*2 + 40) / 3 units with known days
+        assertEquals(20.0, totals.avgDaysToSell(), 1e-9);
     }
 
     private static DashboardService.Band bandFor(int price) {
         return DashboardService.BANDS.stream().filter(b -> price >= b.min() && (b.max() == null || price < b.max())).findFirst().orElseThrow();
+    }
+
+    @Test
+    void errorCodesAreDistinctAndFreeOfLookalikeCharacters() {
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int i = 0; i < 2000; i++) {
+            String code = al.pcmania.service.ErrorCode.next();
+            assertTrue(code.matches("PM-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}"), code);
+            seen.add(code);
+        }
+        assertTrue(seen.size() > 1980, "codes repeated too often: " + seen.size());
+    }
+
+    @Test
+    void theErrorPageGetsACodeButANotFoundDoesNot() {
+        al.pcmania.web.site.SiteErrorAdvice advice = new al.pcmania.web.site.SiteErrorAdvice();
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest("GET", "/produkt/x");
+
+        org.springframework.web.servlet.ModelAndView missing = advice.handle(new al.pcmania.service.NotFoundException(), request);
+        assertEquals("error/404", missing.getViewName());
+        assertNull(missing.getModel().get("errorCode"));
+
+        org.springframework.web.servlet.ModelAndView broken = advice.handle(new IllegalStateException("boom"), request);
+        assertEquals("error", broken.getViewName());
+        assertTrue(String.valueOf(broken.getModel().get("errorCode")).startsWith("PM-"));
     }
 
     private static java.util.Set<Condition> Set_of(Condition c) {

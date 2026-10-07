@@ -10,12 +10,10 @@ import org.springframework.context.event.EventListener;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Plumbing for the assistant: the thread pool replies stream on, and a start-up line saying what is on. */
 @Configuration
 @Slf4j
 public class ChatConfig {
 
-    /** Replies stream for seconds while tools run; each one gets a virtual thread so none is kept waiting. */
     @Bean(name = "chatExecutor", destroyMethod = "shutdown")
     ExecutorService chatExecutor() {
         return Executors.newVirtualThreadPerTaskExecutor();

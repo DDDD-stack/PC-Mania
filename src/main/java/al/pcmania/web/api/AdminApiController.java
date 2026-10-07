@@ -29,19 +29,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** JSON API for the PCMania mobile admin app. Everything except login requires a bearer token. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class AdminApiController {
 
-    /** Tabs in the app: new / in progress / finished. */
     static final Map<String, List<OrderStatus>> ORDER_GROUPS = Map.of(
             "new", List.of(OrderStatus.NEW),
             "active", List.of(OrderStatus.CONFIRMED, OrderStatus.SHIPPED),
             "done", List.of(OrderStatus.DELIVERED, OrderStatus.CANCELLED));
 
-    /** Tabs in the app: waiting for a quote / quoted or accepted / finished. */
     static final Map<String, List<BuildStatus>> BUILD_GROUPS = Map.of(
             "new", List.of(BuildStatus.NEW),
             "active", List.of(BuildStatus.QUOTED, BuildStatus.ACCEPTED),
@@ -64,8 +61,6 @@ public class AdminApiController {
     private final ProductAdminService productService;
     private final UpcomingService upcoming;
     private final AppProperties props;
-
-    // ---- Auth ----
 
     @PostMapping("/auth/login")
     ResponseEntity<?> login(@RequestBody LoginRequest body, HttpServletRequest request) {
@@ -92,8 +87,6 @@ public class AdminApiController {
         return ResponseEntity.noContent().build();
     }
 
-    // ---- Dashboard ----
-
     @GetMapping("/summary")
     Summary summary() {
         var d = dashboard.build();
@@ -106,8 +99,6 @@ public class AdminApiController {
                 activeProducts, slow, d.fastestBand() == null ? null : d.fastestBand().label(),
                 orders.findTopByOrderByIdDesc().map(Order::getId).orElse(null));
     }
-
-    // ---- Orders ----
 
     @GetMapping("/orders")
     PageDto<OrderRow> orders(@RequestParam(defaultValue = "new") String group, @RequestParam(defaultValue = "0") int page) {
@@ -158,8 +149,6 @@ public class AdminApiController {
         return order(id);
     }
 
-    // ---- Custom PC build requests ----
-
     @GetMapping("/builds")
     PageDto<BuildRow> buildRequests(@RequestParam(defaultValue = "new") String group, @RequestParam(defaultValue = "0") int page) {
         List<BuildStatus> statuses = BUILD_GROUPS.getOrDefault(group, BUILD_GROUPS.get("new"));
@@ -193,8 +182,6 @@ public class AdminApiController {
         buildService.update(id, status, quoted, notes);
         return buildRequest(id);
     }
-
-    // ---- Inventory ----
 
     @GetMapping("/products")
     PageDto<ProductRow> products(@RequestParam(defaultValue = "active") String group, @RequestParam(required = false) String q,
@@ -233,8 +220,6 @@ public class AdminApiController {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("has_orders",
                 "Produkti ka porosi të lidhura dhe nuk mund të fshihet. Vendoseni \"I fshehur\"."));
     }
-
-    // ---- Së shpejti ----
 
     @GetMapping("/upcoming")
     List<UpcomingRow> upcomingList() {
@@ -279,7 +264,6 @@ public class AdminApiController {
         return ResponseEntity.noContent().build();
     }
 
-    /** The waiting list: who to call when the item lands. */
     @GetMapping("/upcoming/{id}/interest")
     List<InterestDto> upcomingInterest(@PathVariable Long id) {
         return upcoming.interestsFor(id).stream()

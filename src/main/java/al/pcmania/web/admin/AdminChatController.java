@@ -31,19 +31,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Admin > Asistenti: what customers ask for and do not get, the leads to call, and the transcripts. */
 @Controller
 @RequestMapping("/admin/chat")
 @RequiredArgsConstructor
 public class AdminChatController {
 
-    /** One conversation in the list: when, how long, what it opened with, what the assistant showed, who answered. */
     public record SessionRow(ChatSession session, String opening, List<Product> products, boolean leadCaptured, String provider) {}
 
-    /** One provider's day in the usage panel. */
     public record UsageRow(String provider, int requests, int errors, int rateLimitHits) {}
 
-    /** One turn in a transcript, with the products its tool calls surfaced. */
     public record TranscriptRow(ChatMessage message, List<Product> products) {}
 
     private final ChatSessionRepository sessions;
@@ -75,7 +71,7 @@ public class AdminChatController {
         model.addAttribute("overCap", spend.overCap());
         model.addAttribute("provider", assistant.primary().name());
         model.addAttribute("providerAvailable", assistant.primary().isAvailable());
-        // Why it last failed: without this a broken provider looks identical to a quiet day.
+
         model.addAttribute("lastError", providerUsage.lastError(assistant.primary().name()).orElse(null));
         model.addAttribute("geminiConfigured", props.gemini().keyConfigured());
         model.addAttribute("anthropicConfigured", props.anthropic().keyConfigured());

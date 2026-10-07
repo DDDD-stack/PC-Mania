@@ -30,7 +30,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** The GPU catalogue: the seed, the matcher behind the autofill, and the admin pages, on a real Postgres. */
 @SpringBootTest
 @AutoConfigureMockMvc
 class GpuCatalogTests {
@@ -54,7 +53,6 @@ class GpuCatalogTests {
     @Autowired BrandRepository brands;
     @Autowired TransactionTemplate tx;
 
-    /** The repeatable migration loads every row of data/gpu-catalog.json, upserting on slug. */
     @Test
     void seedLoadsTheCatalogue() {
         assertEquals(21, catalog.count());
@@ -120,7 +118,7 @@ class GpuCatalogTests {
                         .param("driverStatus", "ACTIVE").param("miningRisk", "HIGH").param("aliases", "3070 ti,3070ti"))
                 .andExpect(status().is3xxRedirection());
         assertEquals(700, catalog.findById(id).orElseThrow().getPsuMinWatts());
-        // The row is missing fields now, and the list says so.
+
         mvc.perform(get("/admin/gpu-catalog")).andExpect(content().string(containsString("VRAM, TDP, Konektorët")));
     }
 
@@ -129,7 +127,6 @@ class GpuCatalogTests {
         mvc.perform(get("/admin/api/gpu-catalog/search").param("q", "3060")).andExpect(status().is3xxRedirection());
     }
 
-    /** Saving the product form with a gpuModelId stamps the row; saving a GPU without one warns. */
     @Test
     @WithMockUser(roles = "ADMIN")
     void productFormStampsTheModel() throws Exception {
@@ -153,7 +150,6 @@ class GpuCatalogTests {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attribute("warning", "Pa model nga katalogu, asistenti nuk do ta rekomandojë këtë produkt."));
 
-        // The edit page shows the stamped model.
         mvc.perform(get("/admin/products/" + p.getId())).andExpect(status().isOk())
                 .andExpect(content().string(containsString("Radeon RX 6600")));
     }

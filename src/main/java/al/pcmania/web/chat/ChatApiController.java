@@ -22,12 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
-/**
- * The widget's chat API. {@code POST /api/chat} answers as a stream of server-sent events ({@code status}
- * while a tool runs, {@code delta} text, {@code products} cards, {@code action} for the contact form,
- * {@code notice}, {@code finder}, then {@code done}, {@code limit} or {@code error}). The conversation is
- * identified by an HttpOnly cookie set on the first message; {@code GET /api/chat/history} replays it.
- */
 @RestController
 @RequestMapping("/api/chat")
 public class ChatApiController {

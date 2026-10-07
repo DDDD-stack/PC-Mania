@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-/** {@link StreamingHttp} on the JDK's HttpClient: no extra dependency, honours the JVM's proxy settings. */
 @Component
 public class JdkStreamingHttp implements StreamingHttp {
 

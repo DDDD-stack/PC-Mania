@@ -5,12 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Removes anything that looks like a phone number or an email address from a customer's message
- * before it reaches any provider. Gemini's free tier lets Google use inputs to improve its models, so
- * contact details must never enter a request body; the site's own form is the way to leave them.
- * Prices survive: a phone number has at least nine digits, a price in Lekë rarely more than seven.
- */
 @Slf4j
 public final class PiiStripper {
 
@@ -18,7 +12,7 @@ public final class PiiStripper {
     public static final String EMAIL_PLACEHOLDER = "[email hequr]";
 
     private static final Pattern EMAIL = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");
-    /** Digit runs with the separators people type: "069 123 4567", "+355 69 123 4567", "069-1234567". */
+
     private static final Pattern PHONE_LIKE = Pattern.compile("\\+?\\d(?:[\\d\\s().-]{6,}\\d)");
 
     private PiiStripper() {}

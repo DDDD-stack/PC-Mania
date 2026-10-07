@@ -1,6 +1,4 @@
-/* PCMania – the customer assistant widget. Chat goes to POST /api/chat (server-sent events, conversation
-   in an HttpOnly cookie), the guided finder to GET /api/finder/step, and the contact form posts to /api/lead.
-   Names and phone numbers only ever go through that form. */
+
 (() => {
   const panel = document.getElementById('pmChat');
   const fab = document.getElementById('pmChatFab');
@@ -22,7 +20,6 @@
   let loaded = false, busy = false, ended = false;
   const scrollDown = () => { log.scrollTop = log.scrollHeight; };
 
-  // ---- Bubbles, cards, buttons ----
   const bubble = (role, text = '') => {
     const el = document.createElement('div');
     el.className = 'pm-chat-msg pm-chat-' + role;
@@ -60,7 +57,6 @@
     scrollDown();
   };
 
-  // ---- The contact form (the only PII path) ----
   const leadForm = (host, { wantedItem = '', budgetLek = '', psuWatts = '', source = 'CHAT' } = {}) => {
     if (host.querySelector('.pm-chat-lead')) return;
     const f = leadTpl.content.firstElementChild.cloneNode(true);
@@ -96,22 +92,17 @@
     f.querySelector('[name=name]').focus();
   };
 
-  // ---- The guided finder ----
   const finder = {
     answers: {},
     host: null,
-    /** Starts over: the finder button, and "Fillo nga e para". Clears the answers on purpose. */
+
     start(firstStep) {
       this.answers = {};
       this.host = bubble('assistant', '');
       this.host.querySelector('.pm-chat-text').remove();
       if (firstStep) this.render(firstStep, null); else this.load();
     },
-    /**
-     * The server offered the finder again on a later reply. If the customer is already part-way
-     * through it, carry on from the next unanswered question instead of throwing them back to
-     * question 1 - which is what happened on every message while a provider was down.
-     */
+
     resume(firstStep) {
       const partWay = Object.keys(this.answers).length > 0;
       this.host = bubble('assistant', '');
@@ -188,7 +179,6 @@
   };
   finderBtn.addEventListener('click', () => { if (!busy) finder.start(null); });
 
-  // ---- Chat ----
   const finish = (limit) => {
     busy = false;
     typing.hidden = true;
@@ -251,7 +241,6 @@
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
   });
 
-  // text/event-stream, read as it arrives: blocks separated by a blank line, "event:" and "data:" lines.
   const readEvents = async (res, onEvent) => {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -270,7 +259,7 @@
           else if (line.startsWith('data:')) data += line.slice(5).trim();
         });
         if (!data) continue;
-        try { onEvent(event, JSON.parse(data)); } catch { /* a partial line; the next block completes it */ }
+        try { onEvent(event, JSON.parse(data)); } catch {  }
       }
     }
   };
@@ -307,7 +296,7 @@
         else if (event === 'action' && data.action === 'show_lead_form') leadForm(replyEl(), { wantedItem: data.wantedItem, budgetLek: data.budgetLek, psuWatts: data.psuWatts, source: 'CHAT' });
         else if (event === 'finder') { typing.hidden = true; finder.resume(data); }
         else if (event === 'limit') { waButton(bubble('assistant', data.text)); limit = true; }
-        else if (event === 'error') waButton(bubble('assistant', data.message));
+        else if (event === 'error') waButton(bubble('assistant', data.code ? data.message + ' (kodi: ' + data.code + ')' : data.message));
       });
       finish(limit);
     } catch {

@@ -17,7 +17,7 @@ public class OrderItem {
     private Product product;
     private String titleSnapshot;
     private int priceLekSnapshot;
-    /** Cost at sale time, so later cost edits don't rewrite margin history. */
+
     private int costLekSnapshot;
     private int quantity;
 

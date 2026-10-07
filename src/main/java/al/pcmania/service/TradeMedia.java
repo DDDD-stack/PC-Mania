@@ -5,19 +5,13 @@ import al.pcmania.domain.Enums.TradeMediaType;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Recognises trade-in proof by its first bytes rather than its name or the browser's content type:
- * pictures saved from the web are often WebP named .jpg, and anything can be renamed .mp4.
- */
 public record TradeMedia(TradeMediaType type, String contentType, String extension) {
 
-    /** A phone clip of FurMark at 720p fits; the database (500 MB on Supabase's free plan) does not take full-length 4K. */
     public static final long MAX_VIDEO_BYTES = 40L * 1024 * 1024;
     public static final long MAX_IMAGE_BYTES = 10L * 1024 * 1024;
-    /** All trade-in media together, so a run of uploads cannot fill the database. */
+
     public static final long MAX_TOTAL_BYTES = 150L * 1024 * 1024;
 
-    /** Null when the bytes are not MP4/MOV video or a JPEG/PNG/WebP image. */
     public static TradeMedia detect(InputStream in) throws IOException {
         byte[] h = in.readNBytes(12);
         if (h.length < 12) return null;

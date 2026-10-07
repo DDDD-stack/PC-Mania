@@ -31,13 +31,10 @@ public interface TradeRequestRepository extends JpaRepository<TradeRequest, Long
 
     Optional<TradeRequest> findByRequestNumber(String requestNumber);
 
-    /** Converted trade-ins whose item has not been taken into stock yet: incoming stock. */
     List<TradeRequest> findByStatusAndStockProductIdIsNullOrderByClosedAtAsc(TradeStatus status);
 
-    /** Quotes whose deadline has passed without an answer. */
     List<TradeRequest> findByStatusAndQuoteExpiresAtBefore(TradeStatus status, LocalDateTime cutoff);
 
-    /** Closed requests whose proof media is still stored after the grace period. */
     @Query("""
             select t from TradeRequest t
             where t.mediaFilename is not null and t.closedAt is not null and t.closedAt < :cutoff""")

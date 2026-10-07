@@ -52,10 +52,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * Runs the application against a real Postgres - the database the live shop uses - with the Flyway
- * migrations applied from scratch. SQL that only works on MySQL fails here instead of at a customer's checkout.
- */
 @SpringBootTest(properties = {"spring.jpa.properties.hibernate.generate_statistics=true",
         "app.mobile-api-key=" + PostgresIntegrationTests.APP_KEY})
 @AutoConfigureMockMvc
@@ -136,11 +132,9 @@ class PostgresIntegrationTests {
                         .param("deliveryMethod", "PICKUP_TIRANA")
                         .param("paymentMethod", "CARD_ONLINE")
                         .param("quantity", "1"))
-                // The form comes back with the error instead of redirecting to the success page.
+
                 .andExpect(status().isOk());
 
-        // A disabled radio only stops an honest browser, so the refusal has to hold server-side:
-        // no order, and the unit is still on the shelf.
         assertEquals(before, orderRepo.count());
         Product after = products.findById(p.getId()).orElseThrow();
         assertEquals(1, after.getQuantity());
@@ -175,10 +169,9 @@ class PostgresIntegrationTests {
             mvc.perform(get(path)).andExpect(status().isOk());
         }
         mvc.perform(get("/produkt/does-not-exist")).andExpect(status().isNotFound());
-        mvc.perform(get("/kategori/procesore")).andExpect(status().isNotFound()); // hidden by V3
+        mvc.perform(get("/kategori/procesore")).andExpect(status().isNotFound());
     }
 
-    /** The shop's real contact details, the defaults when Render does not override them. */
     @Test
     void contactPageShowsTheShopsDetails() throws Exception {
         mvc.perform(get("/kontakt"))
@@ -195,7 +188,6 @@ class PostgresIntegrationTests {
         mvc.perform(get("/api/v1/summary")).andExpect(status().isUnauthorized());
     }
 
-    /** "Kërko një produkt": a customer's request lands in the admin wish list as new. */
     @Test
     void customersCanAskForAProductToBeBroughtIn() throws Exception {
         String item = "RTX 3070 " + UUID.randomUUID();
@@ -222,7 +214,7 @@ class PostgresIntegrationTests {
         mvc.perform(post("/kerko-produkt").param("item", "").param("customerName", "A").param("customerPhone", "abc"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Shkruani çfarë po kërkoni")));
-        // The hidden "website" field is only ever filled in by bots: accepted silently, never saved.
+
         mvc.perform(post("/kerko-produkt").param("item", "RX 6600").param("customerName", "Bot")
                         .param("customerPhone", "069 123 4567").param("website", "http://spam.example"))
                 .andExpect(status().is3xxRedirection());
@@ -269,7 +261,6 @@ class PostgresIntegrationTests {
         assertTrue(wishes.findById(w.getId()).isEmpty());
     }
 
-    /** The phone app carries the key instead of signing in; it opens the API and nothing else. */
     @Test
     void theAppKeyOpensTheApiButNotTheWebAdmin() throws Exception {
         mvc.perform(get("/api/v1/summary").header("Authorization", "Bearer " + APP_KEY))
@@ -284,10 +275,9 @@ class PostgresIntegrationTests {
                 .andExpect(status().is3xxRedirection());
     }
 
-    /** The navigation is cached; an admin change must still show on the very next page view. */
     @Test
     void categoryChangesShowUpWithoutARestart() throws Exception {
-        mvc.perform(get("/kategori/monitore")).andExpect(status().isNotFound()); // hidden by V3, and now cached
+        mvc.perform(get("/kategori/monitore")).andExpect(status().isNotFound());
         Long id = categories.findBySlug("monitore").orElseThrow().getId();
         categoryAdmin.setVisible(id, true);
         try {
@@ -315,7 +305,7 @@ class PostgresIntegrationTests {
         assertEquals(1600, width(big, ImageStorage.Size.full));
         assertEquals(800, width(big, ImageStorage.Size.medium));
         assertEquals(400, width(big, ImageStorage.Size.thumb));
-        // JPEG has no transparency: the transparent PNG must come out white, not black.
+
         BufferedImage thumb = ImageIO.read(new ByteArrayInputStream(images.content(ImageStorage.Size.thumb, big).orElseThrow().getData()));
         assertTrue((thumb.getRGB(2, 2) & 0xffffff) > 0xf0f0f0, "corner should be white");
 
@@ -343,7 +333,6 @@ class PostgresIntegrationTests {
         return new MockMultipartFile("files", "photo.png", "image/png", out.toByteArray());
     }
 
-    /** A repeat view of a photo is answered from the ETag alone: that is what keeps it off the connection pool. */
     @Test
     void cachedPhotoRequestsDoNotQueryTheDatabase() throws Exception {
         mvc.perform(get("/img/p/thumb/abc.jpg").header("If-None-Match", "\"abc.jpg\""))
@@ -351,7 +340,6 @@ class PostgresIntegrationTests {
         assertEquals(0, stats.getPrepareStatementCount(), "queries run for a 304 photo response");
     }
 
-    /** Asset links carry a content hash, and both the hashed and the plain paths are served. */
     @Test
     void staticAssetsAreFingerprintedAndServed() throws Exception {
         String html = mvc.perform(get("/")).andReturn().getResponse().getContentAsString();

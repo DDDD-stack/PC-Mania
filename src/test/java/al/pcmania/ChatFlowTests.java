@@ -52,11 +52,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * The assistant end to end on a real Postgres with Gemini selected and the network scripted: the
- * cookie, the stream the widget reads, what is stored, the fallback to the finder, the contact form,
- * the guardrails and the admin pages.
- */
 @SpringBootTest(properties = {"app.chat.provider=gemini", "app.chat.gemini.api-key=test-key", "app.chat.gemini.requests-per-minute=600",
         "app.chat.max-messages-per-session=3"})
 @AutoConfigureMockMvc
@@ -74,7 +69,6 @@ class ChatFlowTests {
         PG.close();
     }
 
-    /** Stands in for the network: each call pops the next scripted answer. */
     @MockitoBean StreamingHttp http;
 
     @Autowired MockMvc mvc;
@@ -133,7 +127,6 @@ class ChatFlowTests {
         });
     }
 
-    /** Posts a message; returns the stream body and the cookie set, if any. */
     private record Answer(String body, Cookie cookie) {}
 
     private Answer ask(Cookie cookie, String message) throws Exception {
@@ -147,7 +140,6 @@ class ChatFlowTests {
         return new Answer(body, set != null ? set : cookie);
     }
 
-    /** The cookie the controller sets as a Set-Cookie header (MockMvc only tracks addCookie). */
     private static Cookie cookieFrom(String header) {
         if (header == null || !header.startsWith(ChatCookie.NAME + "=")) return null;
         String value = header.substring(ChatCookie.NAME.length() + 1, header.indexOf(';'));
@@ -186,7 +178,6 @@ class ChatFlowTests {
                 .andExpect(jsonPath("$.messages[1].products[0].slug").value(p.getSlug()))
                 .andExpect(jsonPath("$.provider").value("gemini"));
 
-        // The next message rides the cookie: the earlier turns go to the model, no new cookie is set.
         reply("Po, 90 ditë garanci.");
         Answer b = ask(a.cookie(), "Sa garanci ka?");
         assertEquals(a.cookie().getValue(), b.cookie().getValue());
@@ -226,7 +217,7 @@ class ChatFlowTests {
         assertEquals(80_000, lead.getBudgetLek());
         Long sessionId = tx.execute(s -> leads.findById(lead.getId()).orElseThrow().getSession().getId());
         assertTrue(sessions.findById(sessionId).orElseThrow().isLeadCaptured());
-        // The name and phone never went to the provider.
+
         for (String body : bodies) assertFalse(body.contains("Arben") || body.contains("555 1234"), body);
 
         mvc.perform(post("/api/lead").contentType(MediaType.APPLICATION_FORM_URLENCODED)

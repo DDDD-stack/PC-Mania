@@ -15,14 +15,6 @@ import java.sql.Types;
 import java.util.List;
 import java.util.zip.CRC32;
 
-/**
- * Loads {@code data/gpu-catalog.json} into {@code gpu_catalog}, upserting on slug, as a repeatable
- * Flyway migration. Spring Boot hands every {@code JavaMigration} bean to Flyway, and a repeatable
- * migration runs again whenever its checksum changes: the checksum here is the JSON's, so editing
- * the file and deploying updates the rows, while rows the file does not mention (added in the admin)
- * are left alone. Columns the file leaves out are reset to the file's values on each run, which is
- * the point: the file is the reference, the admin is for corrections between releases.
- */
 @Component
 public class R__Seed_gpu_catalog extends BaseJavaMigration {
 

@@ -50,7 +50,7 @@ public class SeoController {
         for (String page : List.of("/nderro", "/pc-me-porosi", "/kerko-produkt", "/rreth-nesh", "/kontakt", "/transporti-dhe-pagesa", "/kushtet-e-perdorimit")) {
             url(xml, page, null);
         }
-        // Only worth indexing while something is actually listed there.
+
         if (upcoming.countByStatus(UpcomingStatus.VISIBLE) > 0) url(xml, "/se-shpejti", null);
         xml.append("</urlset>\n");
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofHours(1))).body(xml.toString());

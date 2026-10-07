@@ -19,7 +19,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Duration;
 
-/** "Kërko një produkt": customers tell the shop what to bring in. */
 @Controller
 @RequiredArgsConstructor
 public class WishController {
@@ -28,7 +27,6 @@ public class WishController {
     private final SeoService seo;
     private final RateLimiter rateLimiter;
 
-    /** {@code ?p=} pre-fills the item, e.g. from a sold-out product's "ask for a similar one" link. */
     @GetMapping("/kerko-produkt")
     String form(@RequestParam(name = "p", required = false) String prefill, Model model) {
         WishForm form = new WishForm();

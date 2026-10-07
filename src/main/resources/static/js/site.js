@@ -1,10 +1,9 @@
-/* PCMania – small progressive enhancements. The site works fully without this file. */
+
 (() => {
   const root = document.documentElement;
   root.classList.add('js');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Fade images in once decoded (the shimmer placeholder shows until then).
   const markLoaded = (img) => img.classList.add('is-loaded');
   document.querySelectorAll('img[data-fade]').forEach((img) => {
     if (img.complete && img.naturalWidth) return markLoaded(img);
@@ -12,7 +11,6 @@
     img.addEventListener('error', () => markLoaded(img), { once: true });
   });
 
-  // Header gains a shadow once the page scrolls.
   const header = document.querySelector('.site-header');
   const toTop = document.getElementById('toTop');
   const onScroll = () => {
@@ -23,7 +21,6 @@
   onScroll();
   toTop?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
 
-  // Reveal only what starts below the fold, so the first screen is always fully visible.
   if (!reduceMotion && 'IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
       entries.forEach((e) => {
@@ -41,7 +38,6 @@
     });
   }
 
-  // Loading state for forms marked data-loading: disable the button and show a spinner.
   document.querySelectorAll('form[data-loading]').forEach((form) => {
     form.addEventListener('submit', (e) => {
       if (e.defaultPrevented) return;
@@ -54,7 +50,6 @@
     });
   });
 
-  // Dim the product grid while a filter or sort change loads the next page.
   const grid = document.querySelector('[data-catalog-grid]');
   if (grid) {
     const busy = () => grid.classList.add('is-busy');
@@ -64,7 +59,6 @@
     window.addEventListener('pageshow', () => grid.classList.remove('is-busy'));
   }
 
-  // Keep the active gallery thumbnail scrolled into view.
   const gallery = document.getElementById('gallery');
   gallery?.addEventListener('slid.bs.carousel', (e) => {
     document.querySelectorAll('.gallery-thumbs button')[e.to]

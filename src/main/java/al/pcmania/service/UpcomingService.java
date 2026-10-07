@@ -18,10 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * "Së shpejti" teasers and the people waiting for them. Teasers are never orderable: the only thing a
- * customer can do is leave a phone number, which the operator works through when the stock lands.
- */
 @Service
 @RequiredArgsConstructor
 public class UpcomingService {
@@ -30,9 +26,6 @@ public class UpcomingService {
     private final UpcomingInterestRepository interests;
     private final ImageStorage images;
 
-    // ---- Reading ----
-
-    /** Teasers for the public site: visible ones, plus arrived ones so a promise is not silently dropped. */
     public List<UpcomingProduct> publicList() {
         List<UpcomingProduct> visible = repo.findByStatusOrderBySortOrderAscCreatedAtDesc(UpcomingStatus.VISIBLE);
         List<UpcomingProduct> arrived = repo.findByStatusOrderBySortOrderAscCreatedAtDesc(UpcomingStatus.ARRIVED);
@@ -75,8 +68,6 @@ public class UpcomingService {
     public long waitingCount(Long id) {
         return interests.countByUpcomingIdAndNotifiedFalse(id);
     }
-
-    // ---- Writing ----
 
     @CacheEvict(cacheNames = CacheConfig.UPCOMING_COUNTS, allEntries = true)
     @Transactional
@@ -122,14 +113,10 @@ public class UpcomingService {
     public void delete(Long id) {
         UpcomingProduct u = get(id);
         String image = u.getImageFilename();
-        repo.delete(u);            // interests cascade in the schema
+        repo.delete(u);
         if (image != null) images.delete(image);
     }
 
-    /**
-     * Records a customer's interest. Returns false when that phone number is already on the list, which
-     * keeps a double tap on a slow connection from creating two entries to call.
-     */
     @Transactional
     public boolean addInterest(Long id, String name, String phone) {
         UpcomingProduct u = get(id);
@@ -148,8 +135,6 @@ public class UpcomingService {
     public void markNotified(Long interestId) {
         interests.findById(interestId).orElseThrow(NotFoundException::new).setNotified(true);
     }
-
-    // ---- Helpers ----
 
     private String uniqueSlug(String base, Long selfId) {
         String slug = base;

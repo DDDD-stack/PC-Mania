@@ -3,7 +3,6 @@ spring:
     cache: false
   web:
     resources:
-      # Recompute the content hash on every request, so an edited stylesheet shows on reload.
       chain:
         cache: false
       cache:

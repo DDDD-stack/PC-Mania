@@ -5,7 +5,6 @@
         method: 'POST', body, headers: csrfHeader ? {[csrfHeader]: csrfToken} : {}
     });
 
-    // ---- Spec editor ----
     const specRows = document.getElementById('specRows');
     const tpl = document.getElementById('specRowTpl');
     const addRow = (key = '', value = '') => {
@@ -26,10 +25,6 @@
     });
     if (window.Sortable) Sortable.create(specRows, {handle: '.drag-handle', animation: 150});
 
-    // ---- Title combobox: pick the card's model from the GPU catalogue and prefill from it ----
-    // Typing in the title queries the catalogue (debounced); choosing a row stamps gpuModelId and fills the
-    // specs and the short description, but never a field the operator has already filled in. Everything
-    // prefilled stays editable and carries a "nga katalogu" marker until it is edited by hand.
     const combobox = document.getElementById('gpuCombobox');
     if (combobox) {
         const title = document.getElementById('title');
@@ -54,7 +49,7 @@
                 li.innerHTML = '<i class="bi bi-cpu text-body-secondary"></i><span></span><span class="meta"></span>';
                 li.children[1].textContent = h.name;
                 li.children[2].textContent = [h.vendor, h.vramGb ? h.vramGb + ' GB' : null, h.tier ? 'tier ' + h.tier : null].filter(Boolean).join(' · ');
-                li.addEventListener('mousedown', e => e.preventDefault()); // keep the focus in the field
+                li.addEventListener('mousedown', e => e.preventDefault());
                 li.addEventListener('click', () => choose(i));
                 list.appendChild(li);
             });
@@ -97,7 +92,7 @@
             let row = rows.find(r => r.querySelector('[name=specKeys]').value.trim().toLowerCase() === key.toLowerCase());
             if (row) {
                 const v = row.querySelector('[name=specValues]');
-                if (v.value.trim()) return; // the operator filled it in already
+                if (v.value.trim()) return;
                 v.value = value;
                 mark(v);
             } else {
@@ -130,7 +125,7 @@
             try {
                 const res = await fetch(combobox.dataset.detailUrl + hit.id, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
                 if (res.ok) prefill(await res.json());
-            } catch { /* the model is still stamped on the next successful fetch */ }
+            } catch {  }
         };
 
         title.addEventListener('input', () => {
@@ -154,7 +149,6 @@
         });
     }
 
-    // ---- Switches that reveal a related field (e.g. "Pranon këmbim" shows the internal trade cap) ----
     document.querySelectorAll('[data-toggles]').forEach(sw => {
         const target = document.querySelector(sw.dataset.toggles);
         const sync = () => { if (target) target.hidden = !sw.checked; };
@@ -162,7 +156,6 @@
         sync();
     });
 
-    // ---- Margin preview ----
     const price = document.getElementById('priceLek'), cost = document.getElementById('costLek');
     const marginInfo = document.getElementById('marginInfo');
     const fmt = n => n.toLocaleString('de-DE');
@@ -177,10 +170,6 @@
     cost.addEventListener('input', updateMargin);
     updateMargin();
 
-    // ---- Images staged on the "new product" page ----
-    // The product has no id yet, so the files ride along with the form instead of being uploaded
-    // one by one. A DataTransfer holds the selection so photos can be added in several goes and removed
-    // before saving.
     const stageZone = document.getElementById('stageZone');
     if (stageZone) {
         const stageInput = document.getElementById('stageInput');
@@ -224,7 +213,6 @@
             if (rejected.length) alert('Këto foto nuk u shtuan:\n' + rejected.join('\n'));
         };
 
-        // change fires after the picker closes; read the files, then hand the input back our full selection.
         stageInput.addEventListener('change', () => {
             const picked = [...stageInput.files].filter(f => ![...staged.files].includes(f));
             add(picked);
@@ -242,7 +230,7 @@
             Sortable.create(stageGrid, {
                 animation: 150,
                 onEnd: () => {
-                    // dataset.idx is the file's position before the drag; the DOM order after it is the new one.
+
                     const order = [...stageGrid.querySelectorAll('.image-tile')].map(t => +t.dataset.idx);
                     const files = [...staged.files];
                     staged = new DataTransfer();
@@ -255,7 +243,6 @@
         render();
     }
 
-    // ---- Images on an existing product ----
     const dropzone = document.getElementById('dropzone');
     if (!dropzone) return;
     const fileInput = document.getElementById('fileInput');

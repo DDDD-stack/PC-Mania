@@ -7,10 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * The "Nderro" form. Only the contact field that matches {@link #contactMethod} is validated and kept;
- * the controller checks that one, so exactly one of phone and email is ever stored.
- */
 @Data
 public class TradeForm {
     @NotBlank(message = "Shkruani emrin")
@@ -40,9 +36,7 @@ public class TradeForm {
     @Size(max = 1000)
     private String extraNotes;
 
-    /** The proof will come by WhatsApp, so the upload is optional. */
     private boolean whatsappInstead;
 
-    /** Honeypot. */
     private String website;
 }

@@ -37,7 +37,6 @@
                         </li>
                     </ul>
 
-                    <!-- Arrived items link straight to the listing; the rest collect a phone number. -->
                     <a th:if="${u.status.name() == 'ARRIVED' && u.product != null}" class="btn btn-warning w-100 fw-semibold"
                        th:href="@{/produkt/{s}(s=${u.product.slug})}">Shiko produktin <i class="bi bi-arrow-right"></i></a>
 

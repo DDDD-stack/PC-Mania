@@ -16,12 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Duration;
 import java.util.Optional;
 
-/** Serves product photos out of the database, where {@link ImageStorage} keeps them. */
 @RestController
 @RequiredArgsConstructor
 public class ImageController {
 
-    // Uploaded filenames are random and never reused, so they can be cached for a long time.
     private static final CacheControl CACHE = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable();
 
     private final ImageStorage images;
@@ -36,8 +34,6 @@ public class ImageController {
             return ResponseEntity.notFound().build();
         }
 
-        // The filename identifies the bytes for good, so a matching ETag can be answered without
-        // touching the database at all. That is what keeps repeat page views off the connection pool.
         String etag = "\"" + filename + "\"";
         if (etag.equals(ifNoneMatch)) {
             return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).cacheControl(CACHE).build();
