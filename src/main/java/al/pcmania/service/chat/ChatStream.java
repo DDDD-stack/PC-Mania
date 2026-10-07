@@ -20,6 +20,7 @@ public class ChatStream extends SseEmitter {
     private final LinkedHashSet<String> surfaced = new LinkedHashSet<>();
     private final List<Map<String, Object>> toolCalls = new ArrayList<>();
     private JsonNode action;
+    private boolean actionSent;
     private boolean finderShown;
 
     public ChatStream(ObjectMapper json, long timeoutMs) {
@@ -47,7 +48,13 @@ public class ChatStream extends SseEmitter {
 
     public void action(JsonNode action) {
         this.action = action;
-        send("action", action);
+    }
+
+    public void flushAction() {
+        if (action != null && !actionSent) {
+            actionSent = true;
+            send("action", action);
+        }
     }
 
     public void notice(String textSq) {

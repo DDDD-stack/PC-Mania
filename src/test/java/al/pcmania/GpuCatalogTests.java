@@ -142,7 +142,7 @@ class GpuCatalogTests {
         Product p = tx.execute(s -> products.findAll().stream().filter(x -> x.getTitle().equals(title)).findFirst()
                 .map(x -> { x.getGpuModel().getName(); return x; }).orElseThrow());
         assertEquals("Radeon RX 6600", p.getGpuModel().getName());
-        assertTrue(products.findInStockWithGpuModel(ProductStatus.ACTIVE).stream().anyMatch(x -> x.getId().equals(p.getId())));
+        assertTrue(products.findInStock(ProductStatus.ACTIVE).stream().anyMatch(x -> x.getId().equals(p.getId())));
 
         mvc.perform(post("/admin/products").with(csrf())
                         .param("title", "Kartë pa model " + UUID.randomUUID()).param("categorySlug", "karta-grafike").param("condition", "USED")

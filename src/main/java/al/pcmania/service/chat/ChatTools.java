@@ -103,14 +103,16 @@ public class ChatTools {
     public List<StockItem> searchStock(Integer budgetMinLek, Integer budgetMaxLek, UseCase useCase, Integer minVramGb,
                                        Integer maxPsuWatts, GpuVendor vendor) {
         List<StockItem> out = new ArrayList<>();
-        for (Product p : products.findInStockWithGpuModel(ProductStatus.ACTIVE)) {
+        for (Product p : products.findInStock(ProductStatus.ACTIVE)) {
             GpuCatalog g = p.getGpuModel();
             if (budgetMinLek != null && p.getPriceLek() < budgetMinLek) continue;
             if (budgetMaxLek != null && p.getPriceLek() > budgetMaxLek) continue;
-            if (minVramGb != null && (g.getVramGb() == null || g.getVramGb() < minVramGb)) continue;
-            if (maxPsuWatts != null && g.getPsuMinWatts() != null && g.getPsuMinWatts() > maxPsuWatts) continue;
-            if (vendor != null && g.getVendor() != vendor) continue;
-            if (useCase == UseCase.AAA_1440P && g.getFpsAaa1440p() != null && g.getFpsAaa1440p() < 40) continue;
+            if (g != null) {
+                if (minVramGb != null && (g.getVramGb() == null || g.getVramGb() < minVramGb)) continue;
+                if (maxPsuWatts != null && g.getPsuMinWatts() != null && g.getPsuMinWatts() > maxPsuWatts) continue;
+                if (vendor != null && g.getVendor() != vendor) continue;
+                if (useCase == UseCase.AAA_1440P && g.getFpsAaa1440p() != null && g.getFpsAaa1440p() < 40) continue;
+            }
             out.add(StockItem.of(p));
             if (out.size() >= MAX_RESULTS) break;
         }
@@ -143,9 +145,9 @@ public class ChatTools {
         GpuCatalog cur = current.get();
         List<UpgradeOption> options = new ArrayList<>();
         int bestTier = cur.getTier() == null ? 0 : cur.getTier();
-        for (Product p : products.findInStockWithGpuModel(ProductStatus.ACTIVE)) {
+        for (Product p : products.findInStock(ProductStatus.ACTIVE)) {
             GpuCatalog g = p.getGpuModel();
-            if (g.getTier() == null || cur.getTier() == null || g.getTier() <= cur.getTier()) continue;
+            if (g == null || g.getTier() == null || cur.getTier() == null || g.getTier() <= cur.getTier()) continue;
             if (psuWatts != null && g.getPsuMinWatts() != null && g.getPsuMinWatts() > psuWatts) continue;
             if (budgetLek != null && p.getPriceLek() > budgetLek) continue;
             options.add(new UpgradeOption(StockItem.of(p), g.getTier() - cur.getTier(), performanceGap(cur, g)));

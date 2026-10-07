@@ -39,10 +39,26 @@ class ChatToolsTest {
     @BeforeEach
     void stock() {
 
-        when(products.findInStockWithGpuModel(ProductStatus.ACTIVE)).thenReturn(List.of(p3080, p3060ti, p6600));
+        when(products.findInStock(ProductStatus.ACTIVE)).thenReturn(List.of(p3080, p3060ti, p6600));
         for (Product p : List.of(p6600, p3060ti, p3080)) when(products.findWithGpuModelBySlug(p.getSlug())).thenReturn(Optional.of(p));
         when(products.findWithGpuModelBySlug(anyString())).thenAnswer(inv -> List.of(p6600, p3060ti, p3080).stream()
                 .filter(p -> p.getSlug().equals(inv.getArgument(0))).findFirst());
+    }
+
+    @Test
+    void aProductWithNoCatalogueEntryIsStillOffered() {
+        Product unlinked = product(9L, "gigabyte-rtx-3070ti", "Gigabyte RTX 3070 Ti", 28_500, 22_000, null);
+        when(products.findInStock(ProductStatus.ACTIVE)).thenReturn(List.of(p3080, unlinked, p6600));
+
+        List<String> all = tools.searchStock(null, null, null, null, null, null).stream()
+                .map(ChatTools.StockItem::slug).toList();
+        assertTrue(all.contains("gigabyte-rtx-3070ti"), all.toString());
+
+        List<String> forGaming = tools.searchStock(null, null, ChatTools.UseCase.AAA_1440P, null, 750, null).stream()
+                .map(ChatTools.StockItem::slug).toList();
+        assertTrue(forGaming.contains("gigabyte-rtx-3070ti"), forGaming.toString());
+
+        assertDoesNotThrow(() -> tools.recommendUpgrade("GTX 1660 Super", 750, null));
     }
 
     @Test
@@ -167,7 +183,7 @@ class ChatToolsTest {
     void searchStockStopsAtSixResults() {
         List<Product> many = new java.util.ArrayList<>();
         for (int i = 0; i < 9; i++) many.add(product(100L + i, "card-" + i, "Card " + i, 10_000 + i, 5_000, rx6600));
-        when(products.findInStockWithGpuModel(ProductStatus.ACTIVE)).thenReturn(many);
+        when(products.findInStock(ProductStatus.ACTIVE)).thenReturn(many);
         assertEquals(6, tools.searchStock(null, null, null, null, null, null).size());
         assertEquals(200, tools.searchStock(null, null, null, null, null, null).get(0).lengthMm());
     }
@@ -204,7 +220,7 @@ class ChatToolsTest {
         p.setGpuModel(gpu);
         p.setWarrantyDays(90);
         p.changeStatus(ProductStatus.ACTIVE);
-        p.getSpecs().add(new ProductSpec(p, "VRAM", gpu.getVramGb() + " GB", 1));
+        if (gpu != null) p.getSpecs().add(new ProductSpec(p, "VRAM", gpu.getVramGb() + " GB", 1));
         return p;
     }
 }

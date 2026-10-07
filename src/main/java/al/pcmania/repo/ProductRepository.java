@@ -61,8 +61,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("select p.gpuModel.id, count(p) from Product p where p.gpuModel is not null group by p.gpuModel.id")
     List<Object[]> countByGpuModel();
 
-    @Query("select p from Product p join fetch p.gpuModel g left join fetch p.brand where p.status = :status and p.quantity > 0 order by g.tier desc, p.priceLek asc")
-    List<Product> findInStockWithGpuModel(@Param("status") ProductStatus status);
+    @Query("select p from Product p left join fetch p.gpuModel g left join fetch p.brand where p.status = :status and p.quantity > 0 order by g.tier desc nulls last, p.priceLek asc")
+    List<Product> findInStock(@Param("status") ProductStatus status);
 
     @EntityGraph(attributePaths = {"brand", "gpuModel"})
     Optional<Product> findWithGpuModelBySlug(String slug);

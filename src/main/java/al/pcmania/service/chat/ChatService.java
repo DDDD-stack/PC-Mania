@@ -146,6 +146,7 @@ public class ChatService {
             String provider = answer(session, message, history, out);
             List<Card> cards = mentioned(out.text(), cards(out.surfacedSlugs()));
             if (!cards.isEmpty()) out.products(cards);
+            out.flushAction();
             persistReply(session, out, cards, provider);
             out.event("done", Map.of("remaining", Math.max(0, props.maxMessagesPerSession() - session.getMessageCount())));
             log.info("Assistant reply: session {} by {} with {} tool calls in {} ms", session.getId(), provider,

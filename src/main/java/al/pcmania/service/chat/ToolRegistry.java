@@ -106,7 +106,10 @@ public class ToolRegistry {
                             List<StockItem> items = tools.searchStock(intOf(in, "budgetMinLek"), intOf(in, "budgetMaxLek"),
                                     enumOf(in, "useCase", UseCase.class), intOf(in, "minVramGb"), intOf(in, "maxPsuWatts"),
                                     enumOf(in, "vendor", GpuVendor.class));
-                            return new StockSearch(items, items.isEmpty() ? "Asnjë kartë në stok nuk përputhet me këto kritere." : null);
+                            long withoutSpecs = items.stream().filter(s -> s.gpuModel() == null).count();
+                            return new StockSearch(items, items.isEmpty()
+                                    ? "Asnjë kartë në stok nuk përputhet me këto kritere."
+                                    : withoutSpecs > 0 ? withoutSpecs + " nga këto nuk janë lidhur me katalogun, prandaj specifikat mungojnë. Mos i shpik: thuaj çmimin dhe gjendjen, dhe sugjero t'i shikojë te faqja e produktit." : null);
                         }),
                 new ToolDef("getProduct",
                         "One product by slug, in full: price, condition, stock, warranty, specs, test notes and its catalogue data.",
