@@ -75,6 +75,8 @@ public class AdminChatController {
         model.addAttribute("overCap", spend.overCap());
         model.addAttribute("provider", assistant.primary().name());
         model.addAttribute("providerAvailable", assistant.primary().isAvailable());
+        // Why it last failed: without this a broken provider looks identical to a quiet day.
+        model.addAttribute("lastError", providerUsage.lastError(assistant.primary().name()).orElse(null));
         model.addAttribute("geminiConfigured", props.gemini().keyConfigured());
         model.addAttribute("anthropicConfigured", props.anthropic().keyConfigured());
         model.addAttribute("geminiDailyCap", props.gemini().requestsPerDay());

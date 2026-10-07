@@ -76,7 +76,7 @@ public abstract class LlmChatProvider<C> implements ChatProvider {
                     turn = call(conv, tools, out::delta);
                 } catch (ProviderUnavailableException e) {
                     if (e.isRateLimited()) usage.rateLimitHit(name());
-                    else usage.error(name());
+                    else usage.error(name(), e.getMessage());
                     throw e;
                 }
                 onUsage(turn);

@@ -8,7 +8,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Per-provider, per-day counters: requests made, errors, rate-limit hits. "guided-fallback" counts the
@@ -24,6 +28,13 @@ public class ProviderUsageService {
 
     private final ProviderUsageRepository repo;
 
+    /** Why a provider last failed, so Admin > Asistenti can say it instead of only counting it. */
+    public record LastError(String message, LocalDateTime at) {}
+
+    // Kept in memory on purpose: it is a diagnostic, not a record. Losing it on a restart costs
+    // nothing, and it keeps a failing provider from writing a row for every retry.
+    private final Map<String, LastError> lastErrors = new ConcurrentHashMap<>();
+
     // Each counter is its own short transaction (Spring proxies see calls from outside this bean only,
     // so the annotation sits on the public entry points, not on a shared private helper).
 
@@ -32,10 +43,15 @@ public class ProviderUsageService {
         bump(provider, 1, 0, 0);
     }
 
+    /** The failing call's own message, which is what tells the operator what to fix. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void error(String provider) {
+    public void error(String provider, String message) {
+        if (message != null && !message.isBlank()) {
+            lastErrors.put(provider, new LastError(message.length() > 400 ? message.substring(0, 400) + "…" : message, LocalDateTime.now()));
+        }
         bump(provider, 0, 1, 0);
     }
+
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void rateLimitHit(String provider) {
@@ -45,6 +61,10 @@ public class ProviderUsageService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void fallback() {
         bump(FALLBACK, 1, 0, 0);
+    }
+
+    public Optional<LastError> lastError(String provider) {
+        return Optional.ofNullable(lastErrors.get(provider));
     }
 
     @Transactional(readOnly = true)

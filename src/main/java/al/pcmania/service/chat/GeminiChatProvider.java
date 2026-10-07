@@ -143,7 +143,7 @@ public class GeminiChatProvider extends LlmChatProvider<GeminiChatProvider.Conve
         if (res.status() == 429) throw new ProviderUnavailableException("Gemini rate limit (429)", true);
         if (!res.ok()) {
             log.warn("Gemini answered {}: {}", res.status(), abbreviate(res.errorBody()));
-            throw new ProviderUnavailableException("Gemini answered " + res.status(), false);
+            throw new ProviderUnavailableException("Gemini answered " + res.status() + ": " + abbreviate(res.errorBody()), false);
         }
         if ("MALFORMED_FUNCTION_CALL".equals(finish[0])) {
             log.warn("Gemini produced a malformed function call; answering without tools this turn");

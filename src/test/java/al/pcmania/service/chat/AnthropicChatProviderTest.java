@@ -12,6 +12,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /** The Anthropic path compiles and works against a scripted network, although no key is configured in production. */
@@ -110,6 +112,6 @@ class AnthropicChatProviderTest {
         assertFalse(assertThrows(ProviderUnavailableException.class,
                 () -> provider("sk").stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000))).isRateLimited());
         verify(usage, times(2)).rateLimitHit("anthropic");
-        verify(usage).error("anthropic");
+        verify(usage).error(eq("anthropic"), contains("authentication_error"));
     }
 }

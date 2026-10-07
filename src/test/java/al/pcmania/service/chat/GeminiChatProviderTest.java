@@ -13,6 +13,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /** Gemini's wire format, request and response, and the free-tier handling, with the network scripted. */
@@ -120,7 +122,8 @@ class GeminiChatProviderTest {
         http.status(500, "boom");
         assertFalse(assertThrows(ProviderUnavailableException.class,
                 () -> provider("gk", 12).stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000))).isRateLimited());
-        verify(usage).error("gemini");
+        // The body travels with the error: that string is what Admin > Asistenti shows the operator.
+        verify(usage).error(eq("gemini"), contains("boom"));
         http.fail("connection reset");
         assertThrows(ProviderUnavailableException.class,
                 () -> provider("gk", 12).stream(new ChatSession(), "Hej", List.of(), registry, new ChatStream(json, 10_000)));

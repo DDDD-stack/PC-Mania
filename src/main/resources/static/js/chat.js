@@ -100,11 +100,25 @@
   const finder = {
     answers: {},
     host: null,
+    /** Starts over: the finder button, and "Fillo nga e para". Clears the answers on purpose. */
     start(firstStep) {
       this.answers = {};
       this.host = bubble('assistant', '');
       this.host.querySelector('.pm-chat-text').remove();
       if (firstStep) this.render(firstStep, null); else this.load();
+    },
+    /**
+     * The server offered the finder again on a later reply. If the customer is already part-way
+     * through it, carry on from the next unanswered question instead of throwing them back to
+     * question 1 - which is what happened on every message while a provider was down.
+     */
+    resume(firstStep) {
+      const partWay = Object.keys(this.answers).length > 0;
+      this.host = bubble('assistant', '');
+      this.host.querySelector('.pm-chat-text').remove();
+      if (partWay) this.load();
+      else if (firstStep) this.render(firstStep, null);
+      else this.load();
     },
     async load() {
       try {
@@ -291,7 +305,7 @@
         else if (event === 'notice') { typing.hidden = true; bubble('assistant', data.text).classList.add('pm-chat-notice'); }
         else if (event === 'products') renderCards(replyEl(), data.items);
         else if (event === 'action' && data.action === 'show_lead_form') leadForm(replyEl(), { wantedItem: data.wantedItem, budgetLek: data.budgetLek, psuWatts: data.psuWatts, source: 'CHAT' });
-        else if (event === 'finder') { typing.hidden = true; finder.start(data); }
+        else if (event === 'finder') { typing.hidden = true; finder.resume(data); }
         else if (event === 'limit') { waButton(bubble('assistant', data.text)); limit = true; }
         else if (event === 'error') waButton(bubble('assistant', data.message));
       });

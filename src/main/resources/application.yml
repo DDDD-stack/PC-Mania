@@ -105,6 +105,9 @@ app:
   # the chosen provider is unavailable or rate-limited). Keys never leave the server. See ChatProperties.
   chat:
     provider: ${CHAT_PROVIDER:gemini}
+    # Gemini 2.5 counts its thinking against this same ceiling, so a small number truncates the reply
+    # before any of it reaches the customer.
+    max-tokens: ${CHAT_MAX_TOKENS:4096}
     gemini:
       api-key: ${GEMINI_API_KEY:}
       model: ${GEMINI_MODEL:gemini-2.5-flash}

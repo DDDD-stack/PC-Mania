@@ -21,7 +21,7 @@ public record ChatProperties(
         @DefaultValue("gemini") String provider,
         @DefaultValue("25") int maxMessagesPerSession,
         @DefaultValue("4") int maxToolRounds,
-        @DefaultValue("1024") int maxTokens,
+        @DefaultValue("4096") int maxTokens,
         @DefaultValue("30") int maxPerHourPerIp,
         @DefaultValue Gemini gemini,
         @DefaultValue Anthropic anthropic) {

@@ -177,7 +177,8 @@ public class AnthropicChatProvider extends LlmChatProvider<AnthropicChatProvider
         if (res.status() == 429 || res.status() == 529) throw new ProviderUnavailableException("Anthropic answered " + res.status(), true);
         if (!res.ok()) {
             log.warn("Anthropic answered {}: {}", res.status(), res.errorBody() == null ? "" : res.errorBody().strip());
-            throw new ProviderUnavailableException("Anthropic answered " + res.status(), false);
+            throw new ProviderUnavailableException("Anthropic answered " + res.status() + ": "
+                    + (res.errorBody() == null ? "" : res.errorBody().strip()), false);
         }
         if (error[0] != null && text.isEmpty() && toolBlocks.isEmpty()) {
             throw new ProviderUnavailableException("Anthropic stream error: " + error[0], "overloaded_error".equals(error[0]));
