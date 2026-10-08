@@ -6,6 +6,7 @@ import al.pcmania.repo.*;
 import al.pcmania.web.view.CatalogFilter;
 import al.pcmania.web.view.ProductCard;
 import al.pcmania.web.view.ProductDetail;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +68,37 @@ public class CatalogService {
         Page<Product> page = products.findAll(spec(categorySlug, f), PageRequest.of(f.page() - 1, PAGE_SIZE, sort.and(Sort.by("id").descending())));
         List<ProductCard> cards = cards(page.getContent());
         return new PageImpl<>(cards, page.getPageable(), page.getTotalElements());
+    }
+
+    public Page<ProductCard> search(String query, int page) {
+        String q = query == null ? "" : query.trim();
+        if (q.length() < 2) return Page.empty(PageRequest.of(0, PAGE_SIZE));
+        Page<Product> found = products.findAll(searchSpec(q),
+                PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE, Sort.by("listedAt").descending().and(Sort.by("id").descending())));
+        return new PageImpl<>(cards(found.getContent()), found.getPageable(), found.getTotalElements());
+    }
+
+    private static Specification<Product> searchSpec(String q) {
+        List<String> terms = Arrays.stream(q.toLowerCase(Locale.ROOT).split("\s+")).filter(t -> !t.isBlank()).limit(6).toList();
+        return (root, query, cb) -> {
+            query.distinct(true);
+            var brand = root.join("brand", JoinType.LEFT);
+            var gpu = root.join("gpuModel", JoinType.LEFT);
+            List<Predicate> all = new ArrayList<>();
+            all.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
+            for (String term : terms) {
+                String like = "%" + term.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+                all.add(cb.or(
+                        cb.like(cb.lower(root.get("title")), like, '!'),
+                        cb.like(cb.lower(cb.coalesce(root.get("model"), "")), like, '!'),
+                        cb.like(cb.lower(cb.coalesce(root.get("shortDescription"), "")), like, '!'),
+                        cb.like(cb.lower(cb.coalesce(brand.get("name"), "")), like, '!'),
+                        cb.like(cb.lower(cb.coalesce(gpu.get("name"), "")), like, '!'),
+                        cb.like(cb.lower(cb.coalesce(gpu.get("aliases"), "")), like, '!'),
+                        cb.like(cb.lower(root.get("categorySlug")), like, '!')));
+            }
+            return cb.and(all.toArray(Predicate[]::new));
+        };
     }
 
     public Facets facets(String categorySlug) {

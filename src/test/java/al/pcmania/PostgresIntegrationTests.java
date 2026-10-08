@@ -358,6 +358,25 @@ class PostgresIntegrationTests {
         assertEquals(0, stats.getPrepareStatementCount(), "queries run for a health check");
     }
 
+    @Test
+    void theSearchPageFindsStockAndFallsBackToTheWishForm() throws Exception {
+        Product p = product(1);
+        String token = p.getTitle().substring("Test GPU ".length(), "Test GPU ".length() + 13);
+
+        mvc.perform(get("/kerko").param("q", token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(p.getSlug())))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("noindex")));
+
+        mvc.perform(get("/kerko").param("q", "zzzznukekziston"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(p.getSlug()))))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/kerko-produkt?p=zzzznukekziston")));
+
+        mvc.perform(get("/kerko")).andExpect(status().isOk());
+        mvc.perform(get("/kerko").param("q", "%")).andExpect(status().isOk());
+    }
+
     private Product product(int quantity) {
         return tx.execute(s -> {
             Product p = new Product();

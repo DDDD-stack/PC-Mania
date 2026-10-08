@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{::scripts})}">
+<body>
+<main class="container py-3">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-2">
+            <li class="breadcrumb-item"><a href="/">Kryefaqja</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Kërko</li>
+        </ol>
+    </nav>
+
+    <h1 class="h4 fw-bold mb-3" th:text="${searchQuery.isEmpty()} ? 'Kërko në stok' : 'Rezultatet për “' + ${searchQuery} + '”'">Kërko</h1>
+
+    <form class="search-page-form mb-4" action="/kerko" method="get" role="search">
+        <i class="bi bi-search"></i>
+        <input type="search" name="q" th:value="${searchQuery}" autofocus
+               placeholder="p.sh. RTX 3070, Gigabyte, 8GB" aria-label="Kërko produkt">
+        <button class="btn btn-accent" type="submit">Kërko</button>
+    </form>
+
+    <p th:if="${tooShort}" class="text-body-secondary">Shkruani të paktën dy shkronja.</p>
+
+    <p th:if="${!page.empty}" class="text-body-secondary small"
+       th:text="${page.totalElements} + (${page.totalElements} == 1 ? ' produkt i gjetur' : ' produkte të gjetura')"></p>
+
+    <div class="row row-cols-2 row-cols-md-3 g-2 g-md-3" th:unless="${page.empty}">
+        <th:block th:each="p : ${page.content}"><div th:replace="~{site/fragments :: card(${p})}"></div></th:block>
+    </div>
+
+    <div th:if="${page.empty and !searchQuery.isEmpty() and !tooShort}" class="empty-state">
+        <i class="bi bi-search"></i>
+        <p class="mb-1">Nuk gjetëm asgjë për <strong th:text="${searchQuery}">—</strong>.</p>
+        <p class="text-body-secondary small mb-3">Stoku ndryshon shpesh. Na thoni çfarë kërkoni dhe ju njoftojmë kur ta kemi.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a class="btn btn-accent" th:href="@{/kerko-produkt(p=${searchQuery})}">Kërko një produkt</a>
+            <a class="btn btn-outline-dark" th:href="${whatsappGeneral}" target="_blank" rel="noopener">
+                <i class="bi bi-whatsapp"></i> Pyet në WhatsApp
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${page.empty and searchQuery.isEmpty()}" class="empty-state">
+        <i class="bi bi-search"></i>
+        <p class="text-body-secondary mb-0">Shkruani emrin e një karte grafike, markën ose madhësinë e memories.</p>
+    </div>
+
+    <nav th:if="${page.totalPages > 1}" class="mt-4" aria-label="Faqet">
+        <ul class="pagination justify-content-center flex-wrap">
+            <li class="page-item" th:each="i : ${#numbers.sequence(1, page.totalPages)}"
+                th:classappend="${i == page.number + 1} ? active">
+                <a class="page-link" th:href="@{/kerko(q=${searchQuery}, faqe=${i})}" th:text="${i}"></a>
+            </li>
+        </ul>
+    </nav>
+</main>
+<th:block th:fragment="scripts"></th:block>
+</body>
+</html>

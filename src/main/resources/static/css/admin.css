@@ -30,14 +30,13 @@ body { background: #f4f5f7; }
 
 .drag-handle { cursor: grab; }
 
-/* Product title combobox: suggestions from the GPU catalogue drop under the field. */
 .gpu-combobox { position: relative; }
 .gpu-suggestions { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; max-height: 320px; overflow-y: auto; margin-top: 2px; }
 .gpu-suggestions[hidden] { display: none; }
 .gpu-suggestions .list-group-item { cursor: pointer; display: flex; align-items: center; gap: .5rem; padding: .45rem .75rem; }
 .gpu-suggestions .list-group-item.active { background: #fff8e1; color: inherit; border-color: #dee2e6; }
 .gpu-suggestions .list-group-item .meta { margin-left: auto; font-size: .78rem; color: #6c757d; white-space: nowrap; }
-/* A value the catalogue filled in; the marker goes once the operator edits it. */
+
 .from-catalog-wrap { position: relative; }
 .from-catalog { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); font-size: .68rem; pointer-events: none; }
 textarea ~ .from-catalog { top: .55rem; transform: none; }
@@ -61,13 +60,11 @@ textarea ~ .from-catalog { top: .55rem; transform: none; }
 .kpi { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
 .kpi-label { font-size: .8rem; color: #6c757d; text-transform: uppercase; letter-spacing: .03em; }
 
-/* In-cell bars (single series; the value is always printed beside the bar) */
 .bar-cell { display: flex; align-items: center; gap: .5rem; }
 .bar-cell .bar { display: inline-block; height: 10px; min-width: 2px; background: #3b6fd9; border-radius: 0 4px 4px 0; }
 .bar-cell .bar-value { white-space: nowrap; font-variant-numeric: tabular-nums; color: #212529; }
 .band-table td, .kpi { font-variant-numeric: tabular-nums; }
 
-/* ===== Interaction polish ===== */
 .toast-stack {
     position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 1080;
     display: flex; flex-direction: column; gap: 8px; max-width: min(420px, calc(100vw - 32px));
@@ -119,6 +116,5 @@ textarea ~ .from-catalog { top: .55rem; transform: none; }
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
-/* Logo: the chip mark beside the wordmark. */
 .brand { display: inline-flex; align-items: center; gap: .45rem; }
 .brand-mark { flex: none; display: block; }

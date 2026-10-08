@@ -66,6 +66,15 @@
             </a>
         </div>
     </nav>
+    <div class="header-search">
+        <div class="container">
+            <form action="/kerko" method="get" role="search">
+                <i class="bi bi-search"></i>
+                <input type="search" name="q" th:value="${searchQuery}" autocomplete="off"
+                       placeholder="Kërko kartë grafike, markë, model…" aria-label="Kërko produkt">
+            </form>
+        </div>
+    </div>
 </header>
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel">

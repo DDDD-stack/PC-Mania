@@ -15,6 +15,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
+import al.pcmania.web.view.ProductCard;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -69,6 +71,19 @@ public class CatalogController {
         model.addAttribute("conditions", Condition.values());
         model.addAttribute("sorts", CatalogFilter.Sort.values());
         return "site/category";
+    }
+
+    @GetMapping("/kerko")
+    String search(@RequestParam(name = "q", required = false) String q,
+                  @RequestParam(name = "faqe", required = false) Integer page, Model model) {
+        String query = q == null ? "" : q.trim();
+        Page<ProductCard> results = catalog.search(query, page == null ? 1 : page);
+        model.addAttribute("seo", seo.page(query.isBlank() ? "Kërko produkt" : "Kërko: " + query,
+                "Kërko karta grafike dhe pjesë kompjuteri që PCMania i ka në stok.", "/kerko").withNoindex());
+        model.addAttribute("searchQuery", query);
+        model.addAttribute("page", results);
+        model.addAttribute("tooShort", !query.isBlank() && query.length() < 2);
+        return "site/search";
     }
 
     @GetMapping("/produkt/{slug}")
