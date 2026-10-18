@@ -21,4 +21,16 @@ public class Category {
 
     @Column(name = "is_out_of_stock")
     private boolean outOfStock;
+
+    private String catalogSlug;
+
+    public static final String PREBUILT = "prebuilt";
+
+    public String catalogKey() {
+        return catalogSlug != null && !catalogSlug.isBlank() ? catalogSlug : slug;
+    }
+
+    public boolean isPrebuilt() {
+        return PREBUILT.equals(catalogSlug);
+    }
 }

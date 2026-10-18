@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Paketat')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('combos')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        <h1 class="h4 mb-0 me-auto">Paketat (oferta) <small class="text-body-secondary" th:text="${rows.size()}"></small></h1>
+        <a class="btn btn-primary" href="/admin/combos/new"><i class="bi bi-plus-lg"></i> Paketë e re</a>
+    </div>
+    <p class="text-body-secondary small">
+        Një paketë shfaqet në kryefaqe vetëm kur është aktive, brenda datave dhe <strong>çdo</strong> produkt i saj është në shitje.
+        Sapo një pjesë shitet ose rezervohet (edhe në Facebook, kur e shënoni SHITUR), paketa fshihet vetë dhe këtu shkruhet pse.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table align-middle bg-white">
+            <thead class="table-light">
+            <tr><th>Paketa</th><th class="text-end">Veç e veç</th><th class="text-end">Paketa</th><th class="text-end">Kursimi</th><th>Gjendja</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${rows}">
+                <td>
+                    <a class="fw-semibold text-decoration-none" th:href="@{/admin/combos/{id}(id=${r.combo.id})}" th:text="${r.combo.titleSq}"></a>
+                    <div class="small text-body-secondary" th:text="${#strings.listJoin(r.combo.items.![product.title], ' + ')}"></div>
+                </td>
+                <td class="text-end text-nowrap text-body-secondary" th:text="${@fmt.price(r.originalTotalLek)}"></td>
+                <td class="text-end text-nowrap fw-semibold" th:text="${@fmt.price(r.combo.comboPriceLek)}"></td>
+                <td class="text-end text-nowrap" th:text="${@fmt.price(r.originalTotalLek - r.combo.comboPriceLek)}"></td>
+                <td>
+                    <span th:if="${r.visible}" class="badge text-bg-success">I dukshëm</span>
+                    <a th:if="${r.visible}" class="small ms-1" th:href="@{/paketa/{s}(s=${r.combo.slug})}" target="_blank" rel="noopener">shiko</a>
+                    <div th:unless="${r.visible}" class="small text-danger"><i class="bi bi-eye-slash me-1"></i><span th:text="${r.state()}"></span></div>
+                </td>
+            </tr>
+            <tr th:if="${rows.empty}"><td colspan="5" class="text-center text-body-secondary py-4">Ende nuk ka paketa.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

@@ -1,9 +1,11 @@
 package al.pcmania.web.resource;
 
 import al.pcmania.domain.Category;
+import al.pcmania.domain.Combo;
 import al.pcmania.domain.Enums.UpcomingStatus;
 import al.pcmania.domain.Product;
 import al.pcmania.service.CatalogService;
+import al.pcmania.service.ComboService;
 import al.pcmania.service.SeoService;
 import al.pcmania.service.UpcomingService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class SeoController {
 
     private final CatalogService catalog;
     private final UpcomingService upcoming;
+    private final ComboService combos;
     private final SeoService seo;
 
     @GetMapping(value = "/robots.txt", produces = MediaType.TEXT_PLAIN_VALUE)
@@ -47,6 +50,7 @@ public class SeoController {
         url(xml, "/", null);
         for (Category c : catalog.categories()) url(xml, "/kategori/" + c.getSlug(), null);
         for (Product p : catalog.sitemapProducts()) url(xml, "/produkt/" + p.getSlug(), p.getListedAt());
+        for (Combo c : combos.visibleEntities()) url(xml, "/paketa/" + c.getSlug(), null);
         for (String page : List.of("/nderro", "/pc-me-porosi", "/kerko-produkt", "/rreth-nesh", "/kontakt", "/transporti-dhe-pagesa", "/kushtet-e-perdorimit")) {
             url(xml, page, null);
         }

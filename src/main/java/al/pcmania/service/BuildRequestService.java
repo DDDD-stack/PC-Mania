@@ -24,6 +24,7 @@ public class BuildRequestService {
         b.setCustomerPhone(form.getCustomerPhone().trim());
         b.setBudgetLek(form.getBudgetLek());
         b.setUseCase(form.getUseCase());
+        b.setGames(StringUtils.hasText(form.getGames()) ? form.getGames().trim() : null);
         b.setNotes(StringUtils.hasText(form.getNotes()) ? form.getNotes().trim() : null);
         b.setStatus(BuildStatus.NEW);
         repo.save(b);

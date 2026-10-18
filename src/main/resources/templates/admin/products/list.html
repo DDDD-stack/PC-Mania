@@ -27,6 +27,13 @@
             </select>
         </div>
         <div class="col-12 col-md-2"><button class="btn btn-outline-secondary w-100" type="submit"><i class="bi bi-funnel"></i> Filtro</button></div>
+        <div class="col-12" th:if="${status == null}">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="showAll" name="all" value="true" th:checked="${all}"
+                       onchange="this.form.requestSubmit()">
+                <label class="form-check-label small" for="showAll">Shfaq edhe të shiturat</label>
+            </div>
+        </div>
     </form>
 
     <form th:action="@{/admin/products/bulk-status}" method="post" id="bulkForm">
@@ -68,7 +75,16 @@
                     <td class="text-end text-nowrap" th:text="${@fmt.price(p.priceLek)}"></td>
                     <td class="text-end text-nowrap text-body-secondary" th:text="${@fmt.price(p.costLek)}"></td>
                     <td class="text-center" th:text="${p.quantity}"></td>
-                    <td><span class="badge" th:classappend="'status-' + ${p.status}" th:text="${p.status.label}"></span></td>
+                    <td class="text-nowrap">
+                        <div class="quick-status btn-group btn-group-sm" role="group" aria-label="Statusi" th:attr="data-id=${p.id}">
+                            <button th:each="qs : ${quickStatuses}" type="submit" name="to" th:value="${qs}"
+                                    th:formaction="@{/admin/products/{id}/quick-status(id=${p.id})}"
+                                    class="btn" th:classappend="${p.status == qs} ? ('active qs-' + ${qs}) : 'btn-outline-secondary'"
+                                    th:aria-pressed="${p.status == qs}" th:text="${qs.name() == 'ACTIVE'} ? 'Aktiv' : (${qs.name() == 'RESERVED'} ? 'Rezervuar' : 'Shitur')"></button>
+                        </div>
+                        <span th:unless="${quickStatuses.contains(p.status)}" class="badge ms-1" th:classappend="'status-' + ${p.status}" th:text="${p.status.label}"></span>
+                        <div class="small text-body-secondary qs-sold-at" th:text="${p.soldAt != null} ? 'Shitur ' + ${@fmt.dateTime(p.soldAt)} : ''"></div>
+                    </td>
                     <td class="text-end" th:text="${p.listedAt != null && p.status.name() != 'SOLD'} ? ${@fmt.daysSince(p.listedAt)} : ''"></td>
                     <td class="text-end" th:text="${p.viewCount}"></td>
                     <td class="text-end text-nowrap">
@@ -85,7 +101,7 @@
     <nav th:if="${page.totalPages > 1}">
         <ul class="pagination pagination-sm">
             <li class="page-item" th:each="i : ${#numbers.sequence(0, page.totalPages - 1)}" th:classappend="${i == page.number} ? active">
-                <a class="page-link" th:href="@{/admin/products(q=${q}, status=${status}, category=${category}, page=${i})}" th:text="${i + 1}"></a>
+                <a class="page-link" th:href="@{/admin/products(q=${q}, status=${status}, category=${category}, all=${all ? true : null}, page=${i})}" th:text="${i + 1}"></a>
             </li>
         </ul>
     </nav>
@@ -94,6 +110,35 @@
 <script>
     document.getElementById('checkAll').addEventListener('change', e =>
         document.querySelectorAll('.row-check').forEach(c => c.checked = e.target.checked));
+    (() => {
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+        document.querySelectorAll('.quick-status button').forEach(btn => btn.addEventListener('click', async e => {
+            e.preventDefault();
+            const group = btn.closest('.quick-status');
+            if (btn.classList.contains('active')) return;
+            if (btn.value === 'SOLD' && !confirm('Të shënohet SHITUR? Produkti hiqet menjëherë nga faqja dhe nga paketat.')) return;
+            group.querySelectorAll('button').forEach(b => b.disabled = true);
+            try {
+                const headers = { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' };
+                if (csrfHeader) headers[csrfHeader] = csrfToken;
+                const res = await fetch(btn.formAction, { method: 'POST', headers, credentials: 'same-origin', body: 'to=' + encodeURIComponent(btn.value) });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                group.querySelectorAll('button').forEach(b => {
+                    const on = b.value === data.status;
+                    b.className = 'btn ' + (on ? 'active qs-' + b.value : 'btn-outline-secondary');
+                    b.setAttribute('aria-pressed', on);
+                });
+                group.parentElement.querySelector('.qs-sold-at').textContent = data.soldAt ? 'Shitur ' + data.soldAt : '';
+                window.pmToast?.('Statusi: ' + data.label, { tone: 'success' });
+            } catch {
+                window.pmToast?.('Statusi nuk u ndryshua. Provoni përsëri.', { tone: 'error' });
+            } finally {
+                group.querySelectorAll('button').forEach(b => b.disabled = false);
+            }
+        }));
+    })();
 </script>
 </body>
 </html>

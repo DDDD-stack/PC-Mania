@@ -119,7 +119,7 @@
             </table>
         </div>
         <div class="card-footer small text-body-secondary">
-            Brezi përcaktohet nga çmimi i shitjes për copë. Ditët llogariten nga data e listimit deri në dorëzim. "Në stok" = produkte aktive me kosto.
+            Brezi përcaktohet nga çmimi i shitjes për copë. Ditët llogariten nga data e listimit deri në dorëzim, ose deri në datën kur produkti u shënua SHITUR. "Në stok" = produkte aktive me kosto.
         </div>
     </div>
 
@@ -169,8 +169,10 @@
                         <tr th:each="s, st : ${d.sold}" th:if="${allSales || st.index < 25}">
                             <td class="text-nowrap small" th:text="${@fmt.date(s.soldAt)}"></td>
                             <td>
-                                <a class="text-decoration-none" th:href="@{/admin/orders/{id}(id=${s.orderId})}" th:text="${s.title}"></a>
+                                <a th:if="${s.orderId}" class="text-decoration-none" th:href="@{/admin/orders/{id}(id=${s.orderId})}" th:text="${s.title}"></a>
+                                <a th:unless="${s.orderId}" class="text-decoration-none" th:href="@{/admin/products/{id}(id=${s.productId})}" th:text="${s.title}"></a>
                                 <span class="small text-body-secondary" th:if="${s.quantity > 1}" th:text="' × ' + ${s.quantity}"></span>
+                                <span th:if="${s.statusOnly}" class="badge text-bg-light border ms-1" title="Shënuar SHITUR me statusin, pa porosi: çmimi është ai i listës">statusi · çmimi i listës</span>
                             </td>
                             <td class="text-end text-nowrap text-body-secondary" th:text="${@fmt.num(s.unitCost)}"></td>
                             <td class="text-end text-nowrap" th:text="${@fmt.num(s.unitPrice)}"></td>
@@ -182,7 +184,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer small text-body-secondary">Shumat në Lekë. Përfshihen vetëm porositë "E dorëzuar" (edhe shitjet jashtë faqes).</div>
+                <div class="card-footer small text-body-secondary">Shumat në Lekë. Përfshihen porositë "E dorëzuar" (edhe shitjet jashtë faqes) dhe produktet e shënuara SHITUR pa porosi, me datën kur u shënuan dhe me çmimin e listës. Për çmimin e vërtetë përdorni "Regjistro shitjen".</div>
             </div>
         </div>
     </div>

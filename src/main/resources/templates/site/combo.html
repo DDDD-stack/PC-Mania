@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main class="container py-3 product-page">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-2">
+            <li class="breadcrumb-item"><a href="/">Kryefaqja</a></li>
+            <li class="breadcrumb-item">Oferta – Paketa</li>
+            <li class="breadcrumb-item active text-truncate" aria-current="page" th:text="${c.title}"></li>
+        </ol>
+    </nav>
+
+    <div th:if="${notice}" class="alert alert-warning" role="alert" th:text="${notice}"></div>
+
+    <div class="row g-3 g-lg-4">
+        <div class="col-lg-7">
+            <div class="combo-hero" th:classappend="'n-' + ${c.thumbs().size() > 4 ? 4 : c.thumbs().size()}">
+                <img th:each="t, st : ${c.thumbs()}" th:if="${st.index < 4}" th:src="${@img.medium(t)}" alt="" width="400" height="400"
+                     th:attr="loading=${st.index < 2} ? 'eager' : 'lazy'" decoding="async">
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="d-flex flex-wrap gap-1 mb-2">
+                <span class="badge text-bg-dark">Paketë</span>
+                <span class="badge combo-save static" th:if="${c.visible}" th:text="${@fmt.savings(c.savingsLek())}"></span>
+            </div>
+            <h1 class="product-h1" th:text="${c.title}"></h1>
+            <p class="lead-sm" th:if="${c.subtitle}" th:text="${c.subtitle}"></p>
+
+            <div th:unless="${c.visible}" class="sold-note" role="status">
+                <i class="bi bi-info-circle-fill"></i>
+                <span>Kjo paketë nuk është më e disponueshme, sepse një nga produktet e saj u shit ose u rezervua. Produktet që janë ende në stok mund t'i porosisni veç e veç më poshtë.</span>
+            </div>
+
+            <div class="price-box">
+                <div class="small text-body-secondary">Veç e veç: <s th:text="${@fmt.price(c.originalTotalLek)}"></s></div>
+                <div class="price" th:classappend="${!c.visible} ? 'opacity-50'" th:text="${@fmt.price(c.comboPriceLek)}"></div>
+                <div class="availability text-success" th:if="${c.visible}"><i class="bi bi-check-circle-fill"></i> Të gjitha pjesët janë në stok</div>
+            </div>
+
+            <div class="d-grid gap-2 my-3">
+                <a th:if="${c.visible}" class="btn btn-accent btn-lg" th:href="@{/porosit/paketa/{s}(s=${c.slug})}"><i class="bi bi-bag-check me-2"></i>Porosit paketën</a>
+                <a class="btn btn-whatsapp btn-lg" th:href="${whatsappLink}" target="_blank" rel="noopener">
+                    <i class="bi bi-whatsapp me-2"></i><span th:text="${c.visible} ? 'Pyet në WhatsApp' : 'Pyet për një paketë të ngjashme'"></span>
+                </a>
+            </div>
+
+            <ul class="list-unstyled small perks">
+                <li><i class="bi bi-cash-coin"></i> Pagesë në dorëzim – paguani kur e merrni</li>
+                <li><i class="bi bi-truck"></i> Marrje në Tiranë ose korrier në gjithë Shqipërinë</li>
+                <li><i class="bi bi-arrow-repeat"></i> <a href="/kushtet-e-perdorimit">Garancia dhe kthimet</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <section class="mt-4">
+        <h2 class="section-title">Çfarë përfshin paketa</h2>
+        <div class="combo-member" th:each="m : ${c.members}">
+            <a class="combo-member-head" th:href="@{/produkt/{s}(s=${m.product.slug})}">
+                <img th:src="${@img.thumb(m.product.imageFilename)}" th:alt="${m.product.title}" width="72" height="72" loading="lazy">
+                <div class="flex-grow-1 min-w-0">
+                    <div class="fw-semibold lh-sm" th:text="${m.quantity > 1} ? ${m.quantity} + ' × ' + ${m.product.title} : ${m.product.title}"></div>
+                    <div class="small text-body-secondary" th:text="${m.product.condition.label}"></div>
+                    <span th:if="${m.product.sold}" class="badge state-badge static state-sold">SHITUR</span>
+                    <span th:if="${m.product.reserved}" class="badge state-badge static state-reserved">REZERVUAR</span>
+                </div>
+                <div class="text-nowrap small" th:text="${@fmt.price(m.lineTotalLek())}"></div>
+            </a>
+            <p class="small mb-2" th:if="${m.shortDescription}" th:text="${m.shortDescription}"></p>
+            <table class="table table-sm spec-table mb-0" th:unless="${m.specs.empty}">
+                <tbody>
+                <tr th:each="s : ${m.specs}"><th th:text="${s.key}"></th><td th:text="${s.value}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="buy-bar d-lg-none" th:if="${c.visible}">
+        <div class="buy-bar-price" th:text="${@fmt.price(c.comboPriceLek)}"></div>
+        <a class="btn btn-whatsapp" th:href="${whatsappLink}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+        <a class="btn btn-accent flex-grow-1" th:href="@{/porosit/paketa/{s}(s=${c.slug})}">Porosit paketën</a>
+    </div>
+</main>
+</body>
+</html>

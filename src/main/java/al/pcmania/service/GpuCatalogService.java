@@ -14,7 +14,6 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -24,6 +23,7 @@ public class GpuCatalogService {
     public record Match(GpuCatalog gpu, int score) {}
 
     private final GpuCatalogRepository repo;
+    private final SpecCatalogService specCatalog;
 
     @Cacheable(CacheConfig.GPU_CATALOG)
     public List<GpuCatalog> all() {
@@ -62,33 +62,14 @@ public class GpuCatalogService {
     }
 
     private static int score(GpuCatalog g, String q) {
-        int best = 0;
         List<String> terms = new ArrayList<>();
         terms.add(g.getName());
         terms.addAll(g.aliasList());
-        for (String raw : terms) {
-            String t = normalize(raw);
-            if (t.isEmpty()) continue;
-            int s;
-            if (t.equals(q)) s = 1000;
-            else if (t.startsWith(q)) s = 800 + q.length();
-            else if (t.contains(q)) s = 600 + q.length();
-            else if (t.length() >= 4 && q.contains(t)) {
-                int end = q.indexOf(t) + t.length();
-                s = 400 + Math.min(end, 40) * 4 + Math.min(t.length(), 30);
-            } else s = 0;
-            best = Math.max(best, s);
-        }
-        return best;
+        return Fuzzy.score(terms, q);
     }
 
     public static String normalize(String s) {
-        if (s == null) return "";
-        StringBuilder b = new StringBuilder(s.length());
-        for (char c : s.toLowerCase(Locale.ROOT).toCharArray()) {
-            if (Character.isLetterOrDigit(c)) b.append(c);
-        }
-        return b.toString();
+        return Fuzzy.normalize(s);
     }
 
     public static String shortDescriptionSq(GpuCatalog g) {
@@ -153,10 +134,12 @@ public class GpuCatalogService {
         g.setFpsAaa1080p(form.getFpsAaa1080p());
         g.setFpsAaa1440p(form.getFpsAaa1440p());
         g.setNotesSq(trimToNull(form.getNotesSq()));
-        return repo.save(g);
+        GpuCatalog saved = repo.save(g);
+        specCatalog.mirrorOne(saved);
+        return saved;
     }
 
-    @CacheEvict(cacheNames = CacheConfig.GPU_CATALOG, allEntries = true)
+    @CacheEvict(cacheNames = {CacheConfig.GPU_CATALOG, CacheConfig.SPEC_CATALOG}, allEntries = true)
     @Transactional
     public void delete(Long id) {
         repo.delete(get(id));

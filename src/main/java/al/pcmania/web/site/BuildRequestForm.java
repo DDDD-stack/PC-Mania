@@ -22,6 +22,9 @@ public class BuildRequestForm {
     @NotNull(message = "Zgjidhni përdorimin")
     private UseCase useCase;
 
+    @Size(max = 300, message = "Shkruani deri në 300 karaktere")
+    private String games;
+
     @Size(max = 2000)
     private String notes;
 

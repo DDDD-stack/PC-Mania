@@ -6,8 +6,11 @@ import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.repo.BrandRepository;
 import al.pcmania.repo.CategoryRepository;
 import al.pcmania.repo.GpuCatalogRepository;
+import al.pcmania.repo.ComboRepository;
 import al.pcmania.repo.OrderItemRepository;
+import al.pcmania.repo.PrebuiltSpecRepository;
 import al.pcmania.repo.ProductRepository;
+import al.pcmania.repo.SpecCatalogRepository;
 import al.pcmania.web.Fmt;
 import al.pcmania.web.admin.ProductForm;
 import jakarta.persistence.criteria.Predicate;
@@ -40,6 +43,19 @@ public class ProductAdminService {
     private final GpuCatalogRepository gpuCatalog;
     private final ImageStorage images;
     private final GpuCatalogService catalog;
+    private final FieldTemplateService templates;
+    private final PrebuiltSpecRepository prebuilts;
+    private final SpecCatalogRepository specCatalog;
+    private final ComboRepository combos;
+
+    public static class InvalidProduct extends IllegalArgumentException {
+        public final List<String> errors;
+
+        public InvalidProduct(List<String> errors) {
+            super(String.join(" ", errors));
+            this.errors = List.copyOf(errors);
+        }
+    }
 
     public Product get(Long id) {
         return products.findById(id).orElseThrow(NotFoundException::new);
@@ -62,6 +78,7 @@ public class ProductAdminService {
 
     private void autoLinkCatalogue(Product p) {
         if (p.getGpuModel() != null || !StringUtils.hasText(p.getTitle())) return;
+        if (!SpecCatalogService.GPU.equals(templates.forCategory(p.getCategorySlug()).catalogKey())) return;
         catalog.resolve(p.getTitle()).ifPresent(match -> {
             p.setGpuModel(match);
             log.info("Linked \"{}\" to catalogue entry {}", p.getTitle(), match.getName());
@@ -96,8 +113,24 @@ public class ProductAdminService {
         return p;
     }
 
+    public Optional<PrebuiltSpec> prebuilt(Long productId) {
+        return productId == null ? Optional.empty() : prebuilts.findByProductId(productId);
+    }
+
     @Transactional
     public Product save(Long id, ProductForm form) {
+        FieldTemplateService.Template template = templates.forCategory(form.getCategorySlug());
+        boolean enforce = form.getStatus() != ProductStatus.DRAFT;
+        FieldTemplateService.Cleaned cleaned = templates.clean(form.getCategorySlug(), form.getSpecKeys(), form.getSpecValues(), enforce);
+        List<String> errors = new ArrayList<>(cleaned.errors());
+        ProductForm.PrebuiltForm pb = form.getPrebuilt() == null ? new ProductForm.PrebuiltForm() : form.getPrebuilt();
+        if (template.prebuilt() && enforce) {
+            if (!StringUtils.hasText(pb.getCpuName())) errors.add("Shkruani procesorin e PC-së.");
+            if (pb.getRamGb() == null) errors.add("Shkruani sa GB RAM ka PC-ja.");
+            if (!StringUtils.hasText(pb.getStoragePrimary())) errors.add("Shkruani diskun kryesor.");
+        }
+        if (!errors.isEmpty()) throw new InvalidProduct(errors);
+
         Product p = id == null ? new Product() : get(id);
         p.setTitle(form.getTitle().trim());
         p.setBrand(resolveBrand(form));
@@ -126,12 +159,37 @@ public class ProductAdminService {
 
         p.getSpecs().clear();
         int order = 0;
-        for (int i = 0; i < form.getSpecKeys().size(); i++) {
-            String key = trimToNull(form.getSpecKeys().get(i));
-            String value = i < form.getSpecValues().size() ? trimToNull(form.getSpecValues().get(i)) : null;
-            if (key != null && value != null) p.getSpecs().add(new ProductSpec(p, key, value, ++order));
-        }
-        return products.save(p);
+        for (FieldTemplateService.Spec spec : cleaned.specs()) p.getSpecs().add(new ProductSpec(p, spec.key(), spec.value(), ++order));
+        Product saved = products.save(p);
+        if (template.prebuilt()) savePrebuilt(saved, pb);
+        return saved;
+    }
+
+    private void savePrebuilt(Product p, ProductForm.PrebuiltForm f) {
+        PrebuiltSpec s = prebuilts.findByProductId(p.getId()).orElseGet(PrebuiltSpec::new);
+        s.setProduct(p);
+        s.setCpuName(trimToNull(f.getCpuName()));
+        s.setCpuCores(f.getCpuCores());
+        s.setCpuThreads(f.getCpuThreads());
+        s.setGpuCatalog(f.getGpuCatalogId() == null ? null
+                : specCatalog.findById(f.getGpuCatalogId()).filter(e -> SpecCatalogService.GPU.equals(e.getCategorySlug())).orElse(null));
+        s.setGpuNameOverride(trimToNull(f.getGpuNameOverride()));
+        s.setRamGb(f.getRamGb());
+        s.setRamSpeedMhz(f.getRamSpeedMhz());
+        s.setRamConfig(trimToNull(f.getRamConfig()));
+        s.setStoragePrimary(trimToNull(f.getStoragePrimary()));
+        s.setStorageSecondary(trimToNull(f.getStorageSecondary()));
+        s.setPsuWatts(f.getPsuWatts());
+        s.setPsuBrand(trimToNull(f.getPsuBrand()));
+        s.setMotherboardModel(trimToNull(f.getMotherboardModel()));
+        s.setCaseModel(trimToNull(f.getCaseModel()));
+        s.setOsInstalled(f.isOsInstalled());
+        s.setOsName(f.isOsInstalled() ? trimToNull(f.getOsName()) : null);
+        s.setLoadTempCpuC(f.getLoadTempCpuC());
+        s.setLoadTempGpuC(f.getLoadTempGpuC());
+        s.setTestedAt(f.getTestedAt());
+        s.setNotesSq(trimToNull(f.getNotesSq()));
+        prebuilts.save(s);
     }
 
     @Transactional
@@ -159,7 +217,30 @@ public class ProductAdminService {
         p.setStatus(ProductStatus.DRAFT);
         src.getSpecs().forEach(s -> p.getSpecs().add(new ProductSpec(p, s.getSpecKey(), s.getSpecValue(), s.getSortOrder())));
         src.getImages().forEach(i -> p.getImages().add(new ProductImage(p, images.copy(i.getFilename()), i.getSortOrder(), i.isPrimary())));
-        return products.save(p);
+        Product saved = products.save(p);
+        prebuilts.findByProductId(src.getId()).ifPresent(spec -> {
+            PrebuiltSpec copy = new PrebuiltSpec();
+            copy.setProduct(saved);
+            copy.setCpuName(spec.getCpuName());
+            copy.setCpuCores(spec.getCpuCores());
+            copy.setCpuThreads(spec.getCpuThreads());
+            copy.setGpuCatalog(spec.getGpuCatalog());
+            copy.setGpuNameOverride(spec.getGpuNameOverride());
+            copy.setRamGb(spec.getRamGb());
+            copy.setRamSpeedMhz(spec.getRamSpeedMhz());
+            copy.setRamConfig(spec.getRamConfig());
+            copy.setStoragePrimary(spec.getStoragePrimary());
+            copy.setStorageSecondary(spec.getStorageSecondary());
+            copy.setPsuWatts(spec.getPsuWatts());
+            copy.setPsuBrand(spec.getPsuBrand());
+            copy.setMotherboardModel(spec.getMotherboardModel());
+            copy.setCaseModel(spec.getCaseModel());
+            copy.setOsInstalled(spec.isOsInstalled());
+            copy.setOsName(spec.getOsName());
+            copy.setNotesSq(spec.getNotesSq());
+            prebuilts.save(copy);
+        });
+        return saved;
     }
 
     @Transactional
@@ -188,9 +269,20 @@ public class ProductAdminService {
         return list.size();
     }
 
+    public Optional<String> deleteBlocker(Long id) {
+        if (orderItems.existsByProductId(id)) {
+            return Optional.of("Produkti ka porosi të lidhura dhe nuk mund të fshihet. Vendoseni statusin \"I fshehur\".");
+        }
+        List<Combo> in = combos.findContaining(id);
+        if (!in.isEmpty()) {
+            return Optional.of("Produkti është në paketën \"" + in.getFirst().getTitleSq() + "\". Hiqeni nga paketa ose vendoseni \"I fshehur\".");
+        }
+        return Optional.empty();
+    }
+
     @Transactional
     public boolean delete(Long id) {
-        if (orderItems.existsByProductId(id)) return false;
+        if (deleteBlocker(id).isPresent()) return false;
         Product p = get(id);
         p.getImages().forEach(i -> images.delete(i.getFilename()));
         products.delete(p);

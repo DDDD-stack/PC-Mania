@@ -5,10 +5,13 @@ import al.pcmania.domain.Enums.DeliveryMethod;
 import al.pcmania.domain.Enums.OrderStatus;
 import al.pcmania.domain.Enums.PaymentMethod;
 import al.pcmania.domain.Enums.ProductStatus;
+import al.pcmania.domain.Combo;
+import al.pcmania.domain.ComboItem;
 import al.pcmania.domain.Order;
 import al.pcmania.domain.OrderItem;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.TradeRequest;
+import al.pcmania.repo.ComboRepository;
 import al.pcmania.repo.OrderItemRepository;
 import al.pcmania.repo.OrderRepository;
 import al.pcmania.repo.OrderSequenceRepository;
@@ -26,6 +29,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Year;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +45,7 @@ public class OrderService {
     private final OrderItemRepository orderItems;
     private final OrderSequenceRepository sequence;
     private final ProductRepository products;
+    private final ComboRepository combos;
     private final AppProperties props;
     private final ApplicationEventPublisher events;
     private final EntityManager em;
@@ -57,14 +64,7 @@ public class OrderService {
 
         Order o = new Order();
         o.setOrderNumber(nextOrderNumber());
-        o.setCustomerName(form.getCustomerName().trim());
-        o.setCustomerPhone(form.getCustomerPhone().trim());
-        o.setCustomerEmail(StringUtils.hasText(form.getCustomerEmail()) ? form.getCustomerEmail().trim() : null);
-        o.setCity(form.getCity().trim());
-        o.setAddress(StringUtils.hasText(form.getAddress()) ? form.getAddress().trim() : null);
-        o.setCustomerNotes(StringUtils.hasText(form.getNotes()) ? form.getNotes().trim() : null);
-        o.setDeliveryMethod(form.getDeliveryMethod());
-        o.setPaymentMethod(form.getPaymentMethod());
+        fillCustomer(o, form);
         o.setStatus(OrderStatus.NEW);
         addItem(o, p, qty, p.getPriceLek());
         o.setShippingLek(shippingFor(form.getDeliveryMethod(), p.isTransportIncluded()));
@@ -76,6 +76,53 @@ public class OrderService {
         orders.save(o);
         events.publishEvent(new OrderPlaced(o.getId()));
         return o;
+    }
+
+    @Transactional
+    public Order placeCombo(String comboSlug, CheckoutForm form) {
+        Combo combo = combos.findBySlug(comboSlug).orElseThrow(NotFoundException::new);
+        List<ComboItem> items = combo.getItems().stream()
+                .sorted(Comparator.comparing(i -> i.getProduct().getId())).toList();
+        if (items.isEmpty()) throw new OutOfStockException();
+        List<Product> locked = new ArrayList<>();
+        for (ComboItem i : items) locked.add(lock(i.getProduct().getId()));
+        if (!combos.isVisible(combo.getId(), LocalDateTime.now())) throw new OutOfStockException();
+
+        Order o = new Order();
+        o.setOrderNumber(nextOrderNumber());
+        fillCustomer(o, form);
+        o.setStatus(OrderStatus.NEW);
+        o.setComboId(combo.getId());
+        o.setComboTitleSnapshot(combo.getTitleSq());
+
+        int[] prices = locked.stream().mapToInt(Product::getPriceLek).toArray();
+        int[] quantities = items.stream().mapToInt(ComboItem::getQuantity).toArray();
+        for (ComboService.Priced line : ComboService.allocate(prices, quantities, combo.getComboPriceLek())) {
+            addItem(o, locked.get(line.index()), line.quantity(), line.unitPriceLek());
+        }
+        boolean freeTransport = locked.stream().allMatch(Product::isTransportIncluded);
+        o.setShippingLek(shippingFor(form.getDeliveryMethod(), freeTransport));
+        o.setTotalLek(o.getSubtotalLek() + o.getShippingLek());
+
+        for (int i = 0; i < locked.size(); i++) {
+            Product p = locked.get(i);
+            p.setQuantity(p.getQuantity() - quantities[i]);
+            if (p.getQuantity() == 0) p.changeStatus(ProductStatus.RESERVED);
+        }
+        orders.save(o);
+        events.publishEvent(new OrderPlaced(o.getId()));
+        return o;
+    }
+
+    private static void fillCustomer(Order o, CheckoutForm form) {
+        o.setCustomerName(form.getCustomerName().trim());
+        o.setCustomerPhone(form.getCustomerPhone().trim());
+        o.setCustomerEmail(StringUtils.hasText(form.getCustomerEmail()) ? form.getCustomerEmail().trim() : null);
+        o.setCity(form.getCity().trim());
+        o.setAddress(StringUtils.hasText(form.getAddress()) ? form.getAddress().trim() : null);
+        o.setCustomerNotes(StringUtils.hasText(form.getNotes()) ? form.getNotes().trim() : null);
+        o.setDeliveryMethod(form.getDeliveryMethod());
+        o.setPaymentMethod(form.getPaymentMethod());
     }
 
     @Transactional

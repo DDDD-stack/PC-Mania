@@ -16,11 +16,24 @@ public record ProductCard(
         boolean transportIncluded,
         Integer warrantyDays,
 
-        boolean tradeEligible) {
+        boolean tradeEligible,
+        String specLine) {
 
     public static ProductCard of(Product p, String imageFilename) {
+        return of(p, imageFilename, null);
+    }
+
+    public static ProductCard of(Product p, String imageFilename, String specLine) {
         return new ProductCard(p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
                 p.getCondition(), p.getPriceLek(), p.getStatus(), imageFilename, p.isMiningFree(),
-                p.isTransportIncluded(), p.getWarrantyDays(), p.isTradeEligible());
+                p.isTransportIncluded(), p.getWarrantyDays(), p.isTradeEligible(), specLine);
+    }
+
+    public boolean isReserved() {
+        return status == ProductStatus.RESERVED;
+    }
+
+    public boolean isSold() {
+        return status == ProductStatus.SOLD;
     }
 }

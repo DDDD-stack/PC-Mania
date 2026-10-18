@@ -4,6 +4,7 @@ import al.pcmania.domain.*;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.repo.*;
 import al.pcmania.web.view.CatalogFilter;
+import al.pcmania.web.view.PrebuiltView;
 import al.pcmania.web.view.ProductCard;
 import al.pcmania.web.view.ProductDetail;
 import jakarta.persistence.criteria.JoinType;
@@ -26,11 +27,14 @@ public class CatalogService {
 
     public static final int PAGE_SIZE = 24;
     private static final Set<ProductStatus> PUBLIC_DETAIL = EnumSet.of(ProductStatus.ACTIVE, ProductStatus.RESERVED, ProductStatus.SOLD);
+    public static final Set<ProductStatus> LISTED = EnumSet.of(ProductStatus.ACTIVE, ProductStatus.RESERVED);
 
     private final ProductRepository products;
     private final ProductImageRepository images;
     private final ProductSpecRepository specs;
     private final CategoryRepository categories;
+    private final PrebuiltSpecRepository prebuilts;
+    private final FieldTemplateService templates;
 
     public record CategoryTile(Category category, long count) {
 
@@ -39,7 +43,11 @@ public class CatalogService {
         }
     }
 
-    public record Facets(List<Brand> brands, Map<String, List<String>> specs) {}
+    public record Option(String value, String label) {}
+
+    public record FacetGroup(String key, String label, List<Option> options) {}
+
+    public record Facets(List<Brand> brands, List<FacetGroup> specs, List<String> gpus, List<Integer> rams) {}
 
     public List<Category> categories() {
         return categories.findByVisibleTrueOrderBySortOrderAsc();
@@ -56,7 +64,7 @@ public class CatalogService {
     }
 
     public List<ProductCard> newest(int limit) {
-        return cards(products.findByStatusOrderByListedAtDesc(ProductStatus.ACTIVE, PageRequest.of(0, limit)));
+        return cards(products.findByStatusInOrderByStatusAscListedAtDesc(LISTED, PageRequest.of(0, limit)));
     }
 
     public Page<ProductCard> list(String categorySlug, CatalogFilter f) {
@@ -65,7 +73,8 @@ public class CatalogService {
             case CMIMI_DESC -> Sort.by("priceLek").descending();
             case TE_REJAT -> Sort.by("listedAt").descending();
         };
-        Page<Product> page = products.findAll(spec(categorySlug, f), PageRequest.of(f.page() - 1, PAGE_SIZE, sort.and(Sort.by("id").descending())));
+        Sort availableFirst = Sort.by("status").ascending().and(sort).and(Sort.by("id").descending());
+        Page<Product> page = products.findAll(spec(categorySlug, f), PageRequest.of(f.page() - 1, PAGE_SIZE, availableFirst));
         List<ProductCard> cards = cards(page.getContent());
         return new PageImpl<>(cards, page.getPageable(), page.getTotalElements());
     }
@@ -74,7 +83,8 @@ public class CatalogService {
         String q = query == null ? "" : query.trim();
         if (q.length() < 2) return Page.empty(PageRequest.of(0, PAGE_SIZE));
         Page<Product> found = products.findAll(searchSpec(q),
-                PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE, Sort.by("listedAt").descending().and(Sort.by("id").descending())));
+                PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE, Sort.by("status").ascending()
+                        .and(Sort.by("listedAt").descending()).and(Sort.by("id").descending())));
         return new PageImpl<>(cards(found.getContent()), found.getPageable(), found.getTotalElements());
     }
 
@@ -85,7 +95,7 @@ public class CatalogService {
             var brand = root.join("brand", JoinType.LEFT);
             var gpu = root.join("gpuModel", JoinType.LEFT);
             List<Predicate> all = new ArrayList<>();
-            all.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
+            all.add(root.get("status").in(LISTED));
             for (String term : terms) {
                 String like = "%" + term.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
                 all.add(cb.or(
@@ -102,23 +112,39 @@ public class CatalogService {
     }
 
     public Facets facets(String categorySlug) {
-        List<Object[]> rows = specs.facets(categorySlug, ProductStatus.ACTIVE);
-        Map<String, Integer> keyOrder = new HashMap<>();
-        Map<String, TreeSet<String>> values = new HashMap<>();
-        for (Object[] r : rows) {
-            String key = (String) r[0];
-            keyOrder.merge(key, ((Number) r[2]).intValue(), Math::min);
-            values.computeIfAbsent(key, k -> new TreeSet<>(NATURAL)).add((String) r[1]);
+        FieldTemplateService.Template template = templates.forCategory(categorySlug);
+        List<FieldTemplateService.Field> filterFields = template.fields().stream().filter(FieldTemplateService.Field::showInFilters).toList();
+        List<FacetGroup> groups = new ArrayList<>();
+        if (!filterFields.isEmpty()) {
+            Map<String, TreeSet<String>> values = new HashMap<>();
+            for (Object[] r : specs.facets(categorySlug, LISTED, filterFields.stream().map(FieldTemplateService.Field::key).toList())) {
+                values.computeIfAbsent((String) r[0], k -> new TreeSet<>(NATURAL)).add((String) r[1]);
+            }
+            for (FieldTemplateService.Field f : filterFields) {
+                TreeSet<String> vs = values.get(f.key());
+                if (vs == null || vs.isEmpty()) continue;
+                groups.add(new FacetGroup(f.key(), f.labelSq(), vs.stream().map(v -> new Option(v, f.display(v))).toList()));
+            }
         }
-        Map<String, List<String>> ordered = new LinkedHashMap<>();
-        keyOrder.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().thenComparing(Map.Entry.comparingByKey()))
-                .forEach(e -> ordered.put(e.getKey(), List.copyOf(values.get(e.getKey()))));
-        return new Facets(products.brandsInCategory(categorySlug, ProductStatus.ACTIVE), ordered);
+        List<String> gpus = List.of();
+        List<Integer> rams = List.of();
+        if (template.prebuilt()) {
+            gpus = prebuilts.gpuFacets(categorySlug, LISTED).stream().map(r -> (String) r[0]).filter(Objects::nonNull)
+                    .sorted(NATURAL).toList();
+            rams = prebuilts.ramFacets(categorySlug, LISTED);
+        }
+        return new Facets(products.brandsInCategory(categorySlug, LISTED), groups, gpus, rams);
     }
 
     public Optional<ProductDetail> detail(String slug) {
-        return products.findBySlug(slug).filter(p -> PUBLIC_DETAIL.contains(p.getStatus())).map(ProductDetail::of);
+        return products.findBySlug(slug).filter(p -> PUBLIC_DETAIL.contains(p.getStatus())).map(this::toDetail);
+    }
+
+    private ProductDetail toDetail(Product p) {
+        FieldTemplateService.Template template = templates.forCategory(p.getCategorySlug());
+        PrebuiltView prebuilt = template.prebuilt()
+                ? prebuilts.findByProductId(p.getId()).map(PrebuiltView::of).orElse(null) : null;
+        return ProductDetail.of(p, template, prebuilt);
     }
 
     public List<ProductCard> related(ProductDetail p, int limit) {
@@ -135,7 +161,7 @@ public class CatalogService {
     }
 
     public List<Product> sitemapProducts() {
-        return products.findByStatusIn(List.of(ProductStatus.ACTIVE, ProductStatus.RESERVED));
+        return products.findByStatusIn(LISTED);
     }
 
     @Transactional
@@ -146,10 +172,12 @@ public class CatalogService {
     private static Specification<Product> spec(String categorySlug, CatalogFilter f) {
         return (root, query, cb) -> {
             List<Predicate> p = new ArrayList<>();
-            p.add(cb.equal(root.get("status"), ProductStatus.ACTIVE));
+            p.add(root.get("status").in(LISTED));
             p.add(cb.equal(root.get("categorySlug"), categorySlug));
             if (f.min() != null) p.add(cb.ge(root.get("priceLek"), f.min()));
             if (f.max() != null) p.add(cb.le(root.get("priceLek"), f.max()));
+            if (f.band() != null && f.band().min != null) p.add(cb.ge(root.get("priceLek"), f.band().min));
+            if (f.band() != null && f.band().max != null) p.add(cb.lt(root.get("priceLek"), f.band().max));
             if (!f.conditions().isEmpty()) p.add(root.get("condition").in(f.conditions()));
             if (f.trade()) p.add(cb.isTrue(root.get("tradeEligible")));
             if (!f.brands().isEmpty()) p.add(root.join("brand").get("slug").in(f.brands()));
@@ -163,15 +191,73 @@ public class CatalogService {
                         s.get("specValue").in(vals));
                 p.add(cb.exists(sq));
             });
+            if (!f.gpus().isEmpty()) {
+                Subquery<Long> sq = query.subquery(Long.class);
+                var s = sq.from(PrebuiltSpec.class);
+                var g = s.join("gpuCatalog", JoinType.LEFT);
+                var name = cb.coalesce(cb.nullif(cb.trim(s.get("gpuNameOverride")), ""), g.<String>get("name"));
+                sq.select(s.get("id")).where(cb.equal(s.get("product"), root), name.in(f.gpus()));
+                p.add(cb.exists(sq));
+            }
+            if (!f.rams().isEmpty()) {
+                Subquery<Long> sq = query.subquery(Long.class);
+                var s = sq.from(PrebuiltSpec.class);
+                sq.select(s.get("id")).where(cb.equal(s.get("product"), root), s.get("ramGb").in(f.rams()));
+                p.add(cb.exists(sq));
+            }
             return cb.and(p.toArray(Predicate[]::new));
         };
     }
 
-    private List<ProductCard> cards(List<Product> list) {
+    public List<ProductCard> cards(List<Product> list) {
         if (list.isEmpty()) return List.of();
-        Map<Long, String> primary = images.findByProductIdInOrderBySortOrderAsc(list.stream().map(Product::getId).toList())
+        List<Long> ids = list.stream().map(Product::getId).toList();
+        Map<Long, String> primary = images.findByProductIdInOrderBySortOrderAsc(ids)
                 .stream().collect(Collectors.toMap(i -> i.getProduct().getId(), ProductImage::getFilename, (a, b) -> a));
-        return list.stream().map(p -> ProductCard.of(p, primary.get(p.getId()))).toList();
+        Map<Long, String> lines = specLines(list);
+        return list.stream().map(p -> ProductCard.of(p, primary.get(p.getId()), lines.get(p.getId()))).toList();
+    }
+
+    private Map<Long, String> specLines(List<Product> list) {
+        Map<String, FieldTemplateService.Template> bySlug = new HashMap<>();
+        Set<String> keys = new HashSet<>();
+        List<Long> prebuiltIds = new ArrayList<>();
+        List<Long> otherIds = new ArrayList<>();
+        for (Product p : list) {
+            FieldTemplateService.Template t = bySlug.computeIfAbsent(p.getCategorySlug(), templates::forCategory);
+            if (t.prebuilt()) {
+                prebuiltIds.add(p.getId());
+                continue;
+            }
+            List<String> listing = t.fields().stream().filter(FieldTemplateService.Field::showInListing).map(FieldTemplateService.Field::key).toList();
+            if (!listing.isEmpty()) {
+                keys.addAll(listing);
+                otherIds.add(p.getId());
+            }
+        }
+        Map<Long, String> out = new HashMap<>();
+        if (!prebuiltIds.isEmpty()) {
+            for (PrebuiltSpec s : prebuilts.findByProductIds(prebuiltIds)) {
+                String line = PrebuiltView.of(s).specLine();
+                if (line != null) out.put(s.getProduct().getId(), line);
+            }
+        }
+        if (!otherIds.isEmpty()) {
+            Map<Long, Map<String, String>> values = new HashMap<>();
+            for (Object[] r : specs.valuesFor(otherIds, keys)) {
+                values.computeIfAbsent((Long) r[0], k -> new HashMap<>()).put((String) r[1], (String) r[2]);
+            }
+            for (Product p : list) {
+                Map<String, String> v = values.get(p.getId());
+                if (v == null) continue;
+                FieldTemplateService.Template t = bySlug.get(p.getCategorySlug());
+                String line = t.fields().stream().filter(FieldTemplateService.Field::showInListing)
+                        .filter(f -> v.containsKey(f.key())).map(f -> f.display(v.get(f.key())))
+                        .collect(Collectors.joining(" · "));
+                if (!line.isEmpty()) out.put(p.getId(), line);
+            }
+        }
+        return out;
     }
 
     static final Comparator<String> NATURAL = Comparator

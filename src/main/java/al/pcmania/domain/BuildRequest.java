@@ -20,6 +20,7 @@ public class BuildRequest {
     private int budgetLek;
     @Enumerated(EnumType.STRING)
     private UseCase useCase;
+    private String games;
     private String notes;
     @Enumerated(EnumType.STRING)
     private BuildStatus status = BuildStatus.NEW;

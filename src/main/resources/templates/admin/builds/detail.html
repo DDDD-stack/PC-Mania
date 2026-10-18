@@ -21,6 +21,7 @@
                     <dl class="row mb-0">
                         <dt class="col-5">Buxheti</dt><dd class="col-7 fw-bold" th:text="${@fmt.price(b.budgetLek)}"></dd>
                         <dt class="col-5">Përdorimi</dt><dd class="col-7" th:text="${b.useCase.label}"></dd>
+                        <th:block th:if="${b.games}"><dt class="col-5">Lojërat</dt><dd class="col-7" th:text="${b.games}"></dd></th:block>
                         <dt class="col-5">Telefoni</dt><dd class="col-7"><a th:href="'tel:' + ${b.customerPhone}" th:text="${b.customerPhone}"></a></dd>
                     </dl>
                     <div th:if="${b.notes}" class="mt-2">

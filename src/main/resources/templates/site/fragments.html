@@ -12,16 +12,35 @@
              sizes="(min-width: 1200px) 270px, (min-width: 768px) 33vw, 50vw"
              th:alt="${p.title}" width="400" height="400" loading="lazy" decoding="async">
         <span class="badge cond-badge" th:classappend="'cond-' + ${p.condition}" th:text="${p.condition.label}"></span>
-        <span th:if="${p.tradeEligible}" class="badge trade-badge" title="Pranon këmbim (Nderro)"><i class="bi bi-arrow-left-right me-1"></i>Nderrim</span>
+        <span th:if="${p.tradeEligible && !p.reserved}" class="badge trade-badge" title="Pranon këmbim (Nderro)"><i class="bi bi-arrow-left-right me-1"></i>Nderrim</span>
+        <span th:if="${p.reserved}" class="badge state-badge state-reserved">REZERVUAR</span>
+        <span th:if="${p.sold}" class="badge state-badge state-sold">SHITUR</span>
     </div>
     <div class="product-body">
         <div class="product-brand" th:if="${p.brandName}" th:text="${p.brandName}"></div>
         <h3 class="product-title" th:text="${p.title}"></h3>
+        <div class="product-specline" th:if="${p.specLine}" th:text="${p.specLine}"></div>
         <div class="product-meta">
             <span th:if="${p.miningFree}" title="Pa minim"><i class="bi bi-shield-check"></i></span>
             <span th:if="${p.warrantyDays != null && p.warrantyDays > 0}" th:text="${@fmt.warranty(p.warrantyDays)}"></span>
         </div>
         <div class="product-price" th:text="${@fmt.price(p.priceLek)}"></div>
+    </div>
+</a>
+
+<a th:fragment="comboCard(c)" class="combo-card" th:href="@{/paketa/{s}(s=${c.slug})}">
+    <div class="combo-thumbs" th:classappend="'n-' + ${c.thumbs().size() > 4 ? 4 : c.thumbs().size()}">
+        <img th:each="t, st : ${c.thumbs()}" th:if="${st.index < 4}" th:src="${@img.thumb(t)}" alt="" width="200" height="200" loading="lazy" decoding="async">
+        <span class="badge combo-save" th:text="${@fmt.savings(c.savingsLek())}"></span>
+    </div>
+    <div class="combo-body">
+        <h3 class="combo-title" th:text="${c.title}"></h3>
+        <div class="combo-sub" th:if="${c.subtitle}" th:text="${c.subtitle}"></div>
+        <div class="combo-members" th:text="${#strings.listJoin(c.members.![product.title], ' + ')}"></div>
+        <div class="combo-prices">
+            <s class="combo-was" th:text="${@fmt.price(c.originalTotalLek)}"></s>
+            <span class="combo-price" th:text="${@fmt.price(c.comboPriceLek)}"></span>
+        </div>
     </div>
 </a>
 

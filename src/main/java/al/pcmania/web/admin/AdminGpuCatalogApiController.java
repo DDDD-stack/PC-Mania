@@ -2,6 +2,7 @@ package al.pcmania.web.admin;
 
 import al.pcmania.domain.GpuCatalog;
 import al.pcmania.service.GpuCatalogService;
+import al.pcmania.service.SpecCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,10 +33,15 @@ public class AdminGpuCatalogApiController {
     }
 
     private final GpuCatalogService service;
+    private final SpecCatalogService specCatalog;
 
     @GetMapping("/search")
     List<Hit> search(@RequestParam(name = "q", defaultValue = "") String q) {
-        return service.search(q, 8).stream().map(m -> Hit.of(m.gpu())).toList();
+        return specCatalog.search(SpecCatalogService.GPU, q, 8).stream()
+                .map(m -> m.entry().getGpuCatalogId())
+                .filter(java.util.Objects::nonNull)
+                .map(service::find).flatMap(java.util.Optional::stream)
+                .map(Hit::of).toList();
     }
 
     @GetMapping("/{id}")

@@ -18,10 +18,10 @@
 
 <body>
 
-<nav th:fragment="nav(active)" class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top admin-nav">
+<nav th:fragment="nav(active)" class="navbar navbar-expand-xxl navbar-dark bg-dark sticky-top admin-nav">
     <div class="container-fluid">
         <a class="navbar-brand brand fw-bold" href="/admin"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" width="26" height="26"><span>PC<span class="text-warning">Mania</span> <small class="fw-normal opacity-75">admin</small></span></a>
-        <a class="live-pill d-lg-none ms-auto me-2" href="/admin/orders?status=NEW" data-live-orders hidden>
+        <a class="live-pill d-xxl-none ms-auto me-2" href="/admin/orders?status=NEW" data-live-orders hidden>
             <i class="bi bi-bag-plus"></i> <span data-live-count></span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav" aria-label="Menyja"><span class="navbar-toggler-icon"></span></button>
@@ -30,6 +30,8 @@
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'dashboard'} ? active" href="/admin"><i class="bi bi-graph-up"></i> Paneli</a></li>
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'products'} ? active" href="/admin/products"><i class="bi bi-gpu-card"></i> Produktet</a></li>
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'categories'} ? active" href="/admin/categories"><i class="bi bi-tags"></i> Kategoritë</a></li>
+                <li class="nav-item"><a class="nav-link" th:classappend="${active == 'combos'} ? active" href="/admin/combos"><i class="bi bi-boxes"></i> Paketat</a></li>
+                <li class="nav-item"><a class="nav-link" th:classappend="${active == 'spec-catalog'} ? active" href="/admin/spec-catalog"><i class="bi bi-journal-text"></i> Katalogu</a></li>
                 <li class="nav-item"><a class="nav-link" th:classappend="${active == 'gpu-catalog'} ? active" href="/admin/gpu-catalog"><i class="bi bi-cpu"></i> Katalogu GPU</a></li>
                 <li class="nav-item">
                     <a class="nav-link" th:classappend="${active == 'chat'} ? active" href="/admin/chat"><i class="bi bi-chat-dots"></i> Asistenti

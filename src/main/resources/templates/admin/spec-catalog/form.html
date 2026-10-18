@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${e.id == null} ? 'Rresht i ri' : ${e.name})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('spec-catalog')}"></nav>
+<main class="container-xl py-3 pb-5">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a th:href="@{/admin/spec-catalog(category=${e.categorySlug})}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0 me-auto" th:text="${e.id == null} ? 'Rresht i ri në katalog' : ${e.name}"></h1>
+        <form th:if="${e.id != null && e.gpuCatalogId == null}" th:action="@{/admin/spec-catalog/{id}/delete(id=${e.id})}" method="post"
+              data-confirm="Të fshihet ky rresht nga katalogu?">
+            <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
+        </form>
+    </div>
+
+    <div th:if="${e.gpuCatalogId}" class="alert alert-info small">
+        Ky rresht vjen nga <a th:href="@{/admin/gpu-catalog/{id}(id=${e.gpuCatalogId})}">Katalogu GPU</a> dhe ndryshohet atje, që asistenti dhe forma e produktit të shohin të njëjtat të dhëna.
+    </div>
+
+    <form th:action="${e.id == null} ? @{/admin/spec-catalog} : @{/admin/spec-catalog/{id}(id=${e.id})}" method="post">
+        <fieldset th:disabled="${e.gpuCatalogId != null}">
+        <div class="card card-body mb-3">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label">Kategoria e katalogut</label>
+                    <select class="form-select" name="categorySlug" id="catalogCategory" th:if="${e.id == null}" onchange="location.href='/admin/spec-catalog/new?category=' + encodeURIComponent(this.value)">
+                        <option th:each="k : ${kinds}" th:value="${k.key}" th:text="${k.label} + ' (' + ${k.key} + ')'" th:selected="${k.key == e.categorySlug}"></option>
+                    </select>
+                    <th:block th:unless="${e.id == null}">
+                        <input class="form-control font-monospace" th:value="${e.categorySlug}" disabled>
+                        <input type="hidden" name="categorySlug" th:value="${e.categorySlug}">
+                    </th:block>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Modeli *</label>
+                    <input class="form-control" name="name" th:value="${e.name}" required maxlength="160" placeholder="p.sh. Intel Core i5-12400F">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Emra të tjerë <small class="text-body-secondary">(të ndarë me presje, gjenden edhe pa hapësira)</small></label>
+                    <input class="form-control" name="aliases" th:value="${e.aliases}" maxlength="500" placeholder="12400f, i5 12400">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="verified" value="true" id="verified" th:checked="${e.verified}">
+                        <label class="form-check-label" for="verified">I verifikuar <small class="text-body-secondary">(kontrolluar me fletën e prodhuesit)</small></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header"><strong>Vlerat</strong> <small class="text-body-secondary">— sipas fushave të kategorisë; bosh = nuk plotësohet</small></div>
+            <div class="card-body">
+                <div class="row g-2" th:unless="${fields.empty}">
+                    <div class="col-sm-6 col-lg-4" th:each="f : ${fields}" th:with="v=${values.get(f.key)}">
+                        <label class="form-label small mb-1" th:for="'v-' + ${f.key}"><span th:text="${f.labelSq}"></span><span th:if="${f.unit}" class="text-body-secondary" th:text="' (' + ${f.unit} + ')'"></span></label>
+                        <th:block th:switch="${f.type.name()}">
+                            <select th:case="'ENUM'" class="form-select form-select-sm" th:name="'v.' + ${f.key}" th:id="'v-' + ${f.key}">
+                                <option value="">—</option>
+                                <option th:each="o : ${f.options}" th:value="${o}" th:text="${o}" th:selected="${v == o}"></option>
+                            </select>
+                            <select th:case="'BOOLEAN'" class="form-select form-select-sm" th:name="'v.' + ${f.key}" th:id="'v-' + ${f.key}">
+                                <option value="">—</option>
+                                <option value="true" th:selected="${v == 'true'}">Po</option>
+                                <option value="false" th:selected="${v == 'false'}">Jo</option>
+                            </select>
+                            <input th:case="*" class="form-control form-control-sm" th:name="'v.' + ${f.key}" th:id="'v-' + ${f.key}" th:value="${v}" maxlength="160">
+                        </th:block>
+                    </div>
+                </div>
+                <p th:if="${fields.empty}" class="text-body-secondary small mb-0">Kjo kategori nuk ka ende fusha. Shtojini te Kategoritë › Fushat dhe pastaj plotësoni vlerat këtu.</p>
+            </div>
+        </div>
+        </fieldset>
+
+        <div class="save-bar" th:unless="${e.gpuCatalogId}">
+            <div class="container-xl d-flex gap-2 justify-content-end">
+                <a href="/admin/spec-catalog" class="btn btn-outline-secondary">Anulo</a>
+                <button class="btn btn-primary px-4" type="submit"><i class="bi bi-check-lg"></i> Ruaj</button>
+            </div>
+        </div>
+    </form>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

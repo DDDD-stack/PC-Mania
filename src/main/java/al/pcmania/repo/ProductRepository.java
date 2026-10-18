@@ -31,7 +31,18 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     List<Product> findByStatusOrderByListedAtDesc(ProductStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = "brand")
+    List<Product> findByStatusInOrderByStatusAscListedAtDesc(Collection<ProductStatus> statuses, Pageable pageable);
+
+    @EntityGraph(attributePaths = "brand")
     List<Product> findByStatusOrderByListedAtAsc(ProductStatus status);
+
+    @Query("""
+            select p from Product p where p.status = al.pcmania.domain.Enums.ProductStatus.SOLD and p.soldAt is not null
+              and not exists (select 1 from OrderItem i where i.product = p and i.order.status = al.pcmania.domain.Enums.OrderStatus.DELIVERED)""")
+    List<Product> findSoldWithoutDeliveredOrder();
+
+    @EntityGraph(attributePaths = "brand")
+    List<Product> findByStatusNotOrderByTitleAsc(ProductStatus status);
 
     @EntityGraph(attributePaths = "brand")
     List<Product> findByCategorySlugAndStatusAndIdNotOrderByListedAtDesc(String categorySlug, ProductStatus status, Long id, Pageable pageable);
@@ -47,8 +58,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("update Product p set p.viewCount = p.viewCount + 1 where p.id = :id")
     void incrementViews(@Param("id") Long id);
 
-    @Query("select distinct b from Product p join p.brand b where p.categorySlug = :cat and p.status = :status order by b.name")
-    List<al.pcmania.domain.Brand> brandsInCategory(@Param("cat") String categorySlug, @Param("status") ProductStatus status);
+    @Query("select distinct b from Product p join p.brand b where p.categorySlug = :cat and p.status in :statuses order by b.name")
+    List<al.pcmania.domain.Brand> brandsInCategory(@Param("cat") String categorySlug, @Param("statuses") Collection<ProductStatus> statuses);
 
     @Query("select p.categorySlug, count(p) from Product p where p.status = :status group by p.categorySlug")
     List<Object[]> countByCategory(@Param("status") ProductStatus status);

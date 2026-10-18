@@ -131,6 +131,13 @@ public final class Enums {
         public String getLabel() { return label; }
     }
 
+    public enum FieldType {
+        TEXT("Tekst"), INTEGER("Numër i plotë"), DECIMAL("Numër dhjetor"), BOOLEAN("Po / Jo"), ENUM("Listë zgjedhjesh");
+        public final String label;
+        FieldType(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
     public enum ChatRole { USER, ASSISTANT }
 
     public enum LeadSource {

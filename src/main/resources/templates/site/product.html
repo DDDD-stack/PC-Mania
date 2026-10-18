@@ -51,6 +51,8 @@
             <h1 class="product-h1" th:text="${p.title}"></h1>
 
             <div class="d-flex flex-wrap gap-1 mb-3">
+                <span th:if="${p.sold}" class="badge state-badge static state-sold">SHITUR</span>
+                <span th:if="${p.reserved}" class="badge state-badge static state-reserved">REZERVUAR</span>
                 <span class="badge cond-badge static" th:classappend="'cond-' + ${p.condition}" th:text="${p.condition.label}"></span>
                 <span class="badge text-bg-light border" th:if="${@fmt.warranty(p.warrantyDays)}"><i class="bi bi-shield-check me-1"></i><span th:text="${@fmt.warranty(p.warrantyDays)}"></span></span>
                 <span class="badge text-bg-success" th:if="${p.miningFree}"><i class="bi bi-check2-circle me-1"></i>Pa minim</span>
@@ -58,8 +60,20 @@
                 <a class="badge trade-badge static text-decoration-none" th:if="${p.tradeable}" href="/nderro"><i class="bi bi-arrow-left-right me-1"></i>Pranon këmbim</a>
             </div>
 
+            <div th:if="${p.sold}" class="sold-note" role="status">
+                <i class="bi bi-info-circle-fill"></i>
+                <span>Ky produkt është shitur.
+                    <th:block th:if="${!related.empty}">Më poshtë gjeni <a href="#related">produkte të ngjashme në stok</a><th:block th:if="${category}"> nga <a th:href="@{/kategori/{s}(s=${category.slug})}" th:text="${category.nameSq}"></a></th:block>.</th:block>
+                    <th:block th:if="${related.empty && category}">Shikoni çfarë kemi në stok te <a th:href="@{/kategori/{s}(s=${category.slug})}" th:text="${category.nameSq}"></a>.</th:block>
+                </span>
+            </div>
+            <div th:if="${p.reserved}" class="sold-note reserved-note" role="status">
+                <i class="bi bi-clock-fill"></i>
+                <span>Ky produkt është i rezervuar për një klient. Nëse porosia anulohet, del sërish në shitje.</span>
+            </div>
+
             <div class="price-box">
-                <div class="price" th:text="${@fmt.price(p.priceLek)}"></div>
+                <div class="price" th:classappend="${p.sold} ? 'text-decoration-line-through opacity-50'" th:text="${@fmt.price(p.priceLek)}"></div>
                 <div class="availability">
                     <span th:if="${p.available}" class="text-success">
                         <i class="bi bi-check-circle-fill"></i>
@@ -89,10 +103,39 @@
                 <li><i class="bi bi-arrow-repeat"></i> <a href="/kushtet-e-perdorimit">Garancia dhe kthimet</a></li>
             </ul>
 
+            <div class="tested-block" th:if="${p.prebuilt != null && p.prebuilt.tested}">
+                <div class="fw-semibold mb-2"><i class="bi bi-thermometer-half me-1"></i>Testuar nën ngarkesë</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="temp" th:if="${p.prebuilt.loadTempCpuC != null}">
+                        <span class="temp-value" th:text="${p.prebuilt.loadTempCpuC} + '°C'"></span><span class="temp-label">Procesori</span>
+                    </div>
+                    <div class="temp" th:if="${p.prebuilt.loadTempGpuC != null}">
+                        <span class="temp-value" th:text="${p.prebuilt.loadTempGpuC} + '°C'"></span><span class="temp-label">Karta grafike</span>
+                    </div>
+                </div>
+                <div class="small mt-2" th:if="${p.prebuilt.testedAt}" th:text="'Testuar më ' + ${#temporals.format(p.prebuilt.testedAt, 'dd.MM.yyyy')}"></div>
+            </div>
+
             <div class="test-notes" th:if="${p.testNotes}">
                 <div class="fw-semibold mb-1"><i class="bi bi-speedometer2 me-1"></i>Rezultatet e testit</div>
                 <div class="pre-line" th:text="${p.testNotes}"></div>
             </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-1" th:if="${p.prebuilt != null}">
+        <div class="col-lg-5">
+            <h2 class="section-title">Komponentët</h2>
+            <table class="table table-sm spec-table">
+                <tbody>
+                <tr th:each="r : ${p.prebuilt.rows()}"><th th:text="${r.label}"></th><td th:text="${r.value}"></td></tr>
+                <tr><th>Gjendja</th><td th:text="${p.condition.label}"></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-7" th:if="${p.prebuilt.notesSq}">
+            <h2 class="section-title">Çfarë pret nga ky PC</h2>
+            <div class="description pre-line" th:text="${p.prebuilt.notesSq}"></div>
         </div>
     </div>
 
@@ -121,8 +164,8 @@
         <button class="btn btn-sm btn-outline-secondary" type="button" id="copyLink" th:attr="data-url=${shareUrl}"><i class="bi bi-link-45deg"></i> Kopjo linkun</button>
     </div>
 
-    <section class="mt-5" th:unless="${related.empty}">
-        <h2 class="section-title mb-3">Produkte të ngjashme</h2>
+    <section class="mt-5" id="related" th:unless="${related.empty}">
+        <h2 class="section-title mb-3" th:text="${p.available} ? 'Produkte të ngjashme' : 'Të ngjashme që janë në stok'">Produkte të ngjashme</h2>
         <div class="row row-cols-2 row-cols-md-4 g-2 g-md-3">
             <th:block th:each="r : ${related}"><div th:replace="~{site/fragments :: card(${r})}"></div></th:block>
         </div>

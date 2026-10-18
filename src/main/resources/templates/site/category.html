@@ -33,7 +33,35 @@
                     <form th:action="${path}" method="get" id="filterForm" class="filter-form w-100">
                         <input type="hidden" name="rendit" th:if="${filter.sort.name() != 'TE_REJAT'}" th:value="${filter.sort.param}">
 
-                        <div class="filter-group">
+                        <div class="filter-group" th:if="${prebuilt}">
+                            <div class="filter-title">Buxheti</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="cmimi" value="" id="band-any" th:checked="${filter.band == null}">
+                                <label class="form-check-label" for="band-any">Çdo buxhet</label>
+                            </div>
+                            <div class="form-check" th:each="b : ${bands}">
+                                <input class="form-check-input" type="radio" name="cmimi" th:value="${b.param}" th:id="'band-' + ${b.param}" th:checked="${filter.hasBand(b)}">
+                                <label class="form-check-label" th:for="'band-' + ${b.param}" th:text="${b.label}"></label>
+                            </div>
+                        </div>
+
+                        <div class="filter-group" th:if="${prebuilt && !facets.gpus.empty}">
+                            <div class="filter-title">Karta grafike</div>
+                            <div class="form-check" th:each="g, gst : ${facets.gpus}">
+                                <input class="form-check-input" type="checkbox" name="gpu" th:value="${g}" th:id="'gpu-' + ${gst.index}" th:checked="${filter.hasGpu(g)}">
+                                <label class="form-check-label" th:for="'gpu-' + ${gst.index}" th:text="${g}"></label>
+                            </div>
+                        </div>
+
+                        <div class="filter-group" th:if="${prebuilt && !facets.rams.empty}">
+                            <div class="filter-title">Memoria RAM</div>
+                            <div class="form-check" th:each="r : ${facets.rams}">
+                                <input class="form-check-input" type="checkbox" name="ram" th:value="${r}" th:id="'ram-' + ${r}" th:checked="${filter.hasRam(r)}">
+                                <label class="form-check-label" th:for="'ram-' + ${r}" th:text="${r} + ' GB'"></label>
+                            </div>
+                        </div>
+
+                        <div class="filter-group" th:unless="${prebuilt}">
                             <div class="filter-title">Çmimi (Lekë)</div>
                             <div class="d-flex gap-2">
                                 <input class="form-control form-control-sm" type="number" name="min" min="0" step="1" inputmode="numeric" placeholder="Nga" th:value="${filter.min}">
@@ -64,13 +92,13 @@
                             </div>
                         </div>
 
-                        <th:block th:each="entry, est : ${facets.specs}">
-                            <div class="filter-group" th:if="${entry.value.size() > 1 || filter.specs.containsKey(entry.key)}">
-                                <div class="filter-title" th:text="${entry.key}"></div>
-                                <div class="form-check" th:each="v, vst : ${entry.value}">
-                                    <input class="form-check-input" type="checkbox" name="spec" th:value="${entry.key} + ':' + ${v}"
-                                           th:id="'s-' + ${est.index} + '-' + ${vst.index}" th:checked="${filter.hasSpec(entry.key, v)}">
-                                    <label class="form-check-label" th:for="'s-' + ${est.index} + '-' + ${vst.index}" th:text="${v}"></label>
+                        <th:block th:each="group, est : ${facets.specs}">
+                            <div class="filter-group" th:if="${group.options.size() > 1 || filter.specs.containsKey(group.key)}">
+                                <div class="filter-title" th:text="${group.label}"></div>
+                                <div class="form-check" th:each="o, vst : ${group.options}">
+                                    <input class="form-check-input" type="checkbox" name="spec" th:value="${group.key} + ':' + ${o.value}"
+                                           th:id="'s-' + ${est.index} + '-' + ${vst.index}" th:checked="${filter.hasSpec(group.key, o.value)}">
+                                    <label class="form-check-label" th:for="'s-' + ${est.index} + '-' + ${vst.index}" th:text="${o.label}"></label>
                                 </div>
                             </div>
                         </th:block>
@@ -143,9 +171,9 @@
         });
         const form = document.getElementById('filterForm');
         form.addEventListener('change', e => {
-            if (window.matchMedia('(min-width: 992px)').matches && e.target.type === 'checkbox') form.requestSubmit();
+            if (window.matchMedia('(min-width: 992px)').matches && (e.target.type === 'checkbox' || e.target.type === 'radio')) form.requestSubmit();
         });
-        form.addEventListener('submit', () => form.querySelectorAll('input[type=number]').forEach(i => i.disabled = !i.value));
+        form.addEventListener('submit', () => form.querySelectorAll('input[type=number], input[type=radio][value=""]').forEach(i => i.disabled = !i.value));
     </script>
 </th:block>
 </body>

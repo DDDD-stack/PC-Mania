@@ -10,6 +10,8 @@
         <a href="/admin/orders" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
         <h1 class="h4 mb-0 font-monospace" th:text="${order.orderNumber}"></h1>
         <span class="badge fs-6" th:classappend="'status-' + ${order.status}" th:text="${order.status.label}"></span>
+        <a th:if="${order.comboId}" class="badge text-bg-dark text-decoration-none" th:href="@{/admin/combos/{id}(id=${order.comboId})}">
+            <i class="bi bi-boxes me-1"></i>Paketë: <span th:text="${order.comboTitleSnapshot}"></span></a>
         <span class="text-body-secondary small ms-auto" th:text="${@fmt.dateTime(order.createdAt)}"></span>
     </div>
 

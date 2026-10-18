@@ -3,6 +3,7 @@ package al.pcmania.web.site;
 import al.pcmania.domain.Category;
 import al.pcmania.domain.Enums.Condition;
 import al.pcmania.service.CatalogService;
+import al.pcmania.service.ComboService;
 import al.pcmania.service.NotFoundException;
 import al.pcmania.service.SeoService;
 import al.pcmania.service.UpcomingService;
@@ -31,10 +32,12 @@ public class CatalogController {
     private final CatalogService catalog;
     private final UpcomingService upcoming;
     private final SeoService seo;
+    private final ComboService combos;
 
     @GetMapping("/")
     String home(Model model) {
         model.addAttribute("seo", seo.home());
+        model.addAttribute("combos", combos.visible(4));
         model.addAttribute("newest", catalog.newest(8));
         model.addAttribute("tiles", catalog.categoryTiles());
         model.addAttribute("upcoming", upcoming.publicList().stream().limit(4).toList());
@@ -49,11 +52,14 @@ public class CatalogController {
                     @RequestParam(name = "marka", required = false) List<String> brands,
                     @RequestParam(name = "spec", required = false) List<String> specs,
                     @RequestParam(name = "nderrim", required = false) Boolean trade,
+                    @RequestParam(name = "gpu", required = false) List<String> gpus,
+                    @RequestParam(name = "ram", required = false) List<Integer> rams,
+                    @RequestParam(name = "cmimi", required = false) String band,
                     @RequestParam(name = "rendit", required = false) String sort,
                     @RequestParam(name = "faqe", required = false) Integer page,
                     Model model) {
         Category category = catalog.category(slug).orElseThrow(NotFoundException::new);
-        CatalogFilter filter = CatalogFilter.of(min, max, conditions, brands, specs, trade, sort, page);
+        CatalogFilter filter = CatalogFilter.of(min, max, conditions, brands, specs, trade, gpus, rams, band, sort, page);
         String path = "/kategori/" + slug;
 
         Seo pageSeo = seo.category(category, filter.page());
@@ -70,6 +76,8 @@ public class CatalogController {
         model.addAttribute("facets", catalog.facets(slug));
         model.addAttribute("conditions", Condition.values());
         model.addAttribute("sorts", CatalogFilter.Sort.values());
+        model.addAttribute("bands", CatalogFilter.PriceBand.values());
+        model.addAttribute("prebuilt", category.isPrebuilt());
         return "site/category";
     }
 

@@ -4,6 +4,15 @@
     const post = (url, body) => fetch(url, {
         method: 'POST', body, headers: csrfHeader ? {[csrfHeader]: csrfToken} : {}
     });
+    const getJson = async url => {
+        const res = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(res.status);
+        return res.json();
+    };
+
+    const templates = JSON.parse(document.getElementById('fieldTemplates')?.textContent || '{}');
+    const categorySelect = document.getElementById('categorySlug');
+    const currentTemplate = () => templates[categorySelect?.value] || { fields: [], catalogKey: categorySelect?.value, prebuilt: false };
 
     const specRows = document.getElementById('specRows');
     const tpl = document.getElementById('specRowTpl');
@@ -15,26 +24,108 @@
         return row;
     };
     document.getElementById('addSpec').addEventListener('click', () => addRow().querySelector('input').focus());
-    document.getElementById('gpuPreset').addEventListener('click', () => {
-        const existing = [...specRows.querySelectorAll('[name=specKeys]')].map(i => i.value.trim());
-        ['VRAM', 'Tipi i memories', 'Bus', 'TDP', 'Gjatësia']
-            .filter(k => !existing.includes(k)).forEach(k => addRow(k));
-    });
     specRows.addEventListener('click', e => {
         if (e.target.closest('.spec-del')) e.target.closest('.spec-row').remove();
     });
     if (window.Sortable) Sortable.create(specRows, {handle: '.drag-handle', animation: 150});
 
-    const combobox = document.getElementById('gpuCombobox');
-    if (combobox) {
-        const title = document.getElementById('title');
-        const list = document.getElementById('gpuSuggestions');
-        const modelId = document.getElementById('gpuModelId');
-        const info = document.getElementById('gpuModelInfo');
-        const modelName = document.getElementById('gpuModelName');
-        let hits = [], active = -1, timer = null, lastQuery = '';
+    const mark = (el) => {
+        if (!el.value) return;
+        const wrap = el.closest('.spec-row') || el.parentElement;
+        if (!wrap.classList.contains('spec-row')) wrap.classList.add('from-catalog-wrap');
+        if (!wrap.querySelector('.from-catalog')) {
+            const badge = document.createElement('span');
+            badge.className = 'badge text-bg-warning from-catalog';
+            badge.textContent = 'nga katalogu';
+            wrap.appendChild(badge);
+        }
+        el.dataset.fromCatalog = '1';
+        const clear = () => {
+            delete el.dataset.fromCatalog;
+            wrap.querySelector('.from-catalog')?.remove();
+        };
+        el.addEventListener('input', clear, { once: true });
+        el.addEventListener('change', clear, { once: true });
+    };
+    const fillIfEmpty = (el, value) => {
+        if (!el || value == null || value === '' || String(el.value).trim()) return false;
+        if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === String(value))) return false;
+        el.value = String(value);
+        mark(el);
+        return true;
+    };
 
-        const close = () => { list.hidden = true; list.innerHTML = ''; hits = []; active = -1; title.setAttribute('aria-expanded', 'false'); };
+    const fieldsBox = document.getElementById('templateFields');
+    const templateEmpty = document.getElementById('templateEmpty');
+    const remembered = {};
+    const fieldInput = key => fieldsBox.querySelector(`.tpl-field[data-key="${CSS.escape(key)}"] [name=specValues]`);
+    const readFields = () => {
+        const out = {};
+        fieldsBox.querySelectorAll('.tpl-field').forEach(f => {
+            const v = f.querySelector('[name=specValues]').value;
+            if (v !== '') out[f.dataset.key] = v;
+        });
+        return out;
+    };
+    const renderField = (f, value) => {
+        const col = document.createElement('div');
+        col.className = 'col-sm-6 tpl-field';
+        col.dataset.key = f.key;
+        const label = document.createElement('label');
+        label.className = 'form-label small mb-1';
+        label.htmlFor = 'tf-' + f.key;
+        label.append(f.labelSq);
+        if (f.unit) {
+            const u = document.createElement('span');
+            u.className = 'text-body-secondary';
+            u.textContent = ' (' + f.unit + ')';
+            label.append(u);
+        }
+        if (f.required) {
+            const r = document.createElement('span');
+            r.className = 'text-danger';
+            r.textContent = ' *';
+            label.append(r);
+        }
+        const key = document.createElement('input');
+        key.type = 'hidden';
+        key.name = 'specKeys';
+        key.value = f.key;
+        let input;
+        if (f.type === 'ENUM' || f.type === 'BOOLEAN') {
+            input = document.createElement('select');
+            input.className = 'form-select form-select-sm';
+            const options = f.type === 'ENUM' ? f.options.map(o => [o, o]) : [['true', 'Po'], ['false', 'Jo']];
+            [['', '—'], ...options].forEach(([v, t]) => input.add(new Option(t, v)));
+            if (value != null && ![...input.options].some(o => o.value === value)) input.add(new Option(value + ' (jo në listë)', value));
+        } else {
+            input = document.createElement('input');
+            input.className = 'form-control form-control-sm';
+            input.maxLength = 160;
+            input.inputMode = f.type === 'INTEGER' ? 'numeric' : f.type === 'DECIMAL' ? 'decimal' : 'text';
+        }
+        input.name = 'specValues';
+        input.id = 'tf-' + f.key;
+        if (value != null) input.value = value;
+        col.append(label, key, input);
+        return col;
+    };
+    const prebuiltSection = document.getElementById('prebuiltSection');
+    const applyTemplate = () => {
+        Object.assign(remembered, readFields());
+        const t = currentTemplate();
+        fieldsBox.replaceChildren(...t.fields.map(f => renderField(f, remembered[f.key])));
+        templateEmpty.hidden = t.fields.length > 0;
+        if (prebuiltSection) prebuiltSection.hidden = !t.prebuilt;
+        const prebuiltFields = document.getElementById('prebuiltFields');
+        if (prebuiltFields) prebuiltFields.disabled = !t.prebuilt;
+    };
+    categorySelect?.addEventListener('change', applyTemplate);
+
+    const combobox = ({ box, input, list, url, onPick, icon = 'bi-cpu' }) => {
+        if (!box || !input || !list) return;
+        let hits = [], active = -1, timer = null, lastQuery = '';
+        const close = () => { list.hidden = true; list.innerHTML = ''; hits = []; active = -1; input.setAttribute('aria-expanded', 'false'); };
         const highlight = (i) => {
             active = i;
             [...list.children].forEach((li, k) => li.classList.toggle('active', k === i));
@@ -46,95 +137,47 @@
                 const li = document.createElement('li');
                 li.className = 'list-group-item';
                 li.setAttribute('role', 'option');
-                li.innerHTML = '<i class="bi bi-cpu text-body-secondary"></i><span></span><span class="meta"></span>';
+                li.innerHTML = '<i class="bi text-body-secondary"></i><span></span><span class="meta"></span>';
+                li.children[0].classList.add(icon);
                 li.children[1].textContent = h.name;
-                li.children[2].textContent = [h.vendor, h.vramGb ? h.vramGb + ' GB' : null, h.tier ? 'tier ' + h.tier : null].filter(Boolean).join(' · ');
+                li.children[2].textContent = [h.summary, h.verified ? null : 'pa verifikuar'].filter(Boolean).join(' · ');
                 li.addEventListener('mousedown', e => e.preventDefault());
                 li.addEventListener('click', () => choose(i));
                 list.appendChild(li);
             });
             list.hidden = hits.length === 0;
-            title.setAttribute('aria-expanded', String(hits.length > 0));
+            input.setAttribute('aria-expanded', String(hits.length > 0));
             highlight(hits.length ? 0 : -1);
         };
         const search = async () => {
-            const q = title.value.trim();
+            const q = input.value.trim();
             if (q === lastQuery) return;
             lastQuery = q;
-            if (q.length < 2) return close();
+            const target = url(q);
+            if (q.length < 2 || !target) return close();
             try {
-                const res = await fetch(combobox.dataset.searchUrl + '?q=' + encodeURIComponent(q), { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-                if (!res.ok || q !== title.value.trim()) return;
-                hits = await res.json();
+                const found = await getJson(target);
+                if (q !== input.value.trim()) return;
+                hits = found;
                 render();
             } catch { close(); }
-        };
-
-        const mark = (el) => {
-            if (!el.value) return;
-            const wrap = el.closest('.spec-row') || el.parentElement;
-            if (!wrap.classList.contains('spec-row')) wrap.classList.add('from-catalog-wrap');
-            if (!wrap.querySelector('.from-catalog')) {
-                const badge = document.createElement('span');
-                badge.className = 'badge text-bg-warning from-catalog';
-                badge.textContent = 'nga katalogu';
-                wrap.appendChild(badge);
-            }
-            el.dataset.fromCatalog = '1';
-            el.addEventListener('input', () => {
-                delete el.dataset.fromCatalog;
-                wrap.querySelector('.from-catalog')?.remove();
-            }, { once: true });
-        };
-        const setSpec = (key, value) => {
-            if (value == null || value === '') return;
-            const rows = [...specRows.querySelectorAll('.spec-row')];
-            let row = rows.find(r => r.querySelector('[name=specKeys]').value.trim().toLowerCase() === key.toLowerCase());
-            if (row) {
-                const v = row.querySelector('[name=specValues]');
-                if (v.value.trim()) return;
-                v.value = value;
-                mark(v);
-            } else {
-                row = addRow(key, value);
-                mark(row.querySelector('[name=specValues]'));
-            }
-        };
-        const prefill = (d) => {
-            modelId.value = d.id;
-            modelName.textContent = d.name;
-            info.hidden = false;
-            setSpec('VRAM', d.vramGb ? d.vramGb + ' GB' : null);
-            setSpec('Tipi i memories', d.memoryType);
-            setSpec('TDP', d.tdpWatts ? d.tdpWatts + ' W' : null);
-            setSpec('PSU minimale', d.psuMinWatts ? d.psuMinWatts + ' W' : null);
-            setSpec('Konektorët', d.pcieConnectors);
-            setSpec('Gjatësia', d.lengthMm ? d.lengthMm + ' mm' : null);
-            const short = document.getElementById('shortDescription');
-            if (short && !short.value.trim() && d.shortDescription) {
-                short.value = d.shortDescription;
-                mark(short);
-            }
         };
         const choose = async (i) => {
             const hit = hits[i];
             close();
             if (!hit) return;
-            if (!title.value.trim()) title.value = hit.name;
-            lastQuery = title.value.trim();
             try {
-                const res = await fetch(combobox.dataset.detailUrl + hit.id, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-                if (res.ok) prefill(await res.json());
-            } catch {  }
+                await onPick(hit, await getJson('/admin/api/spec-catalog/' + hit.id));
+            } catch { }
+            lastQuery = input.value.trim();
         };
-
-        title.addEventListener('input', () => {
+        input.addEventListener('input', () => {
             clearTimeout(timer);
             timer = setTimeout(search, 250);
         });
-        title.addEventListener('keydown', e => {
+        input.addEventListener('keydown', e => {
             if (list.hidden) {
-                if (e.key === 'ArrowDown') { search(); }
+                if (e.key === 'ArrowDown') { lastQuery = ''; search(); }
                 return;
             }
             if (e.key === 'ArrowDown') { e.preventDefault(); highlight((active + 1) % hits.length); }
@@ -142,12 +185,73 @@
             else if (e.key === 'Enter') { e.preventDefault(); choose(active); }
             else if (e.key === 'Escape') { close(); }
         });
-        document.addEventListener('click', e => { if (!combobox.contains(e.target)) close(); });
-        document.getElementById('gpuModelClear').addEventListener('click', () => {
-            modelId.value = '';
-            info.hidden = true;
-        });
-    }
+        document.addEventListener('click', e => { if (!box.contains(e.target)) close(); });
+    };
+    const searchUrl = (category, q) => '/admin/api/spec-catalog/search?category=' + encodeURIComponent(category) + '&q=' + encodeURIComponent(q);
+
+    const title = document.getElementById('title');
+    const modelId = document.getElementById('gpuModelId');
+    const info = document.getElementById('gpuModelInfo');
+    const modelName = document.getElementById('gpuModelName');
+    combobox({
+        box: document.getElementById('catalogCombobox'),
+        input: title,
+        list: document.getElementById('catalogSuggestions'),
+        url: q => {
+            const t = currentTemplate();
+            return t.prebuilt || !t.catalogKey ? null : searchUrl(t.catalogKey, q);
+        },
+        onPick: (hit, d) => {
+            if (!title.value.trim()) title.value = d.name;
+            Object.entries(d.values || {}).forEach(([k, v]) => fillIfEmpty(fieldInput(k), v));
+            if (d.gpuCatalogId && modelId) {
+                modelId.value = d.gpuCatalogId;
+                modelName.textContent = d.name;
+                info.hidden = false;
+            }
+            fillIfEmpty(document.getElementById('shortDescription'), d.shortDescription);
+        }
+    });
+    document.getElementById('gpuModelClear')?.addEventListener('click', () => {
+        modelId.value = '';
+        info.hidden = true;
+    });
+
+    const pbGpuSearch = document.getElementById('pbGpuSearch');
+    const pbGpuId = document.getElementById('pbGpuId');
+    const pbGpuInfo = document.getElementById('pbGpuInfo');
+    combobox({
+        box: document.getElementById('pbGpuCombobox'),
+        input: pbGpuSearch,
+        list: document.getElementById('pbGpuSuggestions'),
+        url: q => searchUrl('gpu', q),
+        onPick: (hit, d) => {
+            pbGpuSearch.value = d.name;
+            pbGpuId.value = d.id;
+            document.getElementById('pbGpuName').textContent = d.name;
+            pbGpuInfo.hidden = false;
+            mark(pbGpuSearch);
+        }
+    });
+    document.getElementById('pbGpuClear')?.addEventListener('click', () => {
+        pbGpuId.value = '';
+        pbGpuSearch.value = '';
+        pbGpuInfo.hidden = true;
+    });
+
+    const cpuName = document.getElementById('prebuilt.cpuName');
+    combobox({
+        box: document.getElementById('cpuCombobox'),
+        input: cpuName,
+        list: document.getElementById('cpuSuggestions'),
+        url: q => searchUrl('cpu', q),
+        onPick: (hit, d) => {
+            cpuName.value = d.name;
+            mark(cpuName);
+            fillIfEmpty(document.getElementById('prebuilt.cpuCores'), d.values?.cores);
+            fillIfEmpty(document.getElementById('prebuilt.cpuThreads'), d.values?.threads);
+        }
+    });
 
     document.querySelectorAll('[data-toggles]').forEach(sw => {
         const target = document.querySelector(sw.dataset.toggles);

@@ -15,6 +15,10 @@
             <form th:action="@{/admin/products/{id}/duplicate(id=${product.id})}" method="post" class="d-inline">
                 <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-copy"></i> Dupliko</button>
             </form>
+            <form th:unless="${template.prebuilt}" th:action="@{/admin/products/{id}/catalog-entry(id=${product.id})}" method="post" class="d-inline"
+                  data-confirm="Të ruhen specifikimet e këtij produkti si rresht i ri në katalog (të paverifikuar)?">
+                <button class="btn btn-sm btn-outline-secondary" type="submit" title="Ruaj specifikimet si rresht katalogu"><i class="bi bi-journal-plus"></i> Ruaje në katalog</button>
+            </form>
             <form th:action="@{/admin/products/{id}/delete(id=${product.id})}" method="post" class="d-inline"
                   data-confirm="Të fshihet përfundimisht ky produkt?">
                 <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-trash"></i></button>
@@ -30,11 +34,11 @@
                 <div class="card card-body mb-3">
                     <div class="mb-3">
                         <label class="form-label" for="title">Titulli *</label>
-                        <div class="gpu-combobox" id="gpuCombobox" data-search-url="/admin/api/gpu-catalog/search" data-detail-url="/admin/api/gpu-catalog/">
+                        <div class="gpu-combobox" id="catalogCombobox">
                             <input class="form-control" th:field="*{title}" th:errorclass="is-invalid" required maxlength="200"
-                                   autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="gpuSuggestions"
+                                   autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="catalogSuggestions"
                                    placeholder="p.sh. MSI RTX 3060 Ti Ventus 8GB – shkruani modelin dhe zgjidhni nga katalogu">
-                            <ul class="gpu-suggestions list-group shadow" id="gpuSuggestions" role="listbox" hidden></ul>
+                            <ul class="gpu-suggestions list-group shadow" id="catalogSuggestions" role="listbox" hidden></ul>
                         </div>
                         <div class="invalid-feedback d-block" th:errors="*{title}"></div>
                         <input type="hidden" th:field="*{gpuModelId}" id="gpuModelId">
@@ -46,7 +50,7 @@
                     <div class="row g-2 mb-3">
                         <div class="col-sm-6">
                             <label class="form-label">Kategoria *</label>
-                            <select class="form-select" th:field="*{categorySlug}" th:errorclass="is-invalid">
+                            <select class="form-select" th:field="*{categorySlug}" th:errorclass="is-invalid" id="categorySlug">
                                 <option th:each="c : ${categories}" th:value="${c.slug}"
                                         th:text="${c.nameSq} + (${c.visible} ? '' : ' (e fshehur)')"></option>
                             </select>
@@ -81,31 +85,146 @@
                     </div>
                 </div>
 
+                <div class="card mb-3 prebuilt-section" id="prebuiltSection" th:attr="hidden=${!template.prebuilt}">
+                    <div class="card-header"><strong>Komponentët e PC-së</strong> <small class="text-body-secondary">— shfaqen si tabelë në faqen e produktit</small></div>
+                    <fieldset class="card-body" th:object="${form}" id="prebuiltFields" th:disabled="${!template.prebuilt}">
+                        <fieldset class="mb-3">
+                            <legend>Procesori</legend>
+                            <div class="row g-2">
+                                <div class="col-md-6 gpu-combobox" id="cpuCombobox">
+                                    <input class="form-control form-control-sm" th:field="*{prebuilt.cpuName}" maxlength="120" autocomplete="off"
+                                           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cpuSuggestions" placeholder="p.sh. Intel Core i7-8700">
+                                    <ul class="gpu-suggestions list-group shadow" id="cpuSuggestions" role="listbox" hidden></ul>
+                                </div>
+                                <div class="col-6 col-md-3"><input class="form-control form-control-sm" type="number" min="1" th:field="*{prebuilt.cpuCores}" placeholder="Bërthama" aria-label="Bërthama"></div>
+                                <div class="col-6 col-md-3"><input class="form-control form-control-sm" type="number" min="1" th:field="*{prebuilt.cpuThreads}" placeholder="Thread-e" aria-label="Thread-e"></div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="mb-3">
+                            <legend>Karta grafike</legend>
+                            <div class="row g-2">
+                                <div class="col-md-6 gpu-combobox" id="pbGpuCombobox">
+                                    <input class="form-control form-control-sm" id="pbGpuSearch" th:value="${form.prebuilt.gpuCatalogName}" autocomplete="off"
+                                           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pbGpuSuggestions" placeholder="Kërko në katalog, p.sh. 3060 Ti">
+                                    <ul class="gpu-suggestions list-group shadow" id="pbGpuSuggestions" role="listbox" hidden></ul>
+                                    <input type="hidden" th:field="*{prebuilt.gpuCatalogId}" id="pbGpuId">
+                                    <div class="form-text" id="pbGpuInfo" th:attr="hidden=${form.prebuilt.gpuCatalogId == null}">
+                                        <i class="bi bi-cpu me-1"></i>Nga katalogu: <strong id="pbGpuName" th:text="${form.prebuilt.gpuCatalogName}"></strong>
+                                        <button type="button" class="btn btn-link btn-sm p-0 ms-1" id="pbGpuClear">hiq</button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <input class="form-control form-control-sm" th:field="*{prebuilt.gpuNameOverride}" maxlength="120" placeholder="…ose emri, nëse nuk është në katalog">
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="mb-3">
+                            <legend>Memoria RAM</legend>
+                            <div class="row g-2">
+                                <div class="col-4"><input class="form-control form-control-sm" type="number" min="1" th:field="*{prebuilt.ramGb}" placeholder="GB" aria-label="RAM në GB"></div>
+                                <div class="col-4"><input class="form-control form-control-sm" type="number" min="1" th:field="*{prebuilt.ramSpeedMhz}" placeholder="MHz" aria-label="Shpejtësia në MHz"></div>
+                                <div class="col-4"><input class="form-control form-control-sm" th:field="*{prebuilt.ramConfig}" maxlength="40" placeholder="2x8GB" aria-label="Konfigurimi"></div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="mb-3">
+                            <legend>Disqet</legend>
+                            <div class="row g-2">
+                                <div class="col-md-6"><input class="form-control form-control-sm" th:field="*{prebuilt.storagePrimary}" maxlength="120" placeholder="Kryesori, p.sh. 500GB NVMe"></div>
+                                <div class="col-md-6"><input class="form-control form-control-sm" th:field="*{prebuilt.storageSecondary}" maxlength="120" placeholder="I dyti (opsional), p.sh. 1TB HDD"></div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="mb-3">
+                            <legend>Furnizuesi, pllaka amë dhe kasa</legend>
+                            <div class="row g-2">
+                                <div class="col-4 col-md-2"><input class="form-control form-control-sm" type="number" min="1" th:field="*{prebuilt.psuWatts}" placeholder="W" aria-label="Fuqia e furnizuesit"></div>
+                                <div class="col-8 col-md-4"><input class="form-control form-control-sm" th:field="*{prebuilt.psuBrand}" maxlength="80" placeholder="Marka e furnizuesit"></div>
+                                <div class="col-md-6"><input class="form-control form-control-sm" th:field="*{prebuilt.motherboardModel}" maxlength="120" placeholder="Pllaka amë, p.sh. ASUS B360M"></div>
+                                <div class="col-md-6"><input class="form-control form-control-sm" th:field="*{prebuilt.caseModel}" maxlength="120" placeholder="Kasa"></div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="mb-3">
+                            <legend>Sistemi operativ</legend>
+                            <div class="row g-2 align-items-center">
+                                <div class="col-auto">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" th:field="*{prebuilt.osInstalled}" data-toggles="#osNameGroup">
+                                        <label class="form-check-label" th:for="${#ids.prev('prebuilt.osInstalled')}">I instaluar</label>
+                                    </div>
+                                </div>
+                                <div class="col" id="osNameGroup"><input class="form-control form-control-sm" th:field="*{prebuilt.osName}" maxlength="80" placeholder="p.sh. Windows 11 Pro"></div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="mb-3">
+                            <legend>Testuar nën ngarkesë</legend>
+                            <div class="row g-2">
+                                <div class="col-4"><input class="form-control form-control-sm" type="number" min="0" max="150" th:field="*{prebuilt.loadTempCpuC}" placeholder="CPU °C" aria-label="Temperatura e procesorit"></div>
+                                <div class="col-4"><input class="form-control form-control-sm" type="number" min="0" max="150" th:field="*{prebuilt.loadTempGpuC}" placeholder="GPU °C" aria-label="Temperatura e kartës grafike"></div>
+                                <div class="col-4"><input class="form-control form-control-sm" type="date" th:field="*{prebuilt.testedAt}" aria-label="Data e testit"></div>
+                            </div>
+                            <div class="form-text">Temperaturat e matura janë arsyeja kryesore pse klientët na besojnë. Shfaqen në një bllok "Testuar".</div>
+                        </fieldset>
+                        <div>
+                            <label class="form-label small mb-1" for="prebuilt.notesSq">Performanca e pritur</label>
+                            <textarea class="form-control form-control-sm" th:field="*{prebuilt.notesSq}" rows="3" placeholder="p.sh. Fortnite 1080p Epic ~140 FPS, Cyberpunk 1080p High ~60 FPS"></textarea>
+                        </div>
+                    </fieldset>
+                </div>
+
                 <div class="card mb-3">
                     <div class="card-header d-flex align-items-center">
                         <strong class="me-auto">Specifikimet</strong>
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1" id="gpuPreset">Shabllon GPU</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" id="addSpec"><i class="bi bi-plus"></i> Rresht</button>
+                        <a class="small" id="templateLink" th:href="@{/admin/categories}">Fushat e kategorisë</a>
                     </div>
                     <div class="card-body">
+                        <div th:if="${specErrors}" class="alert alert-danger small">
+                            <ul class="mb-0 ps-3"><li th:each="e : ${specErrors}" th:text="${e}"></li></ul>
+                        </div>
+                        <div id="templateFields" class="row g-2">
+                            <div class="col-sm-6 tpl-field" th:each="f : ${template.fields}" th:attr="data-key=${f.key}"
+                                 th:with="v=${templateValues.get(f.key)}">
+                                <label class="form-label small mb-1" th:for="'tf-' + ${f.key}"><span th:text="${f.labelSq}"></span><span th:if="${f.unit}" class="text-body-secondary" th:text="' (' + ${f.unit} + ')'"></span><span th:if="${f.required}" class="text-danger"> *</span></label>
+                                <input type="hidden" name="specKeys" th:value="${f.key}">
+                                <th:block th:switch="${f.type.name()}">
+                                    <select th:case="'ENUM'" class="form-select form-select-sm" name="specValues" th:id="'tf-' + ${f.key}">
+                                        <option value="">—</option>
+                                        <option th:each="o : ${f.options}" th:value="${o}" th:text="${o}" th:selected="${v == o}"></option>
+                                        <option th:if="${v != null && !f.options.contains(v)}" th:value="${v}" th:text="${v} + ' (jo në listë)'" selected></option>
+                                    </select>
+                                    <select th:case="'BOOLEAN'" class="form-select form-select-sm" name="specValues" th:id="'tf-' + ${f.key}">
+                                        <option value="">—</option>
+                                        <option value="true" th:selected="${v == 'true'}">Po</option>
+                                        <option value="false" th:selected="${v == 'false'}">Jo</option>
+                                    </select>
+                                    <input th:case="*" class="form-control form-control-sm" name="specValues" th:id="'tf-' + ${f.key}" th:value="${v}" maxlength="160"
+                                           th:attr="inputmode=${f.type.name() == 'INTEGER'} ? 'numeric' : (${f.type.name() == 'DECIMAL'} ? 'decimal' : 'text')">
+                                </th:block>
+                            </div>
+                        </div>
+                        <p id="templateEmpty" class="small text-body-secondary mb-0" th:attr="hidden=${!template.fields.empty}">
+                            Kjo kategori nuk ka ende fusha. Shtojini te <em>Kategoritë › Fushat</em>, ose përdorni rreshtat e lirë më poshtë.</p>
+
+                        <div class="d-flex align-items-center mt-3 mb-2">
+                            <span class="small fw-semibold me-auto">Specifikime të tjera</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addSpec"><i class="bi bi-plus"></i> Rresht</button>
+                        </div>
                         <datalist id="specKeyList"><option th:each="k : ${specKeySuggestions}" th:value="${k}"></option></datalist>
                         <div id="specRows">
-                            <div class="spec-row input-group input-group-sm mb-2" th:each="k, st : *{specKeys}">
+                            <div class="spec-row input-group input-group-sm mb-2" th:each="r : ${extraSpecs}">
                                 <span class="input-group-text drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                                <input class="form-control" name="specKeys" th:value="${k}" list="specKeyList" placeholder="Çelësi (p.sh. VRAM)">
-                                <input class="form-control" name="specValues" th:value="${form.specValues[st.index]}" placeholder="Vlera (p.sh. 12 GB)">
+                                <input class="form-control" name="specKeys" th:value="${r.key}" list="specKeyList" placeholder="Çelësi (p.sh. Garancia e prodhuesit)">
+                                <input class="form-control" name="specValues" th:value="${r.value}" placeholder="Vlera">
                                 <button class="btn btn-outline-danger spec-del" type="button"><i class="bi bi-x"></i></button>
                             </div>
                         </div>
                         <template id="specRowTpl">
                             <div class="spec-row input-group input-group-sm mb-2">
                                 <span class="input-group-text drag-handle"><i class="bi bi-grip-vertical"></i></span>
-                                <input class="form-control" name="specKeys" list="specKeyList" placeholder="Çelësi (p.sh. VRAM)">
-                                <input class="form-control" name="specValues" placeholder="Vlera (p.sh. 12 GB)">
+                                <input class="form-control" name="specKeys" list="specKeyList" placeholder="Çelësi (p.sh. Garancia e prodhuesit)">
+                                <input class="form-control" name="specValues" placeholder="Vlera">
                                 <button class="btn btn-outline-danger spec-del" type="button"><i class="bi bi-x"></i></button>
                             </div>
                         </template>
-                        <div class="form-text">Përdorni të njëjtët çelësa dhe të njëjtin format vlerash (p.sh. "12 GB") që filtrat të funksionojnë mirë.</div>
+                        <div class="form-text">Fushat e mësipërme vijnë nga shablloni i kategorisë dhe ushqejnë filtrat. Rreshtat e lirë shfaqen vetëm në tabelën e produktit.</div>
                     </div>
                 </div>
             </div>
@@ -263,6 +382,7 @@
 </main>
 <th:block th:replace="~{admin/fragments :: scripts}"></th:block>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" integrity="sha384-BSxuMLxX+FCbTdYec3TbXlnMGEEM2QXTFdtDaveen71o+jswm2J36+xFqp8k4VHM" crossorigin="anonymous"></script>
+<script type="application/json" id="fieldTemplates" th:utext="${templatesJson}"></script>
 <script th:src="@{/js/admin-product.js}"></script>
 </body>
 </html>

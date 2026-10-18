@@ -16,7 +16,7 @@
     <meta property="og:site_name" th:content="${site.siteName}">
     <meta property="og:locale" content="sq_AL">
     <meta property="og:type" th:content="${seo.type}">
-    <meta property="og:title" th:content="${seo.title}">
+    <meta property="og:title" th:content="${seo.shareTitle}">
     <meta property="og:description" th:content="${seo.description}">
     <meta property="og:url" th:content="${seo.canonical}">
     <meta property="og:image" th:content="${seo.image}">
@@ -31,7 +31,7 @@
     </th:block>
 
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" th:content="${seo.title}">
+    <meta name="twitter:title" th:content="${seo.shareTitle}">
     <meta name="twitter:description" th:content="${seo.description}">
     <meta name="twitter:image" th:content="${seo.image}">
 
@@ -132,7 +132,7 @@
                     <li><a href="/kushtet-e-perdorimit">Kushtet e përdorimit</a></li>
                     <li><a href="/rreth-nesh">Rreth nesh</a></li>
                     <li><a href="/kontakt">Na kontaktoni</a></li>
-                    <li><a th:href="${site.facebookUrl}" target="_blank" rel="noopener"><i class="bi bi-facebook me-1"></i>Facebook</a></li>
+                    <li th:if="${!#strings.isEmpty(site.facebookUrl)}"><a th:href="${site.facebookUrl}" target="_blank" rel="noopener"><i class="bi bi-facebook me-1"></i>Facebook</a></li>
                 </ul>
             </div>
         </div>

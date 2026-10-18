@@ -4,6 +4,7 @@ import al.pcmania.config.AppProperties;
 import al.pcmania.domain.Category;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.web.Fmt;
+import al.pcmania.web.view.ComboView;
 import al.pcmania.web.view.ProductDetail;
 import al.pcmania.web.view.Seo;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -122,7 +123,25 @@ public class SeoService {
 
         return new Seo(title + " | " + props.siteName(), description, url, image, w, h, p.title(), "product",
                 p.status() == ProductStatus.ACTIVE ? p.priceLek() : null,
-                toJson(List.of(product, breadcrumbs)), false);
+                toJson(List.of(product, breadcrumbs)), false, p.title());
+    }
+
+    public Seo combo(ComboView c) {
+        String url = abs("/paketa/" + c.slug());
+        String image = abs(DEFAULT_IMAGE);
+        Integer w = DEFAULT_IMAGE_W, h = DEFAULT_IMAGE_H;
+        if (c.primaryImage() != null) {
+            image = abs(ImageStorage.url(ImageStorage.Size.full, c.primaryImage()));
+            int[] dim = images.dimensions(ImageStorage.Size.full, c.primaryImage());
+            w = dim == null ? null : dim[0];
+            h = dim == null ? null : dim[1];
+        }
+        String members = String.join(" + ", c.members().stream().map(m -> m.product().title()).toList());
+        String description = "Paketë: " + members + ". " + Fmt.lek(c.comboPriceLek()) + " në vend të "
+                + Fmt.lek(c.originalTotalLek()) + " – " + Fmt.thousands(c.savingsLek()).replace(" lekë", " lekë më pak") + ".";
+        if (description.length() > 200) description = description.substring(0, 197) + "…";
+        return new Seo("Ofertë: " + c.title() + " – " + Fmt.lek(c.comboPriceLek()) + " | " + props.siteName(), description,
+                url, image, w, h, c.title(), "product", c.visible() ? c.comboPriceLek() : null, null, false, c.title());
     }
 
     public String whatsappLink(ProductDetail p) {
@@ -139,7 +158,9 @@ public class SeoService {
     private static String description(ProductDetail p) {
         String base = StringUtils.hasText(p.shortDescription()) ? p.shortDescription()
                 : StringUtils.hasText(p.fullDescription()) ? Jsoup.parse(p.fullDescription()).text() : p.title();
-        String prefix = p.condition().label + " · " + Fmt.lek(p.priceLek()) + " · ";
+        String prefix = (p.isSold() ? "E SHITUR · " : p.isReserved() ? "E REZERVUAR · " : "")
+                + (StringUtils.hasText(p.specLine()) ? p.specLine() + " · " : "")
+                + Fmt.lek(p.priceLek()) + " · " + p.condition().label + " · ";
         String d = prefix + base;
         return d.length() > 200 ? d.substring(0, 197) + "…" : d;
     }

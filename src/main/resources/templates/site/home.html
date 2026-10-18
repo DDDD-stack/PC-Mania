@@ -28,9 +28,19 @@
         </div>
     </section>
 
+    <section class="container mt-4" th:unless="${combos.empty}">
+        <div class="mb-3">
+            <h2 class="section-title mb-0">Oferta – Paketa</h2>
+            <p class="small text-body-secondary mb-0">Pjesë që shkojnë bashkë, me një çmim më të ulët se veç e veç.</p>
+        </div>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-2 g-md-3">
+            <div class="col" th:each="c : ${combos}"><a th:replace="~{site/fragments :: comboCard(${c})}"></a></div>
+        </div>
+    </section>
+
     <section class="container mt-4">
         <div class="d-flex align-items-baseline mb-3">
-            <h2 class="section-title me-auto">Produktet më të fundit</h2>
+            <h2 class="section-title me-auto">Produktet e fundit</h2>
             <a class="small" href="/kategori/karta-grafike">Shiko të gjitha <i class="bi bi-arrow-right"></i></a>
         </div>
         <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-2 g-md-3" th:unless="${newest.empty}">

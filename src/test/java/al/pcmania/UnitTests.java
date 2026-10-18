@@ -69,9 +69,9 @@ class UnitTests {
     void totalsWeightMarginByRevenueAndDaysByUnit() throws Exception {
         LocalDateTime t = LocalDateTime.now();
         var items = List.of(
-                new DashboardService.SoldItem(1L, "A", 1L, "a", 2, 80, 100, t, t, 10L),
-                new DashboardService.SoldItem(2L, "B", 2L, "b", 1, 900, 1000, t, t, 40L),
-                new DashboardService.SoldItem(3L, "C", null, "c", 1, 50, 60, null, t, null));
+                new DashboardService.SoldItem(1L, "A", 1L, "a", 2, 80, 100, t, t, 10L, false),
+                new DashboardService.SoldItem(2L, "B", 2L, "b", 1, 900, 1000, t, t, 40L, false),
+                new DashboardService.SoldItem(3L, "C", null, "c", 1, 50, 60, null, t, null, false));
         var m = DashboardService.class.getDeclaredMethod("totals", List.class);
         m.setAccessible(true);
         var totals = (DashboardService.Totals) m.invoke(null, items);

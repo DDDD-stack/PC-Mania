@@ -35,7 +35,8 @@ public class DashboardService {
     }
 
     public record SoldItem(Long orderId, String orderNumber, Long productId, String title, int quantity,
-                           int unitCost, int unitPrice, LocalDateTime listedAt, LocalDateTime soldAt, Long daysToSell) {
+                           int unitCost, int unitPrice, LocalDateTime listedAt, LocalDateTime soldAt, Long daysToSell,
+                           boolean statusOnly) {
         public int getRevenue() { return unitPrice * quantity; }
         public int getProfit() { return (unitPrice - unitCost) * quantity; }
         public double getMarginPct() { return unitPrice == 0 ? 0 : 100.0 * (unitPrice - unitCost) / unitPrice; }
@@ -80,8 +81,13 @@ public class DashboardService {
                 LocalDateTime listedAt = p == null ? null : p.getListedAt();
                 Long days = listedAt == null ? null : Math.max(0, ChronoUnit.DAYS.between(listedAt, soldAt));
                 sold.add(new SoldItem(o.getId(), o.getOrderNumber(), p == null ? null : p.getId(), i.getTitleSnapshot(),
-                        i.getQuantity(), i.getCostLekSnapshot(), i.getPriceLekSnapshot(), listedAt, soldAt, days));
+                        i.getQuantity(), i.getCostLekSnapshot(), i.getPriceLekSnapshot(), listedAt, soldAt, days, false));
             }
+        }
+        for (Product p : products.findSoldWithoutDeliveredOrder()) {
+            Long days = p.getListedAt() == null ? null : Math.max(0, ChronoUnit.DAYS.between(p.getListedAt(), p.getSoldAt()));
+            sold.add(new SoldItem(null, null, p.getId(), p.getTitle(), Math.max(1, p.getQuantity()), p.getCostLek(),
+                    p.getPriceLek(), p.getListedAt(), p.getSoldAt(), days, true));
         }
         sold.sort(Comparator.comparing(SoldItem::soldAt).reversed());
 

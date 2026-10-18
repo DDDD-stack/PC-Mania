@@ -14,7 +14,7 @@ public class Fmt {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
-    private static String grouped(Number n) {
+    public static String grouped(Number n) {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
@@ -47,6 +47,17 @@ public class Fmt {
 
     public long daysSince(LocalDateTime t) {
         return t == null ? 0 : ChronoUnit.DAYS.between(t, LocalDateTime.now());
+    }
+
+    public static String thousands(int amount) {
+        if (Math.abs(amount) < 1000) return amount + " lekë";
+        double k = Math.round(amount / 100.0) / 10.0;
+        String n = k == Math.rint(k) ? String.valueOf((long) k) : String.valueOf(k).replace('.', ',');
+        return n + " mijë lekë";
+    }
+
+    public String savings(int amount) {
+        return "Kurseni " + thousands(amount);
     }
 
     public String warranty(Integer days) {

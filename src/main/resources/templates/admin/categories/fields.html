@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Fushat – ' + ${category.nameSq})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('categories')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        <a href="/admin/categories" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0 me-auto">Fushat: <span th:text="${category.nameSq}"></span></h1>
+        <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/spec-catalog(category=${category.catalogKey()})}"><i class="bi bi-journal-text"></i> Katalogu</a>
+    </div>
+    <p class="text-body-secondary small">
+        Këto fusha shfaqen te forma e produktit për këtë kategori. Vlerat ruhen sipas <strong>çelësit</strong>, prandaj çelësi nuk ndryshohet pasi krijohet.
+        <strong>Në kartë</strong>: shfaqet nën titull në listë. <strong>Filtër</strong>: krijon një filtër në faqen e kategorisë.
+        <th:block th:if="${category.prebuilt}"><br>Kjo është kategoria e PC-ve të gatshme: komponentët plotësohen te seksioni i veçantë i formës, këto fusha janë shtesë.</th:block>
+    </p>
+
+    <div class="field-row" th:each="f : ${fields}">
+        <form class="row g-2 align-items-end" th:action="@{/admin/categories/{c}/fields/{id}(c=${category.id}, id=${f.id})}" method="post">
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Çelësi</label>
+                <input class="form-control form-control-sm font-monospace" th:value="${f.fieldKey}" disabled>
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Emri (shqip) *</label>
+                <input class="form-control form-control-sm" name="labelSq" th:value="${f.labelSq}" required maxlength="100">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Name (English)</label>
+                <input class="form-control form-control-sm" name="labelEn" th:value="${f.labelEn}" maxlength="100">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Lloji</label>
+                <select class="form-select form-select-sm" name="dataType">
+                    <option th:each="t : ${types}" th:value="${t}" th:text="${t.label}" th:selected="${t == f.dataType}"></option>
+                </select>
+            </div>
+            <div class="col-4 col-md-1">
+                <label class="form-label small mb-0">Njësia</label>
+                <input class="form-control form-control-sm" name="unit" th:value="${f.unit}" maxlength="20" placeholder="GB">
+            </div>
+            <div class="col-4 col-md-1">
+                <label class="form-label small mb-0">Rendi</label>
+                <input class="form-control form-control-sm" type="number" name="sortOrder" th:value="${f.sortOrder}">
+            </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label small mb-0">Vlerat e listës</label>
+                <input class="form-control form-control-sm" name="enumOptions" th:value="${#strings.listJoin(f.options(), ', ')}" placeholder="DDR4, DDR5">
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-3 align-items-center">
+                <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" name="required" value="true" th:id="'req-' + ${f.id}" th:checked="${f.required}">
+                    <label class="form-check-label small" th:for="'req-' + ${f.id}">E detyrueshme</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" name="showInListing" value="true" th:id="'lst-' + ${f.id}" th:checked="${f.showInListing}">
+                    <label class="form-check-label small" th:for="'lst-' + ${f.id}">Në kartë</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" name="showInFilters" value="true" th:id="'flt-' + ${f.id}" th:checked="${f.showInFilters}">
+                    <label class="form-check-label small" th:for="'flt-' + ${f.id}">Filtër</label>
+                </div>
+                <button class="btn btn-sm btn-primary ms-auto" type="submit">Ruaj</button>
+                <button class="btn btn-sm btn-outline-danger" type="submit" th:formaction="@{/admin/categories/{c}/fields/{id}/delete(c=${category.id}, id=${f.id})}"
+                        onclick="return confirm('Të hiqet kjo fushë? Vlerat te produktet mbeten si specifikime të lira.')"><i class="bi bi-trash"></i></button>
+            </div>
+        </form>
+    </div>
+    <p th:if="${fields.empty}" class="text-body-secondary">Kjo kategori nuk ka ende fusha. Produktet e saj plotësohen me rreshta të lirë derisa të shtoni fusha këtu.</p>
+
+    <div class="card mt-3">
+        <div class="card-header"><strong>Shto fushë</strong></div>
+        <form class="card-body row g-2 align-items-end" th:action="@{/admin/categories/{c}/fields(c=${category.id})}" method="post">
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Çelësi *</label>
+                <input class="form-control form-control-sm font-monospace" name="fieldKey" required maxlength="60" pattern="[a-z][a-z0-9_]*" placeholder="p.sh. vram_gb">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Emri (shqip) *</label>
+                <input class="form-control form-control-sm" name="labelSq" required maxlength="100" placeholder="p.sh. Memoria">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Name (English)</label>
+                <input class="form-control form-control-sm" name="labelEn" maxlength="100">
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-0">Lloji</label>
+                <select class="form-select form-select-sm" name="dataType">
+                    <option th:each="t : ${types}" th:value="${t}" th:text="${t.label}"></option>
+                </select>
+            </div>
+            <div class="col-4 col-md-1">
+                <label class="form-label small mb-0">Njësia</label>
+                <input class="form-control form-control-sm" name="unit" maxlength="20" placeholder="GB">
+            </div>
+            <div class="col-8 col-md-3">
+                <label class="form-label small mb-0">Vlerat e listës <span class="text-body-secondary">(për "Listë zgjedhjesh")</span></label>
+                <input class="form-control form-control-sm" name="enumOptions" placeholder="DDR4, DDR5">
+            </div>
+            <div class="col-12 d-flex flex-wrap gap-3 align-items-center">
+                <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" name="required" value="true" id="new-req">
+                    <label class="form-check-label small" for="new-req">E detyrueshme</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" name="showInListing" value="true" id="new-lst">
+                    <label class="form-check-label small" for="new-lst">Në kartë</label>
+                </div>
+                <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="checkbox" name="showInFilters" value="true" id="new-flt">
+                    <label class="form-check-label small" for="new-flt">Filtër</label>
+                </div>
+                <button class="btn btn-sm btn-primary ms-auto" type="submit"><i class="bi bi-plus-lg"></i> Shto</button>
+            </div>
+        </form>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

@@ -16,9 +16,11 @@ services:
     healthCheckPath: /healthz
     envVars:
       # --- required -------------------------------------------------------
-      # The public https address Render gives the service. Canonical links, the sitemap,
-      # Facebook preview images and the photo URLs the phone app loads all come from this.
-      - key: BASE_URL
+      # The public https address of the site, e.g. https://pcmania.al once the domain is bought
+      # (until then the onrender.com address). Canonical links, the sitemap, Open Graph preview
+      # cards and the photo URLs the phone app loads are all built from this, never from the
+      # request's host. The older name BASE_URL is still read if this one is not set.
+      - key: APP_BASE_URL
         sync: false
       # Supabase Postgres. Use the *pooler* connection string from Supabase > Project Settings >
       # Database, Session mode - the direct database host is IPv6-only, the pooler answers on IPv4:
@@ -71,14 +73,23 @@ services:
         sync: false
       - key: CONTACT_EMAIL
         sync: false
+      # The shop's own Facebook page. Blank hides the Facebook links instead of pointing at facebook.com.
       - key: FACEBOOK_URL
         sync: false
       - key: COURIER_SHIPPING_LEK
         value: "500"
 
-      # --- optional: order notification e-mail ------------------------------
-      # Without MAIL_HOST new orders are only written to the log.
-      - key: NOTIFY_EMAIL
+      # --- optional: admin notifications --------------------------------------
+      # New orders, PC build requests, chat leads, wish-list and trade-in requests are sent to every
+      # notifier that is configured. With none of them set they are only written to the log.
+      # Telegram: create a bot with @BotFather, send it a message, then read the chat id from
+      # https://api.telegram.org/bot<TOKEN>/getUpdates.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      # E-mail: needs ADMIN_EMAIL plus the MAIL_* SMTP settings (NOTIFY_EMAIL is the older name).
+      - key: ADMIN_EMAIL
         sync: false
       - key: MAIL_HOST
         sync: false

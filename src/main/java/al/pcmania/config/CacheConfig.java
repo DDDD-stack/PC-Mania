@@ -20,9 +20,13 @@ public class CacheConfig {
 
     public static final String GPU_CATALOG = "gpuCatalog";
 
+    public static final String FIELD_TEMPLATES = "fieldTemplates";
+
+    public static final String SPEC_CATALOG = "specCatalog";
+
     @Bean
     CacheManager cacheManager() {
-        CaffeineCacheManager caffeine = new CaffeineCacheManager(CATEGORIES, UPCOMING_COUNTS, GPU_CATALOG);
+        CaffeineCacheManager caffeine = new CaffeineCacheManager(CATEGORIES, UPCOMING_COUNTS, GPU_CATALOG, FIELD_TEMPLATES, SPEC_CATALOG);
         caffeine.setCaffeine(Caffeine.newBuilder().expireAfterWrite(Duration.ofMinutes(10)).maximumSize(100));
 
         return new TransactionAwareCacheManagerProxy(caffeine);

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Katalogu')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('spec-catalog')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        <h1 class="h4 mb-0 me-auto">Katalogu i specifikimeve <small class="text-body-secondary" th:text="${rows.size()}"></small></h1>
+        <a class="btn btn-primary" th:href="@{/admin/spec-catalog/new(category=${category})}"><i class="bi bi-plus-lg"></i> Rresht i ri</a>
+    </div>
+    <p class="text-body-secondary small">
+        Modele të njohura që plotësojnë fushat e produktit kur shkruani titullin. Një kategori pa rreshta këtu funksionon njësoj, thjesht plotësohet me dorë.
+        Rreshtat GPU vijnë nga <a href="/admin/gpu-catalog">Katalogu GPU</a> (që përdor edhe asistenti) dhe ndryshohen atje.
+        Mënyra më e shpejtë për të shtuar të tjerë: hapni një produkt të plotësuar dhe shtypni <em>Ruaje në katalog</em>.
+    </p>
+
+    <div class="d-flex flex-wrap gap-1 mb-3">
+        <a class="btn btn-sm" th:classappend="${category == null} ? 'btn-dark' : 'btn-outline-secondary'" href="/admin/spec-catalog">Të gjitha</a>
+        <a th:each="k : ${kinds}" class="btn btn-sm" th:classappend="${k.key == category} ? 'btn-dark' : 'btn-outline-secondary'"
+           th:href="@{/admin/spec-catalog(category=${k.key})}">
+            <span th:text="${k.label}"></span> <span class="badge text-bg-light" th:text="${counts.getOrDefault(k.key, 0)}"></span>
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle bg-white">
+            <thead class="table-light"><tr><th>Modeli</th><th>Kategoria</th><th>Vlera</th><th>Burimi</th></tr></thead>
+            <tbody>
+            <tr th:each="e : ${rows}">
+                <td><a class="fw-semibold text-decoration-none" th:href="@{/admin/spec-catalog/{id}(id=${e.id})}" th:text="${e.name}"></a>
+                    <div class="small text-body-secondary" th:if="${e.aliases}" th:text="${e.aliases}"></div></td>
+                <td class="small font-monospace" th:text="${e.categorySlug}"></td>
+                <td class="small" th:text="${e.specJson.size()}"></td>
+                <td>
+                    <span th:if="${e.gpuCatalogId}" class="badge text-bg-secondary">Katalogu GPU</span>
+                    <span th:if="${e.verified}" class="badge text-bg-success">i verifikuar</span>
+                    <span th:unless="${e.verified}" class="badge text-bg-warning">pa verifikuar</span>
+                </td>
+            </tr>
+            <tr th:if="${rows.empty}"><td colspan="4" class="text-center text-body-secondary py-4">Ende nuk ka rreshta në këtë kategori.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

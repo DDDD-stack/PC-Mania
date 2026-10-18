@@ -14,8 +14,10 @@
             <dd class="col-sm-9"><a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a></dd>
             <dt class="col-sm-3">Email</dt>
             <dd class="col-sm-9"><a th:href="'mailto:' + ${site.contactEmail}" th:text="${site.contactEmail}"></a></dd>
+            <th:block th:if="${!#strings.isEmpty(site.facebookUrl)}">
             <dt class="col-sm-3">Facebook</dt>
             <dd class="col-sm-9"><a th:href="${site.facebookUrl}" target="_blank" rel="noopener">Faqja jonë në Facebook</a></dd>
+            </th:block>
             <dt class="col-sm-3">Vendndodhja</dt>
             <dd class="col-sm-9">Tiranë. Marrja e produkteve bëhet me takim paraprak.</dd>
         </dl>

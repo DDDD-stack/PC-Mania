@@ -2,8 +2,10 @@ package al.pcmania.web.admin;
 
 import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.ProductStatus;
+import al.pcmania.domain.PrebuiltSpec;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -59,6 +61,77 @@ public class ProductForm {
     private Long gpuModelId;
     private List<String> specKeys = new ArrayList<>();
     private List<String> specValues = new ArrayList<>();
+
+    @Valid
+    private PrebuiltForm prebuilt = new PrebuiltForm();
+
+    @Data
+    public static class PrebuiltForm {
+        @Size(max = 120)
+        private String cpuName;
+        @Min(1) @Max(256)
+        private Integer cpuCores;
+        @Min(1) @Max(512)
+        private Integer cpuThreads;
+        private Long gpuCatalogId;
+        private String gpuCatalogName;
+        @Size(max = 120)
+        private String gpuNameOverride;
+        @Min(1) @Max(1024)
+        private Integer ramGb;
+        @Min(1) @Max(20000)
+        private Integer ramSpeedMhz;
+        @Size(max = 40)
+        private String ramConfig;
+        @Size(max = 120)
+        private String storagePrimary;
+        @Size(max = 120)
+        private String storageSecondary;
+        @Min(1) @Max(5000)
+        private Integer psuWatts;
+        @Size(max = 80)
+        private String psuBrand;
+        @Size(max = 120)
+        private String motherboardModel;
+        @Size(max = 120)
+        private String caseModel;
+        private boolean osInstalled;
+        @Size(max = 80)
+        private String osName;
+        @Min(0) @Max(150)
+        private Integer loadTempCpuC;
+        @Min(0) @Max(150)
+        private Integer loadTempGpuC;
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        private LocalDate testedAt;
+        private String notesSq;
+
+        public static PrebuiltForm from(PrebuiltSpec s) {
+            PrebuiltForm f = new PrebuiltForm();
+            f.cpuName = s.getCpuName();
+            f.cpuCores = s.getCpuCores();
+            f.cpuThreads = s.getCpuThreads();
+            f.gpuCatalogId = s.getGpuCatalog() == null ? null : s.getGpuCatalog().getId();
+            f.gpuCatalogName = s.getGpuCatalog() == null ? null : s.getGpuCatalog().getName();
+            f.gpuNameOverride = s.getGpuNameOverride();
+            f.ramGb = s.getRamGb();
+            f.ramSpeedMhz = s.getRamSpeedMhz();
+            f.ramConfig = s.getRamConfig();
+            f.storagePrimary = s.getStoragePrimary();
+            f.storageSecondary = s.getStorageSecondary();
+            f.psuWatts = s.getPsuWatts();
+            f.psuBrand = s.getPsuBrand();
+            f.motherboardModel = s.getMotherboardModel();
+            f.caseModel = s.getCaseModel();
+            f.osInstalled = s.isOsInstalled();
+            f.osName = s.getOsName();
+            f.loadTempCpuC = s.getLoadTempCpuC();
+            f.loadTempGpuC = s.getLoadTempGpuC();
+            f.testedAt = s.getTestedAt();
+            f.notesSq = s.getNotesSq();
+            return f;
+        }
+    }
 
     public static ProductForm from(Product p) {
         ProductForm f = new ProductForm();

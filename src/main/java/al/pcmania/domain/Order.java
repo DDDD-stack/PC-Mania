@@ -41,6 +41,10 @@ public class Order {
     private Long tradeRequestId;
 
     private int tradeCreditLek;
+
+    private Long comboId;
+
+    private String comboTitleSnapshot;
     private String adminNotes;
     private LocalDateTime createdAt;
 

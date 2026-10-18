@@ -2,15 +2,18 @@ package al.pcmania.service;
 
 import al.pcmania.config.AppProperties;
 import al.pcmania.domain.BuildRequest;
+import al.pcmania.domain.ChatLead;
 import al.pcmania.domain.Enums.TradeMediaType;
 import al.pcmania.domain.Order;
 import al.pcmania.domain.OrderItem;
 import al.pcmania.domain.TradeRequest;
 import al.pcmania.domain.WishRequest;
 import al.pcmania.repo.BuildRequestRepository;
+import al.pcmania.repo.ChatLeadRepository;
 import al.pcmania.repo.OrderRepository;
 import al.pcmania.repo.TradeRequestRepository;
 import al.pcmania.repo.WishRequestRepository;
+import al.pcmania.service.notify.AdminNotifications;
 import al.pcmania.web.Fmt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,8 @@ public class NotificationService {
 
     public record TradeRequested(Long tradeRequestId) {}
 
+    public record LeadCaptured(Long leadId) {}
+
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final ObjectProvider<JavaMailSender> mailSender;
@@ -45,6 +50,8 @@ public class NotificationService {
     private final BuildRequestRepository builds;
     private final WishRequestRepository wishes;
     private final TradeRequestRepository trades;
+    private final ChatLeadRepository leads;
+    private final AdminNotifications admin;
     private final AppProperties props;
 
     @Value("${spring.mail.host:}")
@@ -65,7 +72,7 @@ public class NotificationService {
         String body = """
                 Porosi e re në PCMania
 
-                Nr. porosisë: %s
+                Nr. porosisë: %s%s
                 Klienti: %s
                 Telefoni: %s
                 Email: %s
@@ -84,11 +91,13 @@ public class NotificationService {
                 %s
 
                 Hape në admin: %s/admin/orders/%d
-                """.formatted(o.getOrderNumber(), o.getCustomerName(), o.getCustomerPhone(), orDash(o.getCustomerEmail()),
+                """.formatted(o.getOrderNumber(),
+                o.getComboTitleSnapshot() == null ? "" : "\nPaketë: " + o.getComboTitleSnapshot(),
+                o.getCustomerName(), o.getCustomerPhone(), orDash(o.getCustomerEmail()),
                 o.getCity(), orDash(o.getAddress()), o.getDeliveryMethod().label, o.getPaymentMethod().label,
                 items, Fmt.lek(o.getSubtotalLek()), Fmt.lek(o.getShippingLek()), Fmt.lek(o.getTotalLek()),
                 orDash(o.getCustomerNotes()), props.base(), o.getId());
-        send(props.notifyEmail(), subject, body);
+        admin.notifyAll(subject, body);
 
         if (StringUtils.hasText(o.getCustomerEmail())) {
             send(o.getCustomerEmail(), "PCMania – porosia juaj " + o.getOrderNumber(), """
@@ -121,14 +130,15 @@ public class NotificationService {
                 Telefoni: %s
                 Buxheti: %s
                 Përdorimi: %s
+                Lojërat: %s
 
                 Shënime:
                 %s
 
                 Hape në admin: %s/admin/builds/%d
                 """.formatted(b.getCustomerName(), b.getCustomerPhone(), Fmt.lek(b.getBudgetLek()), b.getUseCase().label,
-                orDash(b.getNotes()), props.base(), b.getId());
-        send(props.notifyEmail(), subject, body);
+                orDash(b.getGames()), orDash(b.getNotes()), props.base(), b.getId());
+        admin.notifyAll(subject, body);
     }
 
     @Async
@@ -154,7 +164,7 @@ public class NotificationService {
                 """.formatted(w.getItem(), w.getMaxPriceLek() == null ? "-" : Fmt.lek(w.getMaxPriceLek()),
                 w.getCondition() == null ? "Nuk ka rëndësi" : w.getCondition().label, w.getCustomerName(),
                 w.getCustomerPhone(), orDash(w.getNotes()), props.base(), w.getId());
-        send(props.notifyEmail(), subject, body);
+        admin.notifyAll(subject, body);
     }
 
     @Async
@@ -184,7 +194,34 @@ public class NotificationService {
                 t.getItemType().label, t.getManufacturer(), t.getModel(), orDash(t.getExtraNotes()), proof,
                 t.getProductTitleSnapshot(), t.getProduct() == null ? "-" : Fmt.lek(t.getProduct().getPriceLek()),
                 props.base(), t.getId());
-        send(props.notifyEmail(), subject, body);
+        admin.notifyAll(subject, body);
+    }
+
+    @Async
+    @TransactionalEventListener
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void onLeadCaptured(LeadCaptured event) {
+        ChatLead l = leads.findById(event.leadId()).orElse(null);
+        if (l == null) return;
+        String subject = "Kontakt i ri nga " + l.getSource().label + " – " + l.getWantedItem();
+        String body = """
+                Një klient la kontaktin
+
+                Emri: %s
+                Telefoni: %s
+                Kërkon: %s
+                Buxheti: %s
+                Furnizuesi i tij: %s
+
+                Shënime:
+                %s
+
+                Hape në admin: %s/admin/chat/leads/%d
+                """.formatted(l.getName(), l.getPhone(), l.getWantedItem(),
+                l.getBudgetLek() == null ? "-" : Fmt.lek(l.getBudgetLek()),
+                l.getPsuWatts() == null ? "-" : l.getPsuWatts() + " W",
+                orDash(l.getNotes()), props.base(), l.getId());
+        admin.notifyAll(subject, body);
     }
 
     public boolean sendTradeQuote(TradeRequest t) {

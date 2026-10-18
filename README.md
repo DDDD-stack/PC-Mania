@@ -91,15 +91,17 @@ variable the hosted deployment uses).
 | `DB_USER` / `DB_PASSWORD` | `pcmania` / `pcmania` | DB credentials |
 | `DB_SCHEMA` | `pcmania` | Schema Flyway creates and uses. On Postgres this keeps the tables out of `public`, which is the schema Supabase exposes publicly |
 | `DB_POOL_SIZE` | `5` | Maximum JDBC connections |
-| `BASE_URL` | `http://localhost:8070` | **Public https URL.** Used for canonical links, Open Graph images and the sitemap — Facebook previews break if this is wrong |
+| `APP_BASE_URL` | `http://localhost:8070` | **Public https URL** (`app.base-url`; the older `BASE_URL` is still read). Canonical links, Open Graph cards, the sitemap and admin links in notifications are built from it, never from the request host — change it when the domain changes |
 | `UPLOAD_DIR` | `./uploads` | Only read at startup, to import photos written to disk by older versions. Uploads now go to the database |
 | `MOBILE_API_KEY` | *(blank)* | Key built into the phone app so it opens without signing in (32+ characters). Blank: the app must sign in |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / *(blank)* | Used only when no admin exists. Blank password → a random one is printed to the log once |
-| `NOTIFY_EMAIL` | *(blank)* | Operator address for new orders / build requests |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP. Without `MAIL_HOST` notifications are only written to the log |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | *(blank)* | Admin notifications by Telegram (new orders, PC build requests, chat leads, wishes, trade-ins). On when both are set |
+| `ADMIN_EMAIL` | *(blank)* | Admin notifications by e-mail (the older `NOTIFY_EMAIL` is still read). On when this and `MAIL_HOST` are set |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP, for the admin e-mail and the customer's order confirmation. With no notifier configured, notifications are only written to the log |
+| `MAX_PART_COUNT` | `300` | Most form fields Tomcat accepts in one multipart request. The product form sends two per spec field; Spring Boot's default of 50 rejected it |
 | `WHATSAPP_NUMBER` | `355688343551` | International format, digits only |
 | `PHONE_DISPLAY` / `CONTACT_EMAIL` | `+355 68 83 43 551` / `drobi840@gmail.com` | Shown in header/footer/contact page and the store's structured data |
-| `FACEBOOK_URL` | `https://www.facebook.com/` | Shop's Facebook page |
+| `FACEBOOK_URL` | *(blank)* | Shop's Facebook page. Blank hides the Facebook links |
 | `COURIER_SHIPPING_LEK` | `500` | Courier fee (0 for products marked "Transport falas") |
 | `COOKIE_SECURE` | `false` | Set to `true` behind TLS so the admin session cookie is never sent in clear |
 | `CHAT_PROVIDER` | `gemini` | Who answers the chat bubble: `gemini` (free tier), `anthropic`, or `guided` (no model, the finder only). The guided finder also stands in whenever the chosen provider is unavailable or rate-limited |
@@ -119,7 +121,7 @@ variable the hosted deployment uses).
   `-DskipTests` to skip them).
 - Health check: `/healthz` answers `ok` without rendering a page or touching the database.
 - After deploying, paste a product URL into the [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) to confirm the preview (and to refresh Facebook's cache after changing photos or price).
-- Submit `BASE_URL/sitemap.xml` in Google Search Console.
+- Submit `APP_BASE_URL/sitemap.xml` in Google Search Console.
 
 ### Render
 
@@ -152,7 +154,7 @@ Render's health check should be `/healthz` (the blueprint sets it). A service cr
 the dashboard keeps whatever path it was given: `/` works too, but renders the home page on every
 poll.
 
-Set `BASE_URL` to the address Render assigns (`https://<name>.onrender.com`). It is what the
+Set `APP_BASE_URL` to the address Render assigns (`https://<name>.onrender.com`), and to the new domain once it is bought. It is what the
 sitemap, canonical links, Facebook previews **and the photo URLs the phone app loads** are built
 from, so the app shows no images until it is right. In the app's **Serveri** field type the host
 on its own (`pc-mania.onrender.com`) - anything that is not an IP address is treated as https.
@@ -210,9 +212,59 @@ SHIPPED → DELIVERED | CANCELLED
 
 Cancelling restores stock (RESERVED → ACTIVE). Delivering sets `deliveredAt` and marks the product `SOLD` once no other open order holds units of it.
 
-**Sales outside the site.** Items sold directly on Facebook can be recorded from the product edit page ("Shitje jashtë faqes"). This creates a `DELIVERED` order with the actual negotiated price, so the dashboard stays complete. Marking a product `SOLD` via the status field alone does **not** count as a sale in reports.
+**Availability.** `Product.status` is the availability field: `ACTIVE` (available), `RESERVED`, `SOLD`, plus `DRAFT`
+and `HIDDEN`, which keep a product off the site entirely. `SOLD` products leave category listings, search, the
+homepage and the sitemap, but their page still answers (old WhatsApp links keep working) with a "SHITUR" badge, no
+order button and similar products from the same category that are in stock. `RESERVED` products stay listed, after
+the available ones, with a "REZERVUAR" badge and no order button. The admin product list has a one-click
+Aktiv / Rezervuar / Shitur control on every row, because the same units are sold on Facebook Marketplace too, and
+it hides sold products unless "Shfaq edhe të shiturat" is on. Setting `SOLD` stamps `soldAt`.
 
-**Dashboard.** A sale is an order item in a `DELIVERED` order. Cost and price come from the order item snapshots; days-to-sell = product `listedAt` → order `deliveredAt`. Price bands use the unit sale price. Margin averages are revenue-weighted; days-to-sell averages are per unit.
+**Category field templates.** Which spec fields a category has lives in `category_field_template` (admin:
+Kategoritë › Fushat). The product form renders its spec inputs from the selected category's template, keeps values
+whose key exists in both when the category changes, validates them by type (`TEXT`, `INTEGER`, `DECIMAL`,
+`BOOLEAN`, `ENUM`) and stores them in `product_spec` under the field key. Labels and units are added on display
+("12 GB"). Fields marked "Në kartë" show under the title on product cards; fields marked "Filtër" become the
+category page's filters. "E detyrueshme" is enforced on any save that is not a draft. Keys that are not in the
+template are kept as free rows, so nothing entered before templates existed is lost.
+
+**Autofill catalogue.** Separate from the templates: `spec_catalog_entry` holds known models per catalogue key
+(`category.catalog_slug`: `gpu`, `cpu`, `ram`, ...) with their template values as JSON. Typing a title searches
+`GET /admin/api/spec-catalog/search?category=..&q=..` (fuzzy, 250 ms debounce, arrow keys), and picking a row
+fills only the empty fields, marked "nga katalogu". A category without entries simply shows its fields for manual
+entry. The GPU rows mirror `gpu_catalog`, which stays the assistant's source and is still edited in Katalogu GPU; the
+mirror is refreshed at startup and on every GPU edit, and picking one also links the product for the assistant. Other
+catalogues grow from the "Ruaje në katalog" button on a filled-in product (Admin › Katalogu). The old
+`/admin/api/gpu-catalog/search` now delegates to the generic search.
+
+**Prebuilt PCs.** The category with `catalog_slug = 'prebuilt'` ("PC të gatshëm", `/kategori/pc-te-gatshem`) adds a
+components section to the product form, stored in `prebuilt_spec`: CPU, GPU (from the catalogue, or a name), RAM,
+disks, PSU, motherboard, case, OS, measured load temperatures and test date, and the expected performance. The
+product page shows them as a table with a "Testuar" block, and the category filters by GPU model, RAM size and
+price band.
+
+**Combo deals.** A combo (`combo`, `combo_item`; Admin › Paketat) only references products: name, price and photos
+are read live. It is shown only while it is active, inside its dates and **every** member is `ACTIVE` with enough
+units; that is a condition in the query, not a stored flag, so a part sold on Facebook hides the combo at once. The
+admin list says why a combo is hidden ("I fshehur: … është SHITUR"). The original total and the saving are computed,
+and a combo priced at or above its parts is refused. Ordering a combo creates one order with a line per member,
+priced so the lines add up to the combo price, records the combo on the order and reserves the members (each is
+`RESERVED` once its last unit is taken, as with a single-product order). The homepage shows up to four combos
+between the hero and the categories, and nothing at all when none are visible.
+
+**Admin notifications.** `AdminNotifier` has two implementations, `TelegramNotifier` and `EmailNotifier`, each on when
+its variables are set; every enabled one gets each message. They run after the transaction commits, on another
+thread, and a failure is logged and never reaches the customer's request. Messages carry the admin link, built
+from `APP_BASE_URL`, and never cost or margin.
+
+**Product photos.** Photos are stored in the `stored_file` table of the Supabase Postgres database (see *No persistent
+filesystem* above), not on the container's disk, so deploys cannot lose them and no Supabase Storage key is needed.
+Watch the database size on the Supabase free plan (500 MB): each photo is stored in three sizes, roughly 0.3–0.5 MB
+together.
+
+**Sales outside the site.** Items sold directly on Facebook can be recorded from the product edit page ("Shitje jashtë faqes"). This creates a `DELIVERED` order with the actual negotiated price, so the dashboard stays complete. A product marked `SOLD` with the status control alone, with no delivered order behind it, now counts too: days-to-sell runs from `listedAt` to `soldAt`, and the revenue is the list price (shown as "statusi · çmimi i listës"). Record the sale for the real negotiated price.
+
+**Dashboard.** A sale is an order item in a `DELIVERED` order, or a product marked `SOLD` without one. Cost and price come from the order item snapshots; days-to-sell = product `listedAt` → order `deliveredAt`. Price bands use the unit sale price. Margin averages are revenue-weighted; days-to-sell averages are per unit.
 
 **Cost privacy.** Public controllers only pass `ProductCard` / `ProductDetail` view records, which have no cost field. `Product` entities are only used in admin templates.
 

@@ -6,8 +6,10 @@ import al.pcmania.domain.Enums.LeadSource;
 import al.pcmania.domain.Enums.LeadStatus;
 import al.pcmania.repo.ChatLeadRepository;
 import al.pcmania.repo.ChatSessionRepository;
+import al.pcmania.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -42,9 +44,11 @@ public class LeadService {
             sessions.findById(session.getId()).ifPresent(s -> s.setLeadCaptured(true));
         }
         log.info("Lead {} from {}: {}", lead.getId(), lead.getSource(), lead.getWantedItem());
+        events.publishEvent(new NotificationService.LeadCaptured(lead.getId()));
         return lead;
     }
 
     private final ChatLeadRepository leads;
     private final ChatSessionRepository sessions;
+    private final ApplicationEventPublisher events;
 }

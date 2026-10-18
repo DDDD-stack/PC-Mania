@@ -51,9 +51,16 @@
                 </div>
 
                 <div class="mb-3">
+                    <label class="form-label" for="games">Cilat lojëra do të luash? <span class="text-body-secondary small">(opsionale)</span></label>
+                    <input class="form-control" th:field="*{games}" th:errorclass="is-invalid" maxlength="300"
+                           placeholder="p.sh. Fortnite, CS2, GTA V, Warzone">
+                    <div class="invalid-feedback" th:errors="*{games}"></div>
+                </div>
+
+                <div class="mb-3">
                     <label class="form-label" for="notes">Shënime</label>
                     <textarea class="form-control" th:field="*{notes}" rows="3" maxlength="2000"
-                              placeholder="p.sh. lojërat që luan, monitori që ke, nëse do edhe monitor/tastierë, preferenca për ngjyrën…"></textarea>
+                              placeholder="p.sh. monitori që ke, nëse do edhe monitor/tastierë, preferenca për ngjyrën…"></textarea>
                 </div>
 
                 <div class="row g-2 mb-3">
