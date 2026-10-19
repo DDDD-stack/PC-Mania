@@ -5,13 +5,10 @@ import al.pcmania.domain.ComboItem;
 import al.pcmania.domain.Enums.FieldType;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.domain.Product;
-import al.pcmania.service.notify.AdminNotifications;
-import al.pcmania.service.notify.AdminNotifier;
 import al.pcmania.web.Fmt;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -88,26 +85,6 @@ class ReleaseUnitTests {
         assertEquals("4,6 GHz", clock.display("4.6"));
         assertEquals("Po", rgb.display("true"));
         assertEquals("12.345 orë", hours.display("12345"));
-    }
-
-    @Test
-    void oneFailingNotifierDoesNotStopTheOthers() {
-        List<String> delivered = new ArrayList<>();
-        AdminNotifier broken = notifier("Broken", true, (s, b) -> { throw new IllegalStateException("down"); });
-        AdminNotifier off = notifier("Off", false, (s, b) -> delivered.add("off"));
-        AdminNotifier ok = notifier("Ok", true, (s, b) -> delivered.add(s));
-        AdminNotifications all = new AdminNotifications(List.of(broken, off, ok));
-        assertEquals(1, all.notifyAll("Porosi e re", "trupi"));
-        assertEquals(List.of("Porosi e re"), delivered);
-        assertEquals(List.of("Broken", "Ok"), all.enabled());
-    }
-
-    private static AdminNotifier notifier(String name, boolean enabled, java.util.function.BiConsumer<String, String> send) {
-        return new AdminNotifier() {
-            public String name() { return name; }
-            public boolean isEnabled() { return enabled; }
-            public void notifyAdmin(String subject, String body) { send.accept(subject, body); }
-        };
     }
 
     private static Product product(String title, ProductStatus status, int qty) {

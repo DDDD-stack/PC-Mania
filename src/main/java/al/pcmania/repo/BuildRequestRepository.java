@@ -11,4 +11,7 @@ public interface BuildRequestRepository extends JpaRepository<BuildRequest, Long
     Page<BuildRequest> findByStatusOrderByCreatedAtDesc(BuildStatus status, Pageable pageable);
     Page<BuildRequest> findByStatusInOrderByCreatedAtDesc(java.util.Collection<BuildStatus> statuses, Pageable pageable);
     long countByStatus(BuildStatus status);
+
+    @org.springframework.data.jpa.repository.Query("select max(x.id) from BuildRequest x")
+    Long latestId();
 }

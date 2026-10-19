@@ -79,17 +79,10 @@ services:
       - key: COURIER_SHIPPING_LEK
         value: "500"
 
-      # --- optional: admin notifications --------------------------------------
-      # New orders, PC build requests, chat leads, wish-list and trade-in requests are sent to every
-      # notifier that is configured. With none of them set they are only written to the log.
-      # Telegram: create a bot with @BotFather, send it a message, then read the chat id from
-      # https://api.telegram.org/bot<TOKEN>/getUpdates.
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: TELEGRAM_CHAT_ID
-        sync: false
-      # E-mail: needs ADMIN_EMAIL plus the MAIL_* SMTP settings (NOTIFY_EMAIL is the older name).
-      - key: ADMIN_EMAIL
+      # --- optional: e-mail -------------------------------------------------
+      # Not used for the owner: new orders, PC build requests, chat leads, wishes and trade-ins reach
+      # the phone app instead (it polls /api/v1/summary). Without MAIL_HOST nothing is e-mailed.
+      - key: NOTIFY_EMAIL
         sync: false
       - key: MAIL_HOST
         sync: false

@@ -39,4 +39,7 @@ public interface TradeRequestRepository extends JpaRepository<TradeRequest, Long
             select t from TradeRequest t
             where t.mediaFilename is not null and t.closedAt is not null and t.closedAt < :cutoff""")
     List<TradeRequest> findMediaToDelete(@Param("cutoff") LocalDateTime cutoff);
+
+    @org.springframework.data.jpa.repository.Query("select max(x.id) from TradeRequest x")
+    Long latestId();
 }

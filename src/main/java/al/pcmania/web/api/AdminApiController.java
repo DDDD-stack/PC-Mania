@@ -55,6 +55,9 @@ public class AdminApiController {
     private final DashboardService dashboard;
     private final OrderRepository orders;
     private final BuildRequestRepository builds;
+    private final al.pcmania.repo.ChatLeadRepository leads;
+    private final al.pcmania.repo.WishRequestRepository wishes;
+    private final al.pcmania.repo.TradeRequestRepository trades;
     private final BuildRequestService buildService;
     private final OrderItemRepository orderItems;
     private final OrderService orderService;
@@ -97,7 +100,8 @@ public class AdminApiController {
                 d.allTime().profit(), d.allTime().marginPct(), d.allTime().avgDaysToSell(),
                 d.stockUnits(), d.stockCost(), d.reservedUnits(),
                 activeProducts, slow, d.fastestBand() == null ? null : d.fastestBand().label(),
-                orders.findTopByOrderByIdDesc().map(Order::getId).orElse(null));
+                orders.findTopByOrderByIdDesc().map(Order::getId).orElse(null),
+                builds.latestId(), leads.latestId(), wishes.latestId(), trades.latestId());
     }
 
     @GetMapping("/orders")

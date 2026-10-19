@@ -38,7 +38,7 @@ public final class ApiDtos {
             long profitAllTime, Double marginPct, Double avgDaysToSell,
             int stockUnits, long stockCost, int reservedUnits,
             long activeProducts, long slowProducts, String fastestBand,
-            Long latestOrderId) {}
+            Long latestOrderId, Long latestBuildRequestId, Long latestLeadId, Long latestWishId, Long latestTradeId) {}
 
     public record OrderRow(Long id, String orderNumber, String status, String statusLabel, String customerName,
                            String customerPhone, String city, String delivery, int totalLek, int itemCount,

@@ -95,9 +95,7 @@ variable the hosted deployment uses).
 | `UPLOAD_DIR` | `./uploads` | Only read at startup, to import photos written to disk by older versions. Uploads now go to the database |
 | `MOBILE_API_KEY` | *(blank)* | Key built into the phone app so it opens without signing in (32+ characters). Blank: the app must sign in |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / *(blank)* | Used only when no admin exists. Blank password → a random one is printed to the log once |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | *(blank)* | Admin notifications by Telegram (new orders, PC build requests, chat leads, wishes, trade-ins). On when both are set |
-| `ADMIN_EMAIL` | *(blank)* | Admin notifications by e-mail (the older `NOTIFY_EMAIL` is still read). On when this and `MAIL_HOST` are set |
-| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP, for the admin e-mail and the customer's order confirmation. With no notifier configured, notifications are only written to the log |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP, only for the customer's order confirmation and trade-in quotes. Unset, nothing is e-mailed. The owner is notified on the phone app, not by e-mail |
 | `MAX_PART_COUNT` | `300` | Most form fields Tomcat accepts in one multipart request. The product form sends two per spec field; Spring Boot's default of 50 rejected it |
 | `WHATSAPP_NUMBER` | `355688343551` | International format, digits only |
 | `PHONE_DISPLAY` / `CONTACT_EMAIL` | `+355 68 83 43 551` / `drobi840@gmail.com` | Shown in header/footer/contact page and the store's structured data |
@@ -252,10 +250,12 @@ priced so the lines add up to the combo price, records the combo on the order an
 `RESERVED` once its last unit is taken, as with a single-product order). The homepage shows up to four combos
 between the hero and the categories, and nothing at all when none are visible.
 
-**Admin notifications.** `AdminNotifier` has two implementations, `TelegramNotifier` and `EmailNotifier`, each on when
-its variables are set; every enabled one gets each message. They run after the transaction commits, on another
-thread, and a failure is logged and never reaches the customer's request. Messages carry the admin link, built
-from `APP_BASE_URL`, and never cost or margin.
+**Owner notifications.** The phone app notifies the owner. `/api/v1/summary` carries the newest id of each kind
+of request (`latestOrderId`, `latestBuildRequestId`, `latestLeadId`, `latestWishId`, `latestTradeId`); the app
+compares them with the last ids it saw and raises a notification for each new one. It checks every 30 seconds while
+open and about every 35 minutes in the background, except 01:00–06:00, when the site sleeps on the free plan. The
+server also writes each event to the log after the transaction commits, with the admin link built from
+`APP_BASE_URL` and never cost or margin. E-mail to the owner is not sent.
 
 **Product photos.** Photos are stored in the `stored_file` table of the Supabase Postgres database (see *No persistent
 filesystem* above), not on the container's disk, so deploys cannot lose them and no Supabase Storage key is needed.

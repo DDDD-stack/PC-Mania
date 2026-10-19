@@ -13,7 +13,6 @@ import al.pcmania.repo.ChatLeadRepository;
 import al.pcmania.repo.OrderRepository;
 import al.pcmania.repo.TradeRequestRepository;
 import al.pcmania.repo.WishRequestRepository;
-import al.pcmania.service.notify.AdminNotifications;
 import al.pcmania.web.Fmt;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +50,6 @@ public class NotificationService {
     private final WishRequestRepository wishes;
     private final TradeRequestRepository trades;
     private final ChatLeadRepository leads;
-    private final AdminNotifications admin;
     private final AppProperties props;
 
     @Value("${spring.mail.host:}")
@@ -97,7 +95,7 @@ public class NotificationService {
                 o.getCity(), orDash(o.getAddress()), o.getDeliveryMethod().label, o.getPaymentMethod().label,
                 items, Fmt.lek(o.getSubtotalLek()), Fmt.lek(o.getShippingLek()), Fmt.lek(o.getTotalLek()),
                 orDash(o.getCustomerNotes()), props.base(), o.getId());
-        admin.notifyAll(subject, body);
+        forAdmin(subject, body);
 
         if (StringUtils.hasText(o.getCustomerEmail())) {
             send(o.getCustomerEmail(), "PCMania – porosia juaj " + o.getOrderNumber(), """
@@ -138,7 +136,7 @@ public class NotificationService {
                 Hape në admin: %s/admin/builds/%d
                 """.formatted(b.getCustomerName(), b.getCustomerPhone(), Fmt.lek(b.getBudgetLek()), b.getUseCase().label,
                 orDash(b.getGames()), orDash(b.getNotes()), props.base(), b.getId());
-        admin.notifyAll(subject, body);
+        forAdmin(subject, body);
     }
 
     @Async
@@ -164,7 +162,7 @@ public class NotificationService {
                 """.formatted(w.getItem(), w.getMaxPriceLek() == null ? "-" : Fmt.lek(w.getMaxPriceLek()),
                 w.getCondition() == null ? "Nuk ka rëndësi" : w.getCondition().label, w.getCustomerName(),
                 w.getCustomerPhone(), orDash(w.getNotes()), props.base(), w.getId());
-        admin.notifyAll(subject, body);
+        forAdmin(subject, body);
     }
 
     @Async
@@ -194,7 +192,7 @@ public class NotificationService {
                 t.getItemType().label, t.getManufacturer(), t.getModel(), orDash(t.getExtraNotes()), proof,
                 t.getProductTitleSnapshot(), t.getProduct() == null ? "-" : Fmt.lek(t.getProduct().getPriceLek()),
                 props.base(), t.getId());
-        admin.notifyAll(subject, body);
+        forAdmin(subject, body);
     }
 
     @Async
@@ -221,7 +219,7 @@ public class NotificationService {
                 l.getBudgetLek() == null ? "-" : Fmt.lek(l.getBudgetLek()),
                 l.getPsuWatts() == null ? "-" : l.getPsuWatts() + " W",
                 orDash(l.getNotes()), props.base(), l.getId());
-        admin.notifyAll(subject, body);
+        forAdmin(subject, body);
     }
 
     public boolean sendTradeQuote(TradeRequest t) {
@@ -250,6 +248,10 @@ public class NotificationService {
                 StringUtils.hasText(t.getQuoteNotes()) ? "\nShënim: " + t.getQuoteNotes() + "\n" : "",
                 DATE.format(t.getQuoteExpiresAt()), props.phoneDisplay(), t.getRequestNumber(), props.base());
         return send(t.getCustomerEmail(), "PCMania – oferta për këmbimin " + t.getRequestNumber(), body);
+    }
+
+    private static void forAdmin(String subject, String body) {
+        log.info("{}\n{}", subject, body);
     }
 
     private boolean send(String to, String subject, String body) {

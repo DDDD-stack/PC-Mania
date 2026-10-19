@@ -15,4 +15,7 @@ public interface ChatLeadRepository extends JpaRepository<ChatLead, Long> {
     List<ChatLead> findBySessionIdOrderByCreatedAtAsc(Long sessionId);
 
     List<ChatLead> findAllByOrderByCreatedAtDesc();
+
+    @org.springframework.data.jpa.repository.Query("select max(x.id) from ChatLead x")
+    Long latestId();
 }

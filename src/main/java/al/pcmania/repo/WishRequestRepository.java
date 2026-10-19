@@ -10,4 +10,7 @@ public interface WishRequestRepository extends JpaRepository<WishRequest, Long> 
     Page<WishRequest> findAllByOrderByCreatedAtDesc(Pageable pageable);
     Page<WishRequest> findByStatusOrderByCreatedAtDesc(WishStatus status, Pageable pageable);
     long countByStatus(WishStatus status);
+
+    @org.springframework.data.jpa.repository.Query("select max(x.id) from WishRequest x")
+    Long latestId();
 }

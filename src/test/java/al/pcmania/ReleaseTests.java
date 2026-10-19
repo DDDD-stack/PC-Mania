@@ -10,6 +10,8 @@ import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
 import al.pcmania.domain.SpecCatalogEntry;
 import al.pcmania.repo.BrandRepository;
+import al.pcmania.repo.BuildRequestRepository;
+import al.pcmania.repo.ChatLeadRepository;
 import al.pcmania.repo.ComboRepository;
 import al.pcmania.repo.GpuCatalogRepository;
 import al.pcmania.repo.OrderRepository;
@@ -17,7 +19,6 @@ import al.pcmania.repo.PrebuiltSpecRepository;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.repo.SpecCatalogRepository;
 import al.pcmania.service.OrderService;
-import al.pcmania.service.notify.AdminNotifier;
 import al.pcmania.web.site.CheckoutForm;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.junit.jupiter.api.AfterAll;
@@ -25,8 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -36,12 +35,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -64,22 +63,6 @@ class ReleaseTests {
         PG.close();
     }
 
-    record Sent(String subject, String body) {}
-
-    static final List<Sent> NOTIFIED = new CopyOnWriteArrayList<>();
-
-    @TestConfiguration
-    static class RecordingNotifier {
-        @Bean
-        AdminNotifier recordingNotifier() {
-            return new AdminNotifier() {
-                public String name() { return "Test"; }
-                public boolean isEnabled() { return true; }
-                public void notifyAdmin(String subject, String body) { NOTIFIED.add(new Sent(subject, body)); }
-            };
-        }
-    }
-
     @Autowired MockMvc mvc;
     @Autowired ProductRepository products;
     @Autowired BrandRepository brands;
@@ -90,6 +73,8 @@ class ReleaseTests {
     @Autowired GpuCatalogRepository gpuCatalog;
     @Autowired PrebuiltSpecRepository prebuilts;
     @Autowired TransactionTemplate tx;
+    @Autowired BuildRequestRepository builds;
+    @Autowired ChatLeadRepository leads;
 
     @Test
     void costNeverReachesAPublicResponse() throws Exception {
@@ -257,8 +242,6 @@ class ReleaseTests {
             x.getItems().add(new al.pcmania.domain.ComboItem(x, products.findById(c.getId()).orElseThrow(), 1));
             return combos.save(x);
         });
-        NOTIFIED.clear();
-
         mvc.perform(post("/porosit/paketa/" + combo.getSlug())
                         .param("customerName", "Test Klient").param("customerPhone", "069 123 4567").param("city", "Tiranë")
                         .param("deliveryMethod", "PICKUP_TIRANA").param("paymentMethod", "CASH_ON_DELIVERY").param("quantity", "1"))
@@ -276,30 +259,33 @@ class ReleaseTests {
         assertEquals(combo.getTitleSq(), o.getComboTitleSnapshot());
         for (Product p : List.of(a, b, c)) assertEquals(ProductStatus.RESERVED, products.findById(p.getId()).orElseThrow().getStatus());
 
-        Sent sent = waitForNotification(o.getOrderNumber());
-        assertTrue(sent.body().contains("Paketë: " + combo.getTitleSq()), sent.body());
-        assertTrue(sent.body().contains("https://shop.example/admin/orders/" + o.getId()), sent.body());
-        assertFalse(sent.body().contains(String.valueOf(SECRET_COST)) || sent.body().contains("987.654"), sent.body());
+        mvc.perform(get("/api/v1/summary").with(user("admin").roles("ADMIN")))
+                .andExpect(jsonPath("$.latestOrderId").value(o.getId()));
 
         assertThrows(OrderService.OutOfStockException.class, () -> orderService.placeCombo(combo.getSlug(), checkout()));
     }
 
     @Test
-    void buildRequestsAndLeadsNotifyTheAdmin() throws Exception {
-        NOTIFIED.clear();
+    void newRequestsShowUpForThePhoneApp() throws Exception {
         mvc.perform(post("/pc-me-porosi").param("customerName", "Ardit Test").param("customerPhone", "069 765 4321")
                         .param("budgetLek", "120000").param("useCase", "GAMING_1080P").param("games", "CS2, Fortnite"))
                 .andExpect(status().is3xxRedirection());
-        Sent build = waitForNotification("Kërkesë e re për PC");
-        assertTrue(build.body().contains("CS2, Fortnite"), build.body());
-        assertTrue(build.body().contains("120.000 Lekë"), build.body());
-        assertTrue(build.body().contains("069 765 4321"), build.body());
+        Long buildId = builds.latestId();
+        assertEquals("CS2, Fortnite", builds.findById(buildId).orElseThrow().getGames());
 
         mvc.perform(post("/api/lead").contentType("application/x-www-form-urlencoded")
                         .param("name", "Lead Test").param("phone", "069 111 2233").param("wantedItem", "RTX 3070").param("source", "FORM"))
                 .andExpect(status().isOk());
-        Sent lead = waitForNotification("RTX 3070");
-        assertTrue(lead.body().contains("Lead Test") && lead.body().contains("069 111 2233"), lead.body());
+        Long leadId = leads.latestId();
+        assertEquals("RTX 3070", leads.findById(leadId).orElseThrow().getWantedItem());
+
+        mvc.perform(get("/api/v1/summary").with(user("admin").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.latestBuildRequestId").value(buildId))
+                .andExpect(jsonPath("$.latestLeadId").value(leadId))
+                .andExpect(jsonPath("$.latestWishId").hasJsonPath())
+                .andExpect(jsonPath("$.latestTradeId").hasJsonPath());
+        mvc.perform(get("/api/v1/summary")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -394,14 +380,6 @@ class ReleaseTests {
     void categoriesWithNothingInThemStillRender() throws Exception {
         mvc.perform(get("/kategori/pc-te-gatshem")).andExpect(status().isOk());
         mvc.perform(get("/paketa/does-not-exist")).andExpect(status().isNotFound());
-    }
-
-    private Sent waitForNotification(String needle) throws InterruptedException {
-        for (int i = 0; i < 100; i++) {
-            for (Sent s : NOTIFIED) if (s.subject().contains(needle) || s.body().contains(needle)) return s;
-            Thread.sleep(50);
-        }
-        throw new AssertionError("no notification containing " + needle + " in " + NOTIFIED);
     }
 
     private Product product(String category, int price, ProductStatus status) {
