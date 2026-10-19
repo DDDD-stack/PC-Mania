@@ -1,6 +1,7 @@
 package al.pcmania.service.chat;
 
 import al.pcmania.domain.Brand;
+import al.pcmania.domain.Enums.FieldType;
 import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.GpuVendor;
 import al.pcmania.domain.Enums.ProductStatus;
@@ -8,6 +9,7 @@ import al.pcmania.domain.GpuCatalog;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
 import al.pcmania.repo.ProductRepository;
+import al.pcmania.service.FieldTemplateService;
 import al.pcmania.service.GpuCatalogService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +27,8 @@ class ChatToolsTest {
 
     private final ProductRepository products = mock(ProductRepository.class);
     private final GpuCatalogService catalog = mock(GpuCatalogService.class);
-    private final ChatTools tools = new ChatTools(products, catalog);
+    private final FieldTemplateService templates = mock(FieldTemplateService.class);
+    private final ChatTools tools = new ChatTools(products, catalog, templates);
 
     private final GpuCatalog gtx1660s = gpu("gtx-1660-super", "GeForce GTX 1660 Super", GpuVendor.NVIDIA, 6, 6, 450, 229, 200, 58, 37);
     private final GpuCatalog rx6600 = gpu("rx-6600", "Radeon RX 6600", GpuVendor.AMD, 8, 8, 450, 200, 240, 68, 45);
@@ -177,6 +180,38 @@ class ChatToolsTest {
         assertEquals("RTX 4070", sig.wantedItem());
         assertEquals(80_000, sig.budgetLek());
         assertThrows(IllegalArgumentException.class, () -> tools.requestContactForm(" ", null, null));
+    }
+
+    @Test
+    void partsAreSearchedApartFromCardsWithLabelledSpecs() {
+        FieldTemplateService.Field socket = new FieldTemplateService.Field(1L, "socket", "Soketi", "Socket", FieldType.TEXT, null, List.of(), false, true, true, 1);
+        FieldTemplateService.Field cores = new FieldTemplateService.Field(2L, "cores", "Bërthamat", "Cores", FieldType.INTEGER, null, List.of(), false, true, true, 2);
+        FieldTemplateService.Field cooler = new FieldTemplateService.Field(3L, "cooler_included", "Me ftohës", "Cooler included", FieldType.BOOLEAN, null, List.of(), false, false, false, 3);
+        when(templates.forCategory("procesore")).thenReturn(new FieldTemplateService.Template("procesore", "Procesorë", "cpu", false, List.of(socket, cores, cooler)));
+        when(templates.forCategory("ftohje")).thenReturn(new FieldTemplateService.Template("ftohje", "Ftohje", "cooling", false, List.of()));
+        when(templates.forCategory("karta-grafike")).thenReturn(new FieldTemplateService.Template("karta-grafike", "Karta grafike", "gpu", false, List.of()));
+
+        Product cpu = product(20L, "amd-ryzen-7-5700x", "AMD Ryzen 7 5700X", 18_900, 15_000, null);
+        cpu.setCategorySlug("procesore");
+        cpu.getSpecs().add(new ProductSpec(cpu, "socket", "AM4", 1));
+        cpu.getSpecs().add(new ProductSpec(cpu, "cores", "8", 2));
+        cpu.getSpecs().add(new ProductSpec(cpu, "cooler_included", "false", 3));
+        Product fan = product(21L, "ftohes-ak400", "Deepcool AK400", 5_900, 4_000, null);
+        fan.setCategorySlug("ftohje");
+        when(products.findInStock(ProductStatus.ACTIVE)).thenReturn(List.of(p3080, p6600, fan, cpu));
+
+        assertEquals(List.of("asus-rtx-3080", "sapphire-rx-6600"),
+                tools.searchStock(null, null, null, null, null, null).stream().map(ChatTools.StockItem::slug).toList());
+        assertTrue(tools.searchStock(null, 6_000, null, null, null, null).isEmpty(), "a cooler is not a graphics card");
+
+        assertEquals(List.of("ftohes-ak400", "amd-ryzen-7-5700x"),
+                tools.searchParts(null, null, null).stream().map(ChatTools.PartItem::slug).toList());
+        List<ChatTools.PartItem> cpus = tools.searchParts("cpu", null, 20_000);
+        assertEquals(1, cpus.size());
+        assertEquals("Procesorë", cpus.get(0).category());
+        assertEquals(List.of(new ChatTools.Spec("Soketi", "AM4"), new ChatTools.Spec("Bërthamat", "8"), new ChatTools.Spec("Me ftohës", "Jo")),
+                cpus.get(0).specs());
+        assertTrue(tools.searchParts("cpu", null, 10_000).isEmpty());
     }
 
     @Test

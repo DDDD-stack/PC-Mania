@@ -6,6 +6,7 @@ import al.pcmania.domain.GpuCatalog;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
 import al.pcmania.repo.ProductRepository;
+import al.pcmania.service.FieldTemplateService;
 import al.pcmania.service.GpuCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,8 +35,13 @@ public class ChatTools {
     private static final Pattern LENGTH_SPEC = Pattern.compile("(?i)^(gjat[eë]sia|length)$");
     private static final Pattern LEADING_NUMBER = Pattern.compile("(\\d+)");
 
+    private static final String GPU = "gpu";
+
+    public static final List<String> PART_CATEGORIES = List.of("cpu", "motherboard", "ram", "storage", "psu", "case", "cooling", "monitor", "prebuilt");
+
     private final ProductRepository products;
     private final GpuCatalogService catalog;
+    private final FieldTemplateService templates;
 
     public record StockItem(String slug, String title, int priceLek, String condition, Integer warrantyDays,
                             Integer vramGb, Integer tier, Integer psuMinWatts, String pcieConnectors, Integer lengthMm,
@@ -52,6 +58,11 @@ public class ChatTools {
     }
 
     public record StockSearch(List<StockItem> items, String note) {}
+
+    public record PartItem(String slug, String title, String category, int priceLek, String condition, Integer warrantyDays,
+                           int quantity, boolean transportIncluded, List<Spec> specs) {}
+
+    public record PartSearch(List<PartItem> items, String note) {}
 
     public record LeadFormSignal(String action, String wantedItem, Integer budgetLek, Integer psuWatts, String note) {}
 
@@ -79,12 +90,11 @@ public class ChatTools {
                               boolean inStock, int quantity, Integer warrantyDays, String shortDescription,
                               String testNotes, boolean isMiningFree, boolean transportIncluded, boolean tradeEligible,
                               List<Spec> specs, GpuInfo gpu, String url) {
-        static ProductInfo of(Product p) {
+        static ProductInfo of(Product p, List<Spec> specs) {
             return new ProductInfo(p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
                     p.getPriceLek(), p.getCondition().label, p.getStatus().name(), ChatTools.inStock(p), p.getQuantity(),
                     p.getWarrantyDays(), p.getShortDescription(), p.getTestNotes(), p.isMiningFree(),
-                    p.isTransportIncluded(), p.isTradeEligible(),
-                    p.getSpecs().stream().map(s -> new Spec(s.getSpecKey(), s.getSpecValue())).toList(),
+                    p.isTransportIncluded(), p.isTradeEligible(), specs,
                     GpuInfo.of(p.getGpuModel()), "/produkt/" + p.getSlug());
         }
     }
@@ -105,6 +115,7 @@ public class ChatTools {
         List<StockItem> out = new ArrayList<>();
         for (Product p : products.findInStock(ProductStatus.ACTIVE)) {
             GpuCatalog g = p.getGpuModel();
+            if (!isGpu(p)) continue;
             if (budgetMinLek != null && p.getPriceLek() < budgetMinLek) continue;
             if (budgetMaxLek != null && p.getPriceLek() > budgetMaxLek) continue;
             if (g != null) {
@@ -119,8 +130,23 @@ public class ChatTools {
         return out;
     }
 
+    public List<PartItem> searchParts(String category, Integer budgetMinLek, Integer budgetMaxLek) {
+        List<PartItem> out = new ArrayList<>();
+        for (Product p : products.findInStock(ProductStatus.ACTIVE)) {
+            if (isGpu(p)) continue;
+            FieldTemplateService.Template t = templates.forCategory(p.getCategorySlug());
+            if (category != null && (t == null || !category.equals(t.catalogKey()))) continue;
+            if (budgetMinLek != null && p.getPriceLek() < budgetMinLek) continue;
+            if (budgetMaxLek != null && p.getPriceLek() > budgetMaxLek) continue;
+            out.add(new PartItem(p.getSlug(), p.getTitle(), t == null ? p.getCategorySlug() : t.categoryName(), p.getPriceLek(),
+                    p.getCondition().label, p.getWarrantyDays(), p.getQuantity(), p.isTransportIncluded(), specs(p)));
+            if (out.size() >= MAX_RESULTS) break;
+        }
+        return out;
+    }
+
     public Optional<ProductInfo> getProduct(String slug) {
-        return product(slug).map(ProductInfo::of);
+        return product(slug).map(p -> ProductInfo.of(p, specs(p)));
     }
 
     public Optional<Comparison> compareProducts(String slugA, String slugB) {
@@ -133,7 +159,7 @@ public class ChatTools {
                 : gap > 0 ? b.get().getTitle() + " është afërsisht " + gap + "% më e shpejtë se " + a.get().getTitle() + "."
                 : gap < 0 ? a.get().getTitle() + " është afërsisht " + (-gap) + "% më e shpejtë se " + b.get().getTitle() + "."
                 : "Të dyja kartat janë afërsisht në të njëjtin nivel.";
-        return Optional.of(new Comparison(ProductInfo.of(a.get()), ProductInfo.of(b.get()), tierDelta, gap, note));
+        return Optional.of(new Comparison(ProductInfo.of(a.get(), specs(a.get())), ProductInfo.of(b.get(), specs(b.get())), tierDelta, gap, note));
     }
 
     public UpgradeAdvice recommendUpgrade(String currentCardQuery, Integer psuWatts, Integer budgetLek) {
@@ -217,6 +243,18 @@ public class ChatTools {
     private Optional<Product> product(String slug) {
         if (!StringUtils.hasText(slug)) return Optional.empty();
         return products.findWithGpuModelBySlug(slug.trim()).filter(p -> PUBLIC.contains(p.getStatus()));
+    }
+
+    private boolean isGpu(Product p) {
+        if (p.getGpuModel() != null) return true;
+        FieldTemplateService.Template t = templates.forCategory(p.getCategorySlug());
+        return t == null || t.catalogKey() == null || GPU.equals(t.catalogKey());
+    }
+
+    private List<Spec> specs(Product p) {
+        FieldTemplateService.Template t = templates.forCategory(p.getCategorySlug());
+        return p.getSpecs().stream().map(s -> t == null ? new Spec(s.getSpecKey(), s.getSpecValue())
+                : new Spec(t.label(s.getSpecKey()), t.display(s.getSpecKey(), s.getSpecValue()))).toList();
     }
 
     static boolean inStock(Product p) {

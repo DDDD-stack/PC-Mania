@@ -24,6 +24,7 @@ public class ToolRegistry {
     public static String statusOf(String toolName) {
         return switch (toolName) {
             case "searchStock" -> "Po shikoj stokun…";
+            case "searchParts" -> "Po shikoj pjesët në stok…";
             case "getProduct" -> "Po lexoj produktin…";
             case "compareProducts" -> "Po krahasoj…";
             case "recommendUpgrade" -> "Po kërkoj një hap përpara…";
@@ -75,6 +76,11 @@ public class ToolRegistry {
         search.put("maxPsuWatts", ParamSpec.integer("The customer's power supply in watts; cards needing more are left out"));
         search.put("vendor", ParamSpec.oneOf("Only this vendor", List.of("NVIDIA", "AMD", "INTEL")));
 
+        Map<String, ParamSpec> parts = new LinkedHashMap<>();
+        parts.put("category", ParamSpec.oneOf("Which kind of part; leave it out to see every part that is not a graphics card", ChatTools.PART_CATEGORIES));
+        parts.put("budgetMinLek", ParamSpec.integer("Lowest price the customer will consider, in Lekë"));
+        parts.put("budgetMaxLek", ParamSpec.integer("Highest price the customer will pay, in Lekë"));
+
         Map<String, ParamSpec> product = new LinkedHashMap<>();
         product.put("slug", ParamSpec.requiredString("The product slug from searchStock"));
 
@@ -110,6 +116,20 @@ public class ToolRegistry {
                             return new StockSearch(items, items.isEmpty()
                                     ? "Asnjë kartë në stok nuk përputhet me këto kritere."
                                     : withoutSpecs > 0 ? withoutSpecs + " nga këto nuk janë lidhur me katalogun, prandaj specifikat mungojnë. Mos i shpik: thuaj çmimin dhe gjendjen, dhe sugjero t'i shikojë te faqja e produktit." : null);
+                        }),
+                new ToolDef("searchParts",
+                        "Other parts in stock right now: processors (cpu), motherboards, RAM, storage, power supplies (psu), cases, "
+                                + "coolers (cooling), monitors and ready-built PCs (prebuilt). Cheapest first, at most 6. Returns slug, title, "
+                                + "category, priceLek, condition, warrantyDays, quantity and specs (label and value, e.g. Soketi: AM4). "
+                                + "Call it before saying anything about a part that is not a graphics card.",
+                        parts, in -> {
+                            String category = str(in, "category");
+                            if (category != null && !ChatTools.PART_CATEGORIES.contains(category.toLowerCase())) {
+                                return new Error("Kategori e panjohur: " + category + ". Përdor një nga " + ChatTools.PART_CATEGORIES + ".");
+                            }
+                            List<PartItem> items = tools.searchParts(category == null ? null : category.toLowerCase(),
+                                    intOf(in, "budgetMinLek"), intOf(in, "budgetMaxLek"));
+                            return new PartSearch(items, items.isEmpty() ? "Asnjë pjesë e këtij lloji në stok me këto kritere." : null);
                         }),
                 new ToolDef("getProduct",
                         "One product by slug, in full: price, condition, stock, warranty, specs, test notes and its catalogue data.",
@@ -159,6 +179,7 @@ public class ToolRegistry {
     static List<String> slugsOf(Object result) {
         List<String> out = new ArrayList<>();
         if (result instanceof StockSearch s) s.items().forEach(i -> out.add(i.slug()));
+        else if (result instanceof PartSearch s) s.items().forEach(i -> out.add(i.slug()));
         else if (result instanceof ProductInfo p) out.add(p.slug());
         else if (result instanceof Comparison c) {
             out.add(c.a().slug());

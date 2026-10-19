@@ -377,6 +377,23 @@ class ReleaseTests {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    void theNewPartsAreInTheCatalogueAndFillTheirTemplates() throws Exception {
+        SpecCatalogEntry cpu = specCatalog.findByCategorySlugOrderByNameAsc("cpu").stream()
+                .filter(x -> x.getName().equals("AMD Ryzen 7 5700X")).findFirst().orElseThrow();
+        assertTrue(cpu.isVerified());
+        assertEquals("AM4", cpu.getSpecJson().get("socket"));
+        SpecCatalogEntry board = specCatalog.findByCategorySlugOrderByNameAsc("motherboard").stream()
+                .filter(x -> x.getName().equals("Gigabyte A520M K V2")).findFirst().orElseThrow();
+        assertEquals("DDR4", board.getSpecJson().get("ram_type"));
+        assertEquals(2, specCatalog.findByCategorySlugOrderByNameAsc("cooling").stream()
+                .filter(x -> x.getName().startsWith("Deepcool")).count());
+        mvc.perform(get("/admin/api/spec-catalog/search").param("category", "motherboard").param("q", "a520m k v2"))
+                .andExpect(jsonPath("$[0].name").value("Gigabyte A520M K V2"));
+        mvc.perform(get("/admin/products/new")).andExpect(content().string(containsString("\"ram_type\"")));
+    }
+
+    @Test
     void categoriesWithNothingInThemStillRender() throws Exception {
         mvc.perform(get("/kategori/pc-te-gatshem")).andExpect(status().isOk());
         mvc.perform(get("/paketa/does-not-exist")).andExpect(status().isNotFound());
