@@ -118,6 +118,33 @@ class SeoTests {
     }
 
     @Test
+    void everyCategoryStartsWithAnIntroThatSurvivesTheSanitiserAndLinksToRealPages() throws Exception {
+        for (String slug : List.of("karta-grafike", "procesore", "pllaka-ame", "memorie-ram", "disqe",
+                "furnizues-energjie", "ftohje", "pc-te-gatshem")) {
+            Category c = show(slug);
+            String intro = c.getIntroHtml();
+            assertNotNull(intro, slug);
+            Document original = Jsoup.parseBodyFragment(intro);
+            Document cleaned = Jsoup.parseBodyFragment(al.pcmania.service.CategoryAdminService.sanitizeIntro(intro));
+            assertEquals(original.text(), cleaned.text(), slug);
+            assertEquals(original.select("a, li, strong, p").size(), cleaned.select("a, li, strong, p").size(), slug);
+            int words = original.text().split("\\s+").length;
+            assertTrue(words >= 50 && words <= 160, slug + " has " + words + " words");
+
+            Document page = page("/kategori/" + slug);
+            Element section = page.selectFirst("section.category-intro");
+            assertNotNull(section, slug);
+            assertEquals(original.text(), section.text(), slug);
+            for (Element a : section.select("a")) {
+                String href = a.attr("href");
+                assertTrue(href.startsWith("/"), slug + " links outside the site: " + href);
+                show(href.startsWith("/kategori/") ? href.substring("/kategori/".length()) : "karta-grafike");
+                mvc.perform(get(href)).andExpect(status().isOk());
+            }
+        }
+    }
+
+    @Test
     void categoriesWithoutTheirOwnTitleGetTheGeneratedOne() throws Exception {
         Document page = page("/kategori/karta-grafike");
         assertEquals("Karta grafike të Reja dhe të Përdorura në Tiranë | PCMania", page.title());
