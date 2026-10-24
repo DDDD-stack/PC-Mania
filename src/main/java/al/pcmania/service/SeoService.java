@@ -5,19 +5,22 @@ import al.pcmania.domain.Category;
 import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.web.Fmt;
 import al.pcmania.web.view.ComboView;
+import al.pcmania.web.view.ProductCard;
 import al.pcmania.web.view.ProductDetail;
 import al.pcmania.web.view.Seo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.jsoup.Jsoup;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -30,6 +33,9 @@ public class SeoService {
     private final AppProperties props;
     private final ImageStorage images;
     private final ObjectMapper json;
+
+    @Value("${app.price-range:}")
+    private String priceRange;
 
     public String abs(String path) {
         return props.base() + path;
@@ -48,10 +54,13 @@ public class SeoService {
         org.put("url", props.base() + "/");
         org.put("image", abs(DEFAULT_IMAGE));
         org.put("telephone", props.phoneDisplay());
-        org.put("email", props.contactEmail());
+        if (props.publicEmail() != null) org.put("email", props.publicEmail());
+        if (StringUtils.hasText(props.facebookUrl())) org.put("sameAs", List.of(props.facebookUrl()));
+        if (StringUtils.hasText(priceRange)) org.put("priceRange", priceRange);
         org.put("currenciesAccepted", "ALL");
         org.put("paymentAccepted", "Cash, Bank transfer");
         org.put("address", Map.of("@type", "PostalAddress", "addressLocality", "Tiranë", "addressCountry", "AL"));
+        org.put("areaServed", Map.of("@type", "Country", "name", "Albania"));
         String title = props.siteName() + " – Karta grafike dhe pjesë kompjuteri në Tiranë";
         return new Seo(title,
                 "Karta grafike dhe pjesë PC të reja e të përdorura, të testuara, me garanci. Pagesë në dorëzim, transport në gjithë Shqipërinë.",
@@ -59,11 +68,64 @@ public class SeoService {
                 toJson(org), false);
     }
 
-    public Seo category(Category c, int page) {
+    public Seo category(Category c, int page, int pageSize, List<ProductCard> shown) {
         String path = "/kategori/" + c.getSlug() + (page > 1 ? "?faqe=" + page : "");
-        return page(c.getNameSq() + (page > 1 ? " – faqja " + page : ""),
-                c.getNameSq() + " të reja dhe të përdorura në Tiranë. Çmime në Lekë, pagesë në dorëzim dhe transport në gjithë Shqipërinë.",
-                path);
+        String url = abs(path);
+        String title = categoryTitle(c) + (page > 1 ? " – faqja " + page : "");
+        String description = categoryDescription(c);
+
+        Map<String, Object> list = new LinkedHashMap<>();
+        list.put("@context", "https://schema.org");
+        list.put("@type", "ItemList");
+        list.put("@id", url + "#produktet");
+        list.put("numberOfItems", shown.size());
+        List<Map<String, Object>> elements = new ArrayList<>();
+        for (int i = 0; i < shown.size(); i++) {
+            ProductCard p = shown.get(i);
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("@type", "ListItem");
+            item.put("position", (page - 1) * pageSize + i + 1);
+            item.put("url", abs("/produkt/" + p.slug()));
+            item.put("name", p.title());
+            if (p.imageFilename() != null) item.put("image", abs(ImageStorage.url(ImageStorage.Size.full, p.imageFilename())));
+            elements.add(item);
+        }
+        list.put("itemListElement", elements);
+
+        Map<String, Object> collection = new LinkedHashMap<>();
+        collection.put("@context", "https://schema.org");
+        collection.put("@type", "CollectionPage");
+        collection.put("name", c.getNameSq());
+        collection.put("description", description);
+        collection.put("url", url);
+        collection.put("mainEntity", Map.of("@id", url + "#produktet"));
+
+        Map<String, Object> breadcrumbs = Map.of(
+                "@context", "https://schema.org",
+                "@type", "BreadcrumbList",
+                "itemListElement", List.of(
+                        crumb(1, "Kryefaqja", props.base() + "/"),
+                        crumb(2, c.getNameSq(), abs("/kategori/" + c.getSlug()))));
+
+        return new Seo(title, description, url, abs(DEFAULT_IMAGE), DEFAULT_IMAGE_W, DEFAULT_IMAGE_H, props.siteName(),
+                "website", null, toJson(List.of(collection, list, breadcrumbs)), false);
+    }
+
+    public String categoryTitle(Category c) {
+        if (StringUtils.hasText(c.getMetaTitle())) return c.getMetaTitle().trim();
+        String name = c.getNameSq().trim();
+        String suffix = " | " + props.siteName();
+        String full = name + " të Reja dhe të Përdorura në Tiranë" + suffix;
+        if (full.length() <= MetaText.TITLE_MAX) return full;
+        String used = name + " të Përdorura në Tiranë" + suffix;
+        if (used.length() <= MetaText.TITLE_MAX) return used;
+        return name + " të Përdorura në Tiranë";
+    }
+
+    public String categoryDescription(Category c) {
+        if (StringUtils.hasText(c.getMetaDescription())) return c.getMetaDescription().trim();
+        return MetaText.cap(c.getNameSq().trim() + " në " + props.siteName() + ", Tiranë: produkte të reja dhe të përdorura, "
+                + "të testuara dhe me garanci. Pagesë në dorëzim dhe transport në gjithë Shqipërinë.", MetaText.DESCRIPTION_MAX);
     }
 
     public Seo product(ProductDetail p, Category category) {
@@ -137,9 +199,11 @@ public class SeoService {
             h = dim == null ? null : dim[1];
         }
         String members = String.join(" + ", c.members().stream().map(m -> m.product().title()).toList());
-        String description = "Paketë: " + members + ". " + Fmt.lek(c.comboPriceLek()) + " në vend të "
-                + Fmt.lek(c.originalTotalLek()) + " – " + Fmt.thousands(c.savingsLek()).replace(" lekë", " lekë më pak") + ".";
-        if (description.length() > 200) description = description.substring(0, 197) + "…";
+        String description = MetaText.fit(List.of(
+                Fmt.lek(c.comboPriceLek()) + " në vend të " + Fmt.lek(c.originalTotalLek()) + " – "
+                        + Fmt.thousands(c.savingsLek()).replace(" lekë", " lekë më pak") + ".",
+                "Paketë: " + members + ".",
+                "Pagesë në dorëzim, dërgesë në gjithë Shqipërinë."), MetaText.DESCRIPTION_MAX);
         return new Seo("Ofertë: " + c.title() + " – " + Fmt.lek(c.comboPriceLek()) + " | " + props.siteName(), description,
                 url, image, w, h, c.title(), "product", c.visible() ? c.comboPriceLek() : null, null, false, c.title());
     }
@@ -155,14 +219,18 @@ public class SeoService {
                 + URLEncoder.encode(text, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
-    private static String description(ProductDetail p) {
-        String base = StringUtils.hasText(p.shortDescription()) ? p.shortDescription()
-                : StringUtils.hasText(p.fullDescription()) ? Jsoup.parse(p.fullDescription()).text() : p.title();
-        String prefix = (p.isSold() ? "E SHITUR · " : p.isReserved() ? "E REZERVUAR · " : "")
-                + (StringUtils.hasText(p.specLine()) ? p.specLine() + " · " : "")
-                + Fmt.lek(p.priceLek()) + " · " + p.condition().label + " · ";
-        String d = prefix + base;
-        return d.length() > 200 ? d.substring(0, 197) + "…" : d;
+    static String description(ProductDetail p) {
+        if (StringUtils.hasText(p.metaDescription())) return p.metaDescription().trim();
+        List<String> parts = new ArrayList<>();
+        String state = p.isSold() ? "E shitur: " : p.isReserved() ? "E rezervuar: " : "";
+        parts.add(state + p.title() + " (" + p.condition().label.toLowerCase(Locale.ROOT) + ") – " + Fmt.lek(p.priceLek()) + ".");
+        parts.add(p.transportIncluded() ? "Pagesë në dorëzim dhe transport falas në gjithë Shqipërinë."
+                : "Pagesë në dorëzim, dërgesë në gjithë Shqipërinë.");
+        String warranty = Fmt.warrantyLabel(p.warrantyDays());
+        if (warranty != null) parts.add(Character.toUpperCase(warranty.charAt(0)) + warranty.substring(1) + ".");
+        parts.add(StringUtils.hasText(p.shortDescription()) ? p.shortDescription() : p.fullDescription());
+        if (StringUtils.hasText(p.specLine())) parts.add("Specifikime: " + p.specLine() + ".");
+        return MetaText.fit(parts, MetaText.DESCRIPTION_MAX);
     }
 
     private static Map<String, Object> crumb(int pos, String name, String url) {
@@ -171,7 +239,6 @@ public class SeoService {
 
     private String toJson(Object o) {
         try {
-
             return json.writeValueAsString(o).replace("</", "<\\/");
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);

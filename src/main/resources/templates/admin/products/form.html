@@ -76,6 +76,13 @@
                         <textarea class="form-control" th:field="*{shortDescription}" rows="2" maxlength="500" data-prefillable></textarea>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Përshkrimi për Google <small class="text-body-secondary">(opsional, deri në 155 shkronja)</small></label>
+                        <textarea class="form-control" th:field="*{metaDescription}" th:errorclass="is-invalid" rows="2" maxlength="300" data-limit="155"
+                                  placeholder="Bosh: krijohet vetë nga titulli, çmimi, gjendja dhe përshkrimi i shkurtër."></textarea>
+                        <div class="invalid-feedback" th:errors="*{metaDescription}"></div>
+                        <div class="form-text">Shfaqet në Google, Facebook dhe WhatsApp poshtë titullit. Filloni me atë që i intereson blerësit, jo me specifikimet.</div>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Përshkrimi i plotë <small class="text-body-secondary">(HTML bazë: &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;b&gt;, &lt;a&gt;)</small></label>
                         <textarea class="form-control font-monospace small" th:field="*{fullDescription}" rows="6"></textarea>
                     </div>
@@ -288,7 +295,7 @@
                         <label class="form-label">Slug (URL)</label>
                         <input class="form-control form-control-sm font-monospace" th:field="*{slug}" th:errorclass="is-invalid" placeholder="gjenerohet nga titulli">
                         <div class="invalid-feedback" th:errors="*{slug}"></div>
-                        <div class="form-text" th:if="${product != null}">Mos e ndryshoni nëse linku është shpërndarë në Facebook.</div>
+                        <div class="form-text" th:if="${product != null}">Nëse e ndryshoni, adresa e vjetër çon automatikisht te e reja, që linqet e shpërndara dhe Google të mos e humbin.</div>
                     </div>
                 </div>
                 <div th:if="${product != null && product.quantity > 0}" class="card mb-3">

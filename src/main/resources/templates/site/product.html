@@ -41,7 +41,7 @@
             <div class="gallery-thumbs" th:if="${p.images.size() > 1}">
                 <button type="button" th:each="img, st : ${p.images}" data-bs-target="#gallery" th:attr="data-bs-slide-to=${st.index}, aria-label='Foto ' + ${st.count}"
                         th:classappend="${st.first} ? active">
-                    <img th:src="${@img.thumb(img)}" alt="" width="72" height="72" loading="lazy">
+                    <img th:src="${@img.thumb(img)}" th:alt="${p.title} + ' – foto ' + ${st.count} + ' (miniaturë)'" width="72" height="72" loading="lazy">
                 </button>
             </div>
         </div>

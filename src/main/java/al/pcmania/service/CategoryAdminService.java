@@ -6,6 +6,8 @@ import al.pcmania.domain.Enums.ProductStatus;
 import al.pcmania.repo.CategoryRepository;
 import al.pcmania.repo.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CategoryAdminService {
+
+    private static final Safelist INTRO_HTML = Safelist.none()
+            .addTags("p", "strong", "em", "ul", "ol", "li", "a")
+            .addAttributes("a", "href")
+            .addProtocols("a", "href", "http", "https", "mailto", "tel")
+            .preserveRelativeLinks(true);
 
     private final CategoryRepository categories;
     private final ProductRepository products;
@@ -54,6 +62,22 @@ public class CategoryAdminService {
         c.setNameSq(nameSq.trim());
         c.setIconClass(StringUtils.hasText(iconClass) ? iconClass.trim() : null);
         if (sortOrder != null) c.setSortOrder(sortOrder);
+    }
+
+    @CacheEvict(cacheNames = {CacheConfig.CATEGORIES, CacheConfig.FIELD_TEMPLATES}, allEntries = true)
+    @Transactional
+    public Category updateSeo(Long id, String metaTitle, String metaDescription, String introHtml) {
+        Category c = get(id);
+        c.setMetaTitle(StringUtils.hasText(metaTitle) ? metaTitle.trim() : null);
+        c.setMetaDescription(StringUtils.hasText(metaDescription) ? metaDescription.trim() : null);
+        c.setIntroHtml(sanitizeIntro(introHtml));
+        return c;
+    }
+
+    public static String sanitizeIntro(String html) {
+        if (!StringUtils.hasText(html)) return null;
+        String clean = Jsoup.clean(html, "http://intro.invalid", INTRO_HTML).trim();
+        return Jsoup.parse(clean).text().isBlank() ? null : clean;
     }
 
     @CacheEvict(cacheNames = {CacheConfig.CATEGORIES, CacheConfig.FIELD_TEMPLATES}, allEntries = true)

@@ -33,6 +33,7 @@ public class Product {
     private ProductStatus status = ProductStatus.DRAFT;
     private String shortDescription;
     private String fullDescription;
+    private String metaDescription;
     private Integer warrantyDays;
     private String testNotes;
     @Column(name = "is_mining_free")

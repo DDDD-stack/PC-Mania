@@ -21,7 +21,7 @@
                 <th class="text-center">Produkte</th>
                 <th class="text-center" style="width:110px">E dukshme</th>
                 <th class="text-center" style="width:110px">Pa stok</th>
-                <th style="width:230px"></th>
+                <th style="width:310px"></th>
             </tr>
             </thead>
             <tbody>
@@ -55,6 +55,7 @@
                 </td>
                 <td class="text-end text-nowrap">
                     <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/categories/{id}/fields(id=${c.id})}" title="Fushat e specifikimeve"><i class="bi bi-ui-checks"></i> Fushat</a>
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/categories/{id}/seo(id=${c.id})}" title="Titulli, përshkrimi dhe teksti për Google"><i class="bi bi-google"></i> Google</a>
                     <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
                             th:data-bs-target="'#edit-' + ${c.id}"><i class="bi bi-pencil"></i></button>
                     <form class="d-inline" th:action="@{/admin/categories/{id}/delete(id=${c.id})}" method="post"

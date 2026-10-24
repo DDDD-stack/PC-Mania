@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Google – ' + ${category.nameSq})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('categories')}"></nav>
+<main class="container-xl py-3">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        <a href="/admin/categories" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0 me-auto">Google: <span th:text="${category.nameSq}"></span></h1>
+        <a class="btn btn-sm btn-outline-secondary" th:href="@{/kategori/{s}(s=${category.slug})}" target="_blank"><i class="bi bi-eye"></i> Shiko faqen</a>
+    </div>
+    <p class="text-body-secondary small">
+        Titulli dhe përshkrimi janë ato që shfaq Google në rezultatet e kërkimit. Teksti hyrës shfaqet në faqen e kategorisë,
+        nën titull, dhe i jep Google-it diçka për të lexuar përveç listës së produkteve. Lërini bosh për të përdorur tekstin e gjeneruar.
+    </p>
+
+    <form class="card" th:action="@{/admin/categories/{id}/seo(id=${category.id})}" method="post">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label" for="metaTitle">Titulli në Google</label>
+                <input class="form-control" id="metaTitle" name="metaTitle" th:value="${category.metaTitle}" maxlength="120"
+                       th:attr="data-limit=${titleMax}" th:placeholder="${generatedTitle}">
+                <div class="form-text">Bosh: <span th:text="${generatedTitle}"></span></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="metaDescription">Përshkrimi në Google</label>
+                <textarea class="form-control" id="metaDescription" name="metaDescription" rows="3" maxlength="300"
+                          th:attr="data-limit=${descriptionMax}" th:placeholder="${generatedDescription}" th:text="${category.metaDescription}"></textarea>
+                <div class="form-text">Bosh: <span th:text="${generatedDescription}"></span></div>
+            </div>
+            <div>
+                <label class="form-label" for="introHtml">Teksti hyrës <small class="text-body-secondary">(HTML bazë: &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, &lt;a&gt;)</small></label>
+                <textarea class="form-control font-monospace small" id="introHtml" name="introHtml" rows="8" th:text="${category.introHtml}"
+                          placeholder="&lt;p&gt;Karta grafike të reja dhe të përdorura në Tiranë, të testuara nën ngarkesë para shitjes…&lt;/p&gt;"></textarea>
+                <div class="form-text">
+                    Dy-tre paragrafë të shkurtër mjaftojnë: çfarë shisni në këtë kategori, si i testoni, garancia, dërgesa,
+                    dhe çfarë t'i kërkojë blerësi (p.sh. sa W i duhen furnizuesit). Etiketat e tjera hiqen kur ruhet.
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-end">
+            <button class="btn btn-primary" type="submit">Ruaj</button>
+        </div>
+    </form>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

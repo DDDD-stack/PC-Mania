@@ -178,7 +178,7 @@ class PostgresIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"tel:+355688343551\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("+355 68 83 43 551")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("href=\"mailto:drobi840@gmail.com\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("mailto:"))))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("https://wa.me/355688343551?text=")));
     }
 

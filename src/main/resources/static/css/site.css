@@ -107,6 +107,9 @@ body { background: var(--bs-body-bg); -webkit-tap-highlight-color: transparent; 
 .spec-table th, .spec-table td { padding: .5rem .75rem; }
 .description { background: #fff; border: 1px solid #e5e7eb; border-radius: .75rem; padding: 1rem; overflow-wrap: anywhere; }
 .description > :last-child { margin-bottom: 0; }
+.category-intro { max-width: 72ch; color: var(--bs-secondary-color); overflow-wrap: anywhere; }
+.category-intro > :last-child { margin-bottom: 0; }
+.category-intro ul, .category-intro ol { padding-left: 1.25rem; }
 .buy-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; display: flex; align-items: center; gap: .5rem;
     background: #fff; border-top: 1px solid #e5e7eb; box-shadow: 0 -4px 16px rgba(15,23,42,.08);
     padding: .55rem .75rem calc(.55rem + env(safe-area-inset-bottom, 0px)); }

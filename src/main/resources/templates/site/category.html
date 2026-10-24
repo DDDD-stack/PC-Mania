@@ -9,12 +9,12 @@
         </ol>
     </nav>
 
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <h1 class="h3 fw-bold mb-0 me-auto">
-            <span th:text="${category.nameSq}"></span>
-            <small class="text-body-secondary fs-6 fw-normal" th:text="'(' + ${page.totalElements} + ')'"></small>
-        </h1>
+    <div class="d-flex flex-wrap align-items-baseline gap-2 mb-3">
+        <h1 class="h3 fw-bold mb-0" th:text="${category.nameSq}"></h1>
+        <span class="text-body-secondary fs-6 me-auto" th:text="'(' + ${page.totalElements} + ')'"></span>
     </div>
+
+    <section class="category-intro mb-3" th:if="${intro}" th:utext="${intro}"></section>
 
     <div th:if="${category.outOfStock}" class="alert alert-warning d-flex flex-wrap align-items-center gap-2" role="alert">
         <span><i class="bi bi-info-circle me-1"></i>Kjo kategori është aktualisht pa stok. Na shkruani dhe ju njoftojmë sapo të vijnë produkte të reja.</span>

@@ -98,8 +98,10 @@ variable the hosted deployment uses).
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_FROM` | | SMTP, only for the customer's order confirmation and trade-in quotes. Unset, nothing is e-mailed. The owner is notified on the phone app, not by e-mail |
 | `MAX_PART_COUNT` | `300` | Most form fields Tomcat accepts in one multipart request. The product form sends two per spec field; Spring Boot's default of 50 rejected it |
 | `WHATSAPP_NUMBER` | `355688343551` | International format, digits only |
-| `PHONE_DISPLAY` / `CONTACT_EMAIL` | `+355 68 83 43 551` / `drobi840@gmail.com` | Shown in header/footer/contact page and the store's structured data |
-| `FACEBOOK_URL` | *(blank)* | Shop's Facebook page. Blank hides the Facebook links |
+| `PHONE_DISPLAY` | `+355 68 83 43 551` | Shown in header/footer/contact page and the store's structured data |
+| `CONTACT_EMAIL` | *(blank)* | Public e-mail. Shown (footer, contact page, `Store` structured data) only when it is on the site's own domain, e.g. `info@pcmania.al` with `APP_BASE_URL=https://pcmania.al`; a Gmail or other personal address is never published |
+| `FACEBOOK_URL` | *(blank)* | Shop's Facebook page. Blank hides the Facebook links; set, it is also the `sameAs` of the `Store` structured data |
+| `PRICE_RANGE` | `5000-80000 ALL` | `priceRange` of the `Store` structured data |
 | `COURIER_SHIPPING_LEK` | `500` | Courier fee (0 for products marked "Transport falas") |
 | `COOKIE_SECURE` | `false` | Set to `true` behind TLS so the admin session cookie is never sent in clear |
 | `CHAT_PROVIDER` | `gemini` | Who answers the chat bubble: `gemini` (free tier), `anthropic`, or `guided` (no model, the finder only). The guided finder also stands in whenever the chosen provider is unavailable or rate-limited |

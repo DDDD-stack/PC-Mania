@@ -10,7 +10,7 @@
     <section class="pm-chat" id="pmChat" role="dialog" aria-modal="false" aria-labelledby="pmChatTitle" hidden
              th:data-whatsapp="${whatsappGeneral}">
         <header class="pm-chat-head">
-            <div class="pm-chat-avatar"><img th:src="@{/favicon.svg}" alt="" width="26" height="26"></div>
+            <div class="pm-chat-avatar"><img th:src="@{/favicon.svg}" alt="" aria-hidden="true" width="26" height="26"></div>
             <div class="pm-chat-titles">
                 <div class="pm-chat-title" id="pmChatTitle">Asistenti PCMania</div>
                 <div class="pm-chat-sub">Përgjigjet nga stoku ynë · për porosi na shkruani në WhatsApp</div>
@@ -35,7 +35,7 @@
     </section>
     <template id="pmChatCardTpl">
         <a class="pm-chat-card" target="_blank" rel="noopener">
-            <img alt="" width="56" height="56" loading="lazy">
+            <img alt="" aria-hidden="true" width="56" height="56" loading="lazy">
             <span class="pm-chat-card-body">
                 <span class="pm-chat-card-title"></span>
                 <span class="pm-chat-card-meta"><span class="pm-chat-card-price"></span> · <span class="pm-chat-card-cond"></span></span>

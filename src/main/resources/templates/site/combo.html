@@ -15,7 +15,7 @@
     <div class="row g-3 g-lg-4">
         <div class="col-lg-7">
             <div class="combo-hero" th:classappend="'n-' + ${c.thumbs().size() > 4 ? 4 : c.thumbs().size()}">
-                <img th:each="t, st : ${c.thumbs()}" th:if="${st.index < 4}" th:src="${@img.medium(t)}" alt="" width="400" height="400"
+                <img th:each="t, st : ${c.thumbs()}" th:if="${st.index < 4}" th:src="${@img.medium(t)}" th:alt="${c.title()} + ' – pjesa ' + ${st.count}" width="400" height="400"
                      th:attr="loading=${st.index < 2} ? 'eager' : 'lazy'" decoding="async">
             </div>
         </div>

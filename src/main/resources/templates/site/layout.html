@@ -50,7 +50,7 @@
             <button class="navbar-toggler border-0 px-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="Menyja">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand brand me-auto fw-bold" href="/"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" width="30" height="30"><span translate="no">PC<span class="text-accent">Mania</span></span></a>
+            <a class="navbar-brand brand me-auto fw-bold" href="/"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" aria-hidden="true" width="30" height="30"><span translate="no">PC<span class="text-accent">Mania</span></span></a>
             <nav class="d-none d-lg-flex gap-3 me-3 header-links">
                 <a th:each="c, st : ${navCategories}" th:if="${st.index < 5}" th:href="@{/kategori/{s}(s=${c.slug})}" th:text="${c.nameSq}"></a>
                 <a th:if="${hasUpcoming}" href="/se-shpejti">Së shpejti</a>
@@ -79,7 +79,7 @@
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="mainMenu" aria-labelledby="mainMenuLabel">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title brand fw-bold" id="mainMenuLabel"><img class="brand-mark brand-mark-dark" th:src="@{/favicon.svg}" alt="" width="28" height="28"><span translate="no">PC<span class="text-accent">Mania</span></span></h5>
+        <h5 class="offcanvas-title brand fw-bold" id="mainMenuLabel"><img class="brand-mark brand-mark-dark" th:src="@{/favicon.svg}" alt="" aria-hidden="true" width="28" height="28"><span translate="no">PC<span class="text-accent">Mania</span></span></h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Mbyll"></button>
     </div>
     <div class="offcanvas-body pt-0">
@@ -108,11 +108,11 @@
     <div class="container py-4">
         <div class="row g-4">
             <div class="col-12 col-md-5">
-                <div class="brand fw-bold fs-5 mb-2"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" width="30" height="30"><span translate="no">PC<span class="text-accent">Mania</span></span></div>
+                <div class="brand fw-bold fs-5 mb-2"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" aria-hidden="true" width="30" height="30"><span translate="no">PC<span class="text-accent">Mania</span></span></div>
                 <p class="small mb-2">Karta grafike dhe pjesë kompjuteri të reja e të përdorura, të testuara para shitjes. Tiranë, Shqipëri.</p>
                 <p class="small mb-0">
-                    <i class="bi bi-telephone me-1"></i><a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a><br>
-                    <i class="bi bi-envelope me-1"></i><a th:href="'mailto:' + ${site.contactEmail}" th:text="${site.contactEmail}"></a>
+                    <i class="bi bi-telephone me-1"></i><a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a>
+                    <th:block th:if="${site.publicEmail()}"><br><i class="bi bi-envelope me-1"></i><a th:href="'mailto:' + ${site.publicEmail()}" th:text="${site.publicEmail()}"></a></th:block>
                 </p>
             </div>
             <div class="col-6 col-md-3">

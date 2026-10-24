@@ -30,7 +30,7 @@
 
 <a th:fragment="comboCard(c)" class="combo-card" th:href="@{/paketa/{s}(s=${c.slug})}">
     <div class="combo-thumbs" th:classappend="'n-' + ${c.thumbs().size() > 4 ? 4 : c.thumbs().size()}">
-        <img th:each="t, st : ${c.thumbs()}" th:if="${st.index < 4}" th:src="${@img.thumb(t)}" alt="" width="200" height="200" loading="lazy" decoding="async">
+        <img th:each="t, st : ${c.thumbs()}" th:if="${st.index < 4}" th:src="${@img.thumb(t)}" th:alt="${c.title()} + ' – pjesa ' + ${st.count}" width="200" height="200" loading="lazy" decoding="async">
         <span class="badge combo-save" th:text="${@fmt.savings(c.savingsLek())}"></span>
     </div>
     <div class="combo-body">

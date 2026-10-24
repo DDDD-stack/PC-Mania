@@ -22,6 +22,21 @@
   };
   document.querySelectorAll('.pm-toast').forEach(wire);
 
+  document.querySelectorAll('[data-limit]').forEach((field) => {
+    const limit = Number(field.dataset.limit);
+    const out = document.createElement('div');
+    out.className = 'form-text text-end';
+    out.setAttribute('aria-live', 'polite');
+    field.insertAdjacentElement('afterend', out);
+    const update = () => {
+      const n = field.value.trim().length;
+      out.textContent = n > limit ? `${n} / ${limit} – Google e pret pjesën pas ${limit} shkronjave` : `${n} / ${limit}`;
+      out.classList.toggle('text-danger', n > limit);
+    };
+    field.addEventListener('input', update);
+    update();
+  });
+
   window.pmToast = (message, { tone = 'info', href } = {}) => {
     const t = document.createElement(href ? 'a' : 'div');
     t.className = `pm-toast pm-toast-${tone}`;

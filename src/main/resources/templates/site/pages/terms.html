@@ -27,7 +27,7 @@
         <p>Emrin, telefonin, qytetin dhe adresën i përdorim vetëm për përpunimin dhe dorëzimin e porosisë ose për t'ju dërguar ofertën e kërkuar. Nuk i ndajmë me palë të treta, përveç korrierit kur zgjidhni dërgesë me korrier.</p>
 
         <h2>7. Kontakt</h2>
-        <p class="mb-0">Për çdo pyetje rreth këtyre kushteve: <a th:href="'mailto:' + ${site.contactEmail}" th:text="${site.contactEmail}"></a>.</p>
+        <p class="mb-0">Për çdo pyetje rreth këtyre kushteve na telefononi ose na shkruani në WhatsApp në <a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a><th:block th:if="${site.publicEmail()}">, ose në <a th:href="'mailto:' + ${site.publicEmail()}" th:text="${site.publicEmail()}"></a></th:block>.</p>
     </div>
 </main>
 </body>

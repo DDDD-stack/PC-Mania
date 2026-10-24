@@ -10,6 +10,7 @@ import al.pcmania.repo.ComboRepository;
 import al.pcmania.repo.OrderItemRepository;
 import al.pcmania.repo.PrebuiltSpecRepository;
 import al.pcmania.repo.ProductRepository;
+import al.pcmania.repo.ProductSlugHistoryRepository;
 import al.pcmania.repo.SpecCatalogRepository;
 import al.pcmania.web.Fmt;
 import al.pcmania.web.admin.ProductForm;
@@ -47,6 +48,7 @@ public class ProductAdminService {
     private final PrebuiltSpecRepository prebuilts;
     private final SpecCatalogRepository specCatalog;
     private final ComboRepository combos;
+    private final ProductSlugHistoryRepository slugHistory;
 
     public static class InvalidProduct extends IllegalArgumentException {
         public final List<String> errors;
@@ -141,6 +143,7 @@ public class ProductAdminService {
         p.setCostLek(form.getCostLek());
         p.setQuantity(form.getQuantity());
         p.setShortDescription(trimToNull(form.getShortDescription()));
+        p.setMetaDescription(trimToNull(form.getMetaDescription()));
         p.setFullDescription(sanitize(form.getFullDescription()));
         p.setWarrantyDays(form.getWarrantyDays());
         p.setTestNotes(trimToNull(form.getTestNotes()));
@@ -152,7 +155,8 @@ public class ProductAdminService {
         if (id == null) autoLinkCatalogue(p);
 
         String wanted = StringUtils.hasText(form.getSlug()) ? form.getSlug() : (p.getSlug() != null ? p.getSlug() : Slugs.of(p.getTitle()));
-        if (!wanted.equals(p.getSlug())) p.setSlug(uniqueSlug(wanted));
+        String previousSlug = p.getSlug();
+        if (!wanted.equals(previousSlug)) p.setSlug(uniqueSlug(wanted));
 
         p.changeStatus(form.getStatus());
         if (form.getListedAt() != null) p.setListedAt(form.getListedAt().atTime(p.getListedAt() == null ? LocalTime.NOON : p.getListedAt().toLocalTime()));
@@ -161,8 +165,15 @@ public class ProductAdminService {
         int order = 0;
         for (FieldTemplateService.Spec spec : cleaned.specs()) p.getSpecs().add(new ProductSpec(p, spec.key(), spec.value(), ++order));
         Product saved = products.save(p);
+        if (previousSlug != null && !previousSlug.equals(saved.getSlug())) rememberSlug(previousSlug, saved);
         if (template.prebuilt()) savePrebuilt(saved, pb);
         return saved;
+    }
+
+    private void rememberSlug(String oldSlug, Product p) {
+        slugHistory.deleteByOldSlug(p.getSlug());
+        slugHistory.findByOldSlug(oldSlug).ifPresentOrElse(h -> h.setProductId(p.getId()),
+                () -> slugHistory.save(new ProductSlugHistory(oldSlug, p.getId())));
     }
 
     private void savePrebuilt(Product p, ProductForm.PrebuiltForm f) {
@@ -205,6 +216,7 @@ public class ProductAdminService {
         p.setCostLek(src.getCostLek());
         p.setQuantity(1);
         p.setShortDescription(src.getShortDescription());
+        p.setMetaDescription(src.getMetaDescription());
         p.setFullDescription(src.getFullDescription());
         p.setWarrantyDays(src.getWarrantyDays());
         p.setTestNotes(src.getTestNotes());

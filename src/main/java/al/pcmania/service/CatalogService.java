@@ -35,6 +35,7 @@ public class CatalogService {
     private final CategoryRepository categories;
     private final PrebuiltSpecRepository prebuilts;
     private final FieldTemplateService templates;
+    private final ProductSlugHistoryRepository slugHistory;
 
     public record CategoryTile(Category category, long count) {
 
@@ -134,6 +135,17 @@ public class CatalogService {
             rams = prebuilts.ramFacets(categorySlug, LISTED);
         }
         return new Facets(products.brandsInCategory(categorySlug, LISTED), groups, gpus, rams);
+    }
+
+    public Optional<String> renamedTo(String oldSlug) {
+        return slugHistory.findByOldSlug(oldSlug)
+                .flatMap(h -> products.findById(h.getProductId()))
+                .filter(p -> PUBLIC_DETAIL.contains(p.getStatus()) && !p.getSlug().equals(oldSlug))
+                .map(Product::getSlug);
+    }
+
+    public String categoryIntro(Category c) {
+        return CategoryAdminService.sanitizeIntro(c.getIntroHtml());
     }
 
     public Optional<ProductDetail> detail(String slug) {

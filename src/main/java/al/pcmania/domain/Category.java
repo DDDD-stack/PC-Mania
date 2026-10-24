@@ -24,6 +24,10 @@ public class Category {
 
     private String catalogSlug;
 
+    private String metaTitle;
+    private String metaDescription;
+    private String introHtml;
+
     public static final String PREBUILT = "prebuilt";
 
     public String catalogKey() {

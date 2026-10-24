@@ -71,6 +71,7 @@ services:
         sync: false
       - key: PHONE_DISPLAY
         sync: false
+      # Only shown when it is on the site's own domain (e.g. info@pcmania.al); a Gmail address stays hidden.
       - key: CONTACT_EMAIL
         sync: false
       # The shop's own Facebook page. Blank hides the Facebook links instead of pointing at facebook.com.

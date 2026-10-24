@@ -11,6 +11,7 @@ import al.pcmania.web.view.CatalogFilter;
 import al.pcmania.web.view.ProductDetail;
 import al.pcmania.web.view.Seo;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import al.pcmania.web.view.ProductCard;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.List;
 import java.util.regex.Pattern;
@@ -62,7 +65,8 @@ public class CatalogController {
         CatalogFilter filter = CatalogFilter.of(min, max, conditions, brands, specs, trade, gpus, rams, band, sort, page);
         String path = "/kategori/" + slug;
 
-        Seo pageSeo = seo.category(category, filter.page());
+        Page<ProductCard> results = catalog.list(slug, filter);
+        Seo pageSeo = seo.category(category, filter.page(), results.getSize(), results.getContent());
 
         if (filter.hasFilters() || filter.sort() != CatalogFilter.Sort.TE_REJAT) {
             pageSeo = pageSeo.withNoindex().withCanonical(seo.abs(path));
@@ -72,7 +76,8 @@ public class CatalogController {
         model.addAttribute("category", category);
         model.addAttribute("filter", filter);
         model.addAttribute("path", path);
-        model.addAttribute("page", catalog.list(slug, filter));
+        model.addAttribute("page", results);
+        model.addAttribute("intro", catalog.categoryIntro(category));
         model.addAttribute("facets", catalog.facets(slug));
         model.addAttribute("conditions", Condition.values());
         model.addAttribute("sorts", CatalogFilter.Sort.values());
@@ -95,8 +100,15 @@ public class CatalogController {
     }
 
     @GetMapping("/produkt/{slug}")
-    String product(@PathVariable String slug, @RequestHeader(value = "User-Agent", required = false) String userAgent, Model model) {
-        ProductDetail p = catalog.detail(slug).orElseThrow(NotFoundException::new);
+    ModelAndView product(@PathVariable String slug, @RequestHeader(value = "User-Agent", required = false) String userAgent, Model model) {
+        ProductDetail p = catalog.detail(slug).orElse(null);
+        if (p == null) {
+            String current = catalog.renamedTo(slug).orElseThrow(NotFoundException::new);
+            RedirectView moved = new RedirectView("/produkt/" + current);
+            moved.setStatusCode(HttpStatus.MOVED_PERMANENTLY);
+            moved.setExposeModelAttributes(false);
+            return new ModelAndView(moved);
+        }
         Category category = catalog.category(p.categorySlug()).orElse(null);
         if (userAgent != null && !BOTS.matcher(userAgent).find()) catalog.countView(p.id());
 
@@ -106,6 +118,6 @@ public class CatalogController {
         model.addAttribute("related", catalog.related(p, 4));
         model.addAttribute("whatsappLink", seo.whatsappLink(p));
         model.addAttribute("shareUrl", seo.abs("/produkt/" + p.slug()));
-        return "site/product";
+        return new ModelAndView("site/product", model.asMap());
     }
 }

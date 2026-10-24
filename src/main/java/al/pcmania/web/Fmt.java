@@ -61,6 +61,10 @@ public class Fmt {
     }
 
     public String warranty(Integer days) {
+        return warrantyLabel(days);
+    }
+
+    public static String warrantyLabel(Integer days) {
         if (days == null || days <= 0) return null;
         if (days % 365 == 0) return days / 365 == 1 ? "1 vit garanci" : days / 365 + " vite garanci";
         if (days >= 30 && days % 30 == 0) return days / 30 == 1 ? "1 muaj garanci" : days / 30 + " muaj garanci";

@@ -157,7 +157,8 @@ class ReleaseTests {
                 .andExpect(content().string(containsString("<meta property=\"og:image\" content=\"https://shop.example/")))
                 .andExpect(content().string(containsString("<meta property=\"og:type\" content=\"product\">")))
                 .andExpect(content().string(containsString("<meta name=\"twitter:card\" content=\"summary_large_image\">")))
-                .andExpect(content().string(containsString("12 GB · GDDR6 · 52.000 Lekë")))
+                .andExpect(content().string(containsString("<meta name=\"description\" content=\"" + p.getTitle() + " (e përdorur) – 52.000 Lekë.")))
+                .andExpect(content().string(containsString("Specifikime: 12 GB · GDDR6.\">")))
                 .andExpect(content().string(containsString("<th>Memoria (VRAM)</th><td>12 GB</td>")));
         mvc.perform(get("/sitemap.xml")).andExpect(content().string(containsString("<loc>https://shop.example/kategori/karta-grafike</loc>")));
     }

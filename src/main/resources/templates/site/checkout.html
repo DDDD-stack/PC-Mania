@@ -19,7 +19,7 @@
                 <div class="fw-bold text-nowrap" th:text="${@fmt.price(item.priceLek)}"></div>
             </div>
             <div class="d-flex gap-1 mt-2" th:if="${item.thumbs.size() > 1}">
-                <img class="order-summary-mini" th:each="t : ${item.thumbs}" th:src="${@img.thumb(t)}" alt="" width="40" height="40" loading="lazy">
+                <img class="order-summary-mini" th:each="t : ${item.thumbs}" th:src="${@img.thumb(t)}" th:alt="${item.title} + ' – pjesë e paketës'" width="40" height="40" loading="lazy">
             </div>
             <div class="d-flex align-items-center gap-2 mt-3" th:if="${item.maxQuantity > 1}">
                 <label class="form-label mb-0" for="quantity">Sasia</label>

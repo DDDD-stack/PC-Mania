@@ -44,6 +44,8 @@ public class ProductForm {
     private ProductStatus status = ProductStatus.DRAFT;
     @Size(max = 500)
     private String shortDescription;
+    @Size(max = 300, message = "Përshkrimi për Google është shumë i gjatë (maks. 300 shkronja).")
+    private String metaDescription;
     private String fullDescription;
     @Min(0)
     private Integer warrantyDays;
@@ -146,6 +148,7 @@ public class ProductForm {
         f.quantity = p.getQuantity();
         f.status = p.getStatus();
         f.shortDescription = p.getShortDescription();
+        f.metaDescription = p.getMetaDescription();
         f.fullDescription = p.getFullDescription();
         f.warrantyDays = p.getWarrantyDays();
         f.testNotes = p.getTestNotes();

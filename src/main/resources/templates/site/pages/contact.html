@@ -12,8 +12,10 @@
         <dl class="row mb-0">
             <dt class="col-sm-3">Telefon</dt>
             <dd class="col-sm-9"><a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a></dd>
+            <th:block th:if="${site.publicEmail()}">
             <dt class="col-sm-3">Email</dt>
-            <dd class="col-sm-9"><a th:href="'mailto:' + ${site.contactEmail}" th:text="${site.contactEmail}"></a></dd>
+            <dd class="col-sm-9"><a th:href="'mailto:' + ${site.publicEmail()}" th:text="${site.publicEmail()}"></a></dd>
+            </th:block>
             <th:block th:if="${!#strings.isEmpty(site.facebookUrl)}">
             <dt class="col-sm-3">Facebook</dt>
             <dd class="col-sm-9"><a th:href="${site.facebookUrl}" target="_blank" rel="noopener">Faqja jonë në Facebook</a></dd>
