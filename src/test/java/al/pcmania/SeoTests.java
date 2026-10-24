@@ -287,6 +287,30 @@ class SeoTests {
     }
 
     @Test
+    void theOldRenderAddressSendsVisitorsToTheDomainButKeepsTheAppWorking() throws Exception {
+        org.springframework.test.web.servlet.request.RequestPostProcessor render = r -> {
+            r.setServerName("pc-mania.onrender.com");
+            return r;
+        };
+        mvc.perform(get("/kategori/karta-grafike").queryParam("faqe", "2").with(render))
+                .andExpect(status().isMovedPermanently())
+                .andExpect(redirectedUrl(BASE + "/kategori/karta-grafike?faqe=2"));
+        mvc.perform(get("/").with(render)).andExpect(status().isMovedPermanently()).andExpect(redirectedUrl(BASE + "/"));
+        mvc.perform(get("/sitemap.xml").with(render)).andExpect(status().isMovedPermanently());
+
+        mvc.perform(get("/healthz").with(render)).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/summary").with(render)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/admin").with(render)).andExpect(status().is3xxRedirection())
+                .andExpect(result -> assertFalse(String.valueOf(result.getResponse().getRedirectedUrl()).startsWith(BASE)));
+        mvc.perform(get("/css/site.css").with(render)).andExpect(status().isOk());
+        mvc.perform(post("/api/lead").with(render).contentType("application/x-www-form-urlencoded")
+                .param("name", "Test").param("phone", "069 000 0000").param("wantedItem", "RTX").param("source", "FORM"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/kategori/karta-grafike")).andExpect(status().isOk());
+    }
+
+    @Test
     void theSitemapListsWhatIsForSaleAndLeavesSoldPagesReachable() throws Exception {
         Product active = product("karta-grafike", "Sitemap Active " + UUID.randomUUID(), 0);
         Product sold = product("karta-grafike", "Sitemap Sold " + UUID.randomUUID(), 0);
