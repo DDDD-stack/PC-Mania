@@ -72,6 +72,7 @@ app:
   phone-display: ${PHONE_DISPLAY:+355 68 83 43 551}
   contact-email: ${CONTACT_EMAIL:}
   price-range: ${PRICE_RANGE:5000-80000 ALL}
+  return-days: ${RETURN_DAYS:3}
   facebook-url: ${FACEBOOK_URL:}
   courier-shipping-lek: ${COURIER_SHIPPING_LEK:500}
   admin:

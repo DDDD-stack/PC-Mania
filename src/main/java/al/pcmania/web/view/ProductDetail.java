@@ -16,6 +16,7 @@ public record ProductDetail(
         String title,
         String brandName,
         String model,
+        String gtin,
         String categorySlug,
         Condition condition,
         int priceLek,
@@ -55,7 +56,7 @@ public record ProductDetail(
         }
         String specLine = prebuilt != null ? prebuilt.specLine() : listing.isEmpty() ? null : String.join(" · ", listing);
         return new ProductDetail(p.getId(), p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
-                p.getModel(), p.getCategorySlug(), p.getCondition(), p.getPriceLek(), p.getQuantity(), p.getStatus(),
+                p.getModel(), p.getGtin(), p.getCategorySlug(), p.getCondition(), p.getPriceLek(), p.getQuantity(), p.getStatus(),
                 p.getShortDescription(), p.getFullDescription(), p.getMetaDescription(), p.getWarrantyDays(), p.getTestNotes(),
                 p.isMiningFree(), p.isTransportIncluded(), p.isTradeEligible(), specs,
                 p.getImages().stream().map(ProductImage::getFilename).toList(), prebuilt, specLine);

@@ -60,6 +60,20 @@ class MetaTextTest {
         assertNull(props("https://pc-mania.onrender.com", "info@pcmania.al").publicEmail());
     }
 
+    @Test
+    void barcodesNeedTheRightLengthAndCheckDigit() {
+        assertTrue(Gtin.isValid("4006381333931"));
+        assertTrue(Gtin.isValid("036000291452"));
+        assertTrue(Gtin.isValid("96385074"));
+        assertTrue(Gtin.isValid("4006381 333931"));
+        assertTrue(Gtin.isValid(null) && Gtin.isValid("  "));
+        assertFalse(Gtin.isValid("4006381333932"));
+        assertFalse(Gtin.isValid("40063813339"));
+        assertFalse(Gtin.isValid("ABC6381333931"));
+        assertEquals("4006381333931", Gtin.normalize(" 4006381-333931 "));
+        assertNull(Gtin.normalize(" "));
+    }
+
     private static Category category(String name) {
         Category c = new Category();
         c.setNameSq(name);

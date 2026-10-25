@@ -37,6 +37,17 @@ public class SeoService {
     @Value("${app.price-range:}")
     private String priceRange;
 
+    @Value("${app.return-days:3}")
+    private int returnDays;
+    @Value("${app.handling-days-min:0}")
+    private int handlingDaysMin;
+    @Value("${app.handling-days-max:1}")
+    private int handlingDaysMax;
+    @Value("${app.transit-days-min:1}")
+    private int transitDaysMin;
+    @Value("${app.transit-days-max:3}")
+    private int transitDaysMax;
+
     public String abs(String path) {
         return props.base() + path;
     }
@@ -157,12 +168,15 @@ public class SeoService {
             case OPEN_BOX, USED -> "https://schema.org/UsedCondition";
         });
         offer.put("seller", Map.of("@type", "Organization", "name", props.siteName()));
+        offer.put("shippingDetails", shipping(p.transportIncluded()));
+        offer.put("hasMerchantReturnPolicy", returnPolicy());
 
         Map<String, Object> product = new LinkedHashMap<>();
         product.put("@context", "https://schema.org");
         product.put("@type", "Product");
         product.put("name", p.title());
         product.put("sku", "PM-" + p.id());
+        if (p.gtin() != null) product.put("gtin", p.gtin());
         if (p.model() != null) product.put("mpn", p.model());
         if (p.brandName() != null) product.put("brand", Map.of("@type", "Brand", "name", p.brandName()));
         product.put("description", description);
@@ -231,6 +245,36 @@ public class SeoService {
         parts.add(StringUtils.hasText(p.shortDescription()) ? p.shortDescription() : p.fullDescription());
         if (StringUtils.hasText(p.specLine())) parts.add("Specifikime: " + p.specLine() + ".");
         return MetaText.fit(parts, MetaText.DESCRIPTION_MAX);
+    }
+
+    private Map<String, Object> shipping(boolean free) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("@type", "OfferShippingDetails");
+        details.put("shippingRate", Map.of("@type", "MonetaryAmount", "value", free ? 0 : props.courierShippingLek(), "currency", "ALL"));
+        details.put("shippingDestination", Map.of("@type", "DefinedRegion", "addressCountry", "AL"));
+        details.put("deliveryTime", Map.of(
+                "@type", "ShippingDeliveryTime",
+                "handlingTime", days(handlingDaysMin, handlingDaysMax),
+                "transitTime", days(transitDaysMin, transitDaysMax)));
+        return details;
+    }
+
+    private Map<String, Object> returnPolicy() {
+        Map<String, Object> policy = new LinkedHashMap<>();
+        policy.put("@type", "MerchantReturnPolicy");
+        policy.put("applicableCountry", "AL");
+        if (returnDays > 0) {
+            policy.put("returnPolicyCategory", "https://schema.org/MerchantReturnFiniteReturnWindow");
+            policy.put("merchantReturnDays", returnDays);
+        } else {
+            policy.put("returnPolicyCategory", "https://schema.org/MerchantReturnNotPermitted");
+        }
+        policy.put("merchantReturnLink", abs("/kushtet-e-perdorimit"));
+        return policy;
+    }
+
+    private static Map<String, Object> days(int min, int max) {
+        return Map.of("@type", "QuantitativeValue", "minValue", min, "maxValue", max, "unitCode", "DAY");
     }
 
     private static Map<String, Object> crumb(int pos, String name, String url) {

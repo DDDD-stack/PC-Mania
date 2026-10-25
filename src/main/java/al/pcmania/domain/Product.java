@@ -21,6 +21,7 @@ public class Product {
     @ManyToOne(fetch = FetchType.LAZY)
     private Brand brand;
     private String model;
+    private String gtin;
     private String categorySlug;
     private String slug;
     @Enumerated(EnumType.STRING)

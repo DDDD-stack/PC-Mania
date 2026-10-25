@@ -70,6 +70,11 @@
                             <label class="form-label">…ose markë e re</label>
                             <input class="form-control" th:field="*{newBrand}" maxlength="80" placeholder="p.sh. XFX">
                         </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Barkodi (EAN/UPC)</label>
+                            <input class="form-control font-monospace" th:field="*{gtin}" maxlength="20" inputmode="numeric" placeholder="p.sh. 4719331309271">
+                            <div class="form-text">Numri nën barkodin në kuti. Ndihmon Google-in ta njohë produktin. Pa kuti, lëreni bosh.</div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Përshkrim i shkurtër <small class="text-body-secondary">(shfaqet në karta dhe në Facebook)</small></label>

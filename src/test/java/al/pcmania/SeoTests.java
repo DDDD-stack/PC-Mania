@@ -197,6 +197,26 @@ class SeoTests {
         assertTrue(offer.path("availability").asText().startsWith("https://schema.org/"));
         assertTrue(offer.path("itemCondition").asText().startsWith("https://schema.org/"));
         assertEquals(BASE + "/produkt/" + p.getSlug(), offer.path("url").asText());
+
+        JsonNode shipping = offer.path("shippingDetails");
+        assertEquals("OfferShippingDetails", shipping.path("@type").asText());
+        assertEquals(0, shipping.path("shippingRate").path("value").asInt(), "transport falas ships for 0");
+        assertEquals("ALL", shipping.path("shippingRate").path("currency").asText());
+        assertEquals("AL", shipping.path("shippingDestination").path("addressCountry").asText());
+        assertEquals("DAY", shipping.path("deliveryTime").path("transitTime").path("unitCode").asText());
+        assertEquals(3, shipping.path("deliveryTime").path("transitTime").path("maxValue").asInt());
+        JsonNode returns = offer.path("hasMerchantReturnPolicy");
+        assertEquals("MerchantReturnPolicy", returns.path("@type").asText());
+        assertEquals("AL", returns.path("applicableCountry").asText());
+        assertEquals("https://schema.org/MerchantReturnFiniteReturnWindow", returns.path("returnPolicyCategory").asText());
+        assertEquals(3, returns.path("merchantReturnDays").asInt());
+        assertEquals(BASE + "/kushtet-e-perdorimit", returns.path("merchantReturnLink").asText());
+        assertEquals("MSI", product.path("brand").path("name").asText());
+        assertTrue(product.path("gtin").isMissingNode(), "no barcode is published until one is entered");
+
+        tx.executeWithoutResult(s -> products.findById(p.getId()).orElseThrow().setTransportIncluded(false));
+        JsonNode paid = jsonLd(page("/produkt/" + p.getSlug())).get(0).path("offers").path("shippingDetails");
+        assertEquals(500, paid.path("shippingRate").path("value").asInt(), "courier price otherwise");
     }
 
     @Test
@@ -210,6 +230,27 @@ class SeoTests {
         assertEquals("Kasë e re me airflow të mirë.", products.findById(p.getId()).orElseThrow().getMetaDescription());
         mvc.perform(get("/admin/products/" + p.getId()).with(user("admin").roles("ADMIN")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("e re me airflow t")));
+    }
+
+    @Test
+    void aBarcodeIsCheckedAndPublishedAsTheGtin() throws Exception {
+        Product p = product("kasa", "Kase Barcode " + UUID.randomUUID(), 0);
+        mvc.perform(post("/admin/products/" + p.getId()).with(csrf()).with(user("admin").roles("ADMIN"))
+                        .param("title", p.getTitle()).param("categorySlug", "kasa").param("condition", "NEW")
+                        .param("priceLek", "14500").param("costLek", "9000").param("quantity", "1").param("status", "ACTIVE")
+                        .param("slug", p.getSlug()).param("gtin", "4006381333932"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Barkodi nuk")));
+        assertNull(products.findById(p.getId()).orElseThrow().getGtin());
+
+        mvc.perform(post("/admin/products/" + p.getId()).with(csrf()).with(user("admin").roles("ADMIN"))
+                        .param("title", p.getTitle()).param("categorySlug", "kasa").param("condition", "NEW")
+                        .param("priceLek", "14500").param("costLek", "9000").param("quantity", "1").param("status", "ACTIVE")
+                        .param("slug", p.getSlug()).param("gtin", " 4006381 333931 "))
+                .andExpect(status().is3xxRedirection());
+        assertEquals("4006381333931", products.findById(p.getId()).orElseThrow().getGtin());
+        show("kasa");
+        assertEquals("4006381333931", jsonLd(page("/produkt/" + p.getSlug())).get(0).path("gtin").asText());
     }
 
     @Test

@@ -102,6 +102,7 @@ variable the hosted deployment uses).
 | `CONTACT_EMAIL` | *(blank)* | Public e-mail. Shown (footer, contact page, `Store` structured data) only when it is on the site's own domain, e.g. `info@pcmania.al` with `APP_BASE_URL=https://pcmania.al`; a Gmail or other personal address is never published |
 | `FACEBOOK_URL` | *(blank)* | Shop's Facebook page. Blank hides the Facebook links; set, it is also the `sameAs` of the `Store` structured data |
 | `PRICE_RANGE` | `5000-80000 ALL` | `priceRange` of the `Store` structured data |
+| `RETURN_DAYS` | `3` | Return window in each product's `hasMerchantReturnPolicy`, as in the terms page; `0` publishes "no returns". Shipping in `shippingDetails` uses `COURIER_SHIPPING_LEK` (0 for "transport falas" products) and 0–1 + 1–3 days |
 | `COURIER_SHIPPING_LEK` | `500` | Courier fee (0 for products marked "Transport falas") |
 | `COOKIE_SECURE` | `false` | Set to `true` behind TLS so the admin session cookie is never sent in clear |
 | `CHAT_PROVIDER` | `gemini` | Who answers the chat bubble: `gemini` (free tier), `anthropic`, or `guided` (no model, the finder only). The guided finder also stands in whenever the chosen provider is unavailable or rate-limited |

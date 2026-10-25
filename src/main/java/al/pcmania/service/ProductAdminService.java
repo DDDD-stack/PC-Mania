@@ -125,6 +125,9 @@ public class ProductAdminService {
         boolean enforce = form.getStatus() != ProductStatus.DRAFT;
         FieldTemplateService.Cleaned cleaned = templates.clean(form.getCategorySlug(), form.getSpecKeys(), form.getSpecValues(), enforce);
         List<String> errors = new ArrayList<>(cleaned.errors());
+        if (!Gtin.isValid(form.getGtin())) {
+            errors.add("Barkodi nuk është i saktë: duhen 8, 12, 13 ose 14 shifra dhe shifra e fundit e kontrollit duhet të përputhet.");
+        }
         ProductForm.PrebuiltForm pb = form.getPrebuilt() == null ? new ProductForm.PrebuiltForm() : form.getPrebuilt();
         if (template.prebuilt() && enforce) {
             if (!StringUtils.hasText(pb.getCpuName())) errors.add("Shkruani procesorin e PC-së.");
@@ -137,6 +140,7 @@ public class ProductAdminService {
         p.setTitle(form.getTitle().trim());
         p.setBrand(resolveBrand(form));
         p.setModel(trimToNull(form.getModel()));
+        p.setGtin(Gtin.normalize(form.getGtin()));
         p.setCategorySlug(form.getCategorySlug());
         p.setCondition(form.getCondition());
         p.setPriceLek(form.getPriceLek());
@@ -210,6 +214,7 @@ public class ProductAdminService {
         p.setTitle(src.getTitle());
         p.setBrand(src.getBrand());
         p.setModel(src.getModel());
+        p.setGtin(src.getGtin());
         p.setCategorySlug(src.getCategorySlug());
         p.setCondition(src.getCondition());
         p.setPriceLek(src.getPriceLek());

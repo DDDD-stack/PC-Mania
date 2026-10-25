@@ -24,6 +24,7 @@ public class ProductForm {
     private String newBrand;
     @Size(max = 120)
     private String model;
+    private String gtin;
     @NotBlank(message = "Zgjidhni kategorinë")
     private String categorySlug;
     @Size(max = 200)
@@ -140,6 +141,7 @@ public class ProductForm {
         f.title = p.getTitle();
         f.brandId = p.getBrand() == null ? null : p.getBrand().getId();
         f.model = p.getModel();
+        f.gtin = p.getGtin();
         f.categorySlug = p.getCategorySlug();
         f.slug = p.getSlug();
         f.condition = p.getCondition();
