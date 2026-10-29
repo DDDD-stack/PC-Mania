@@ -29,6 +29,7 @@ public class ToolRegistry {
             case "compareProducts" -> "Po krahasoj…";
             case "recommendUpgrade" -> "Po kërkoj një hap përpara…";
             case "checkFit" -> "Po kontrolloj përputhshmërinë…";
+            case "checkCompatibility" -> "Po kontrolloj nëse pjesët shkojnë bashkë…";
             default -> null;
         };
     }
@@ -98,6 +99,11 @@ public class ToolRegistry {
         fit.put("psuWatts", ParamSpec.integer("Their power supply in watts"));
         fit.put("caseLengthMm", ParamSpec.integer("The longest card their case takes, in mm"));
 
+        Map<String, ParamSpec> compat = new LinkedHashMap<>();
+        compat.put("slugs", ParamSpec.string("Comma-separated slugs of shop products to check together, from searchStock or searchParts"));
+        compat.put("customerParts", ParamSpec.string("The customer's own parts, as they named them, separated by ';' "
+                + "(e.g. 'B450 Tomahawk; Corsair CV550 550W; Ryzen 5 3600'). Include any detail they gave, like watts or DDR4"));
+
         Map<String, ParamSpec> contact = new LinkedHashMap<>();
         contact.put("wantedItem", ParamSpec.requiredString("What the customer is looking for, in their words (no personal details)"));
         contact.put("budgetLek", ParamSpec.integer("Budget in Lekë, if given"));
@@ -151,6 +157,17 @@ public class ToolRegistry {
                         "Whether a product works with the customer's power supply and fits their case. Verdict OK, TIGHT or NO_FIT with reasons.",
                         fit, in -> tools.checkFit(str(in, "slug"), intOf(in, "psuWatts"), intOf(in, "caseLengthMm")).<Object>map(f -> f)
                                 .orElse(new Error("Nuk ka produkt me këtë slug."))),
+                new ToolDef("checkCompatibility",
+                        "Whether parts work together: processor and motherboard (socket, BIOS), RAM and motherboard (DDR type, "
+                                + "size, slots), cooler and processor (socket), cooler and case (height), graphics card and case (length), "
+                                + "graphics card and power supply (watts), motherboard and case (size), NVMe disk and motherboard. "
+                                + "Mix shop products (slugs) with the customer's own parts (customerParts). Returns each part's specs, "
+                                + "one check per pair with verdict OK, TIGHT, UNKNOWN or NO and the reason, and the overall verdict.",
+                        compat, in -> {
+                            String slugs = str(in, "slugs"), customer = str(in, "customerParts");
+                            if (slugs == null && customer == null) return new Error("Jep të paktën dy pjesë: slugs dhe/ose customerParts.");
+                            return tools.checkCompatibility(slugs, customer);
+                        }),
                 new ToolDef("requestContactForm",
                         "When nothing in stock fits, ask the site to show its contact form so the shop can call the customer back. "
                                 + "Pass only what they are looking for; never a name, phone number or address. Returns a signal; "
@@ -186,6 +203,9 @@ public class ToolRegistry {
             out.add(c.b().slug());
         } else if (result instanceof UpgradeAdvice a) a.options().forEach(o -> out.add(o.product().slug()));
         else if (result instanceof FitCheck f) out.add(f.slug());
+        else if (result instanceof CompatibilityReport r) r.parts().forEach(p -> {
+            if (p.slug() != null) out.add(p.slug());
+        });
         return out;
     }
 

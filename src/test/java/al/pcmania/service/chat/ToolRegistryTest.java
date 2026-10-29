@@ -18,9 +18,9 @@ class ToolRegistryTest {
     private final ToolRegistry registry = new ToolRegistry(tools, json);
 
     @Test
-    void sevenToolsAndNoneTakesPersonalDetails() {
+    void eightToolsAndNoneTakesPersonalDetails() {
         List<ToolDef> defs = registry.definitions();
-        assertEquals(List.of("searchStock", "searchParts", "getProduct", "compareProducts", "recommendUpgrade", "checkFit", "requestContactForm"),
+        assertEquals(List.of("searchStock", "searchParts", "getProduct", "compareProducts", "recommendUpgrade", "checkFit", "checkCompatibility", "requestContactForm"),
                 defs.stream().map(ToolDef::name).toList());
         for (ToolDef d : defs) {
             for (String p : d.params().keySet()) {

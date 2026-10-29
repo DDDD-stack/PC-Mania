@@ -66,7 +66,7 @@ class GeminiChatProviderTest {
         assertTrue(body.path("systemInstruction").path("parts").get(0).path("text").asText().contains("NEVER ask for a name"));
         assertEquals(1024, body.path("generationConfig").path("maxOutputTokens").asInt());
         JsonNode decl = body.path("tools").get(0).path("functionDeclarations");
-        assertEquals(7, decl.size());
+        assertEquals(8, decl.size());
         assertEquals("OBJECT", decl.get(0).path("parameters").path("type").asText());
         assertEquals("INTEGER", decl.get(0).path("parameters").path("properties").path("budgetMaxLek").path("type").asText());
         assertEquals("currentCardQuery", decl.get(4).path("parameters").path("required").get(0).asText());

@@ -3,28 +3,49 @@
 <body>
 <main class="container py-4">
     <h1 class="h3 fw-bold mb-3">Kushtet e përdorimit</h1>
-    <div class="prose">
-        <h2>1. Porositë</h2>
-        <p>Porosia e dërguar nga faqja është një kërkesë blerjeje. Ajo konsiderohet e konfirmuar vetëm pasi t'ju kontaktojmë në numrin e telefonit të dhënë. Rezervojmë të drejtën të anulojmë një porosi nëse produkti nuk është më i disponueshëm ose të dhënat e kontaktit janë të pasakta.</p>
+    <div class="prose" th:with="returnDays=${@environment.getProperty('app.return-days', '3')}">
+        <p>Këtu shpjegojmë shkurt si funksionon blerja te PCMania: porosia, pagesa, gjendja e produkteve, garancia dhe kthimet. Nëse diçka nuk është e qartë, na pyesni para se të porosisni.</p>
 
-        <h2>2. Çmimet</h2>
-        <p>Të gjitha çmimet shprehen në Lekë (ALL). Kostoja e transportit, kur aplikohet, shfaqet para dërgimit të porosisë. Çmimi i vlefshëm është ai në momentin e dërgimit të porosisë.</p>
+        <h2>1. Porosia</h2>
+        <ul>
+            <li>Porosia që dërgoni nga faqja është një kërkesë për blerje. Bëhet e vlefshme vetëm pasi t'ju telefonojmë dhe ta konfirmojmë bashkë.</li>
+            <li>Pasi e dërgoni porosinë, produkti rezervohet për ju derisa ta konfirmojmë.</li>
+            <li>Mund ta anulojmë porosinë nëse produkti nuk është më në dispozicion ose nëse numri i telefonit apo të dhënat e tjera të kontaktit nuk janë të sakta.</li>
+        </ul>
+
+        <h2>2. Çmimet dhe pagesa</h2>
+        <ul>
+            <li>Të gjitha çmimet janë në Lekë (ALL). Vlen çmimi që shfaqet në momentin kur dërgoni porosinë.</li>
+            <li>Nëse ka kosto transporti, jua tregojmë para se ta dërgoni porosinë.</li>
+            <li>Paguani kur e merrni produktin (para në dorë, korrierit ose në takim në Tiranë) ose me transfertë bankare pasi ta konfirmojmë porosinë. Për porositë e zakonshme nuk kërkojmë asnjë pagesë paraprake.</li>
+        </ul>
 
         <h2>3. Gjendja e produkteve</h2>
+        <p>Te çdo produkt shkruajmë gjendjen e tij:</p>
         <ul>
-            <li><strong>E re</strong> – produkt i ri, në paketimin origjinal të pahapur.</li>
-            <li><strong>Open box</strong> – paketimi është hapur (p.sh. për test ose fotografim), produkti është i papërdorur ose i përdorur minimalisht.</li>
-            <li><strong>E përdorur</strong> – produkt i përdorur më parë, i testuar dhe funksional. Shenjat kozmetike përshkruhen në faqen e produktit.</li>
+            <li><strong>E re</strong>: produkt i ri, në paketimin origjinal të pahapur.</li>
+            <li><strong>Open box</strong>: paketimi është hapur, p.sh. për ta testuar ose fotografuar, por produkti nuk është përdorur ose është përdorur shumë pak.</li>
+            <li><strong>E përdorur</strong>: produkt i përdorur më parë, që e kemi testuar dhe që funksionon. Çdo shenjë kozmetike e shkruajmë te faqja e produktit.</li>
         </ul>
 
         <h2>4. Garancia</h2>
-        <p>Kohëzgjatja e garancisë shënohet në faqen e çdo produkti. Garancia mbulon defektet funksionale që nuk janë shkaktuar nga përdorimi i gabuar, dëmtimi fizik, lëngjet, modifikimet (p.sh. BIOS i ndryshuar) ose overclocking-u. Për të përdorur garancinë, na kontaktoni me numrin e porosisë.</p>
+        <ul>
+            <li><strong>Sa zgjat:</strong> kohëzgjatja e garancisë shkruhet te faqja e çdo produkti.</li>
+            <li><strong>Çfarë mbulon:</strong> defektet në funksionim.</li>
+            <li><strong>Çfarë nuk mbulon:</strong> dëmet nga përdorimi i gabuar, goditjet dhe dëmtimet fizike, lëngjet, modifikimet (p.sh. BIOS i ndryshuar) dhe overclocking-u.</li>
+            <li><strong>Si ta përdorni:</strong> na kontaktoni dhe na jepni numrin e porosisë.</li>
+        </ul>
 
         <h2>5. Kthimet</h2>
-        <p>Nëse produkti nuk përputhet me përshkrimin, na kontaktoni brenda 3 ditëve nga marrja. Për blerjet në distancë, konsumatori gëzon të drejtat e parashikuara nga legjislacioni shqiptar për mbrojtjen e konsumatorit. Produkti duhet të kthehet në të njëjtën gjendje, me të gjithë aksesorët dhe paketimin.</p>
+        <ul>
+            <li>Nëse produkti që merrni nuk përputhet me përshkrimin, na njoftoni brenda <strong th:text="${returnDays} + ' ditëve'">3 ditëve</strong> nga dita që e merrni.</li>
+            <li>Produkti duhet të kthehet në të njëjtën gjendje, me të gjithë aksesorët dhe paketimin.</li>
+            <li>Për blerjet në distancë (me korrier) gëzoni edhe të gjitha të drejtat që ju jep ligji shqiptar për mbrojtjen e konsumatorit.</li>
+            <li>Nëse e merrni produktin në Tiranë, mund ta shihni dhe ta kontrolloni para se të paguani.</li>
+        </ul>
 
         <h2>6. Të dhënat personale</h2>
-        <p>Emrin, telefonin, qytetin dhe adresën i përdorim vetëm për përpunimin dhe dorëzimin e porosisë ose për t'ju dërguar ofertën e kërkuar. Nuk i ndajmë me palë të treta, përveç korrierit kur zgjidhni dërgesë me korrier.</p>
+        <p>Emrin, telefonin, qytetin dhe adresën tuaj i përdorim vetëm për të përpunuar dhe dorëzuar porosinë, ose për t'ju dërguar ofertën që kërkuat. Nuk ia japim askujt, përveç korrierit kur zgjidhni dërgesë me korrier.</p>
 
         <h2>7. Kontakt</h2>
         <p class="mb-0">Për çdo pyetje rreth këtyre kushteve na telefononi ose na shkruani në WhatsApp në <a th:href="'tel:' + ${#strings.replace(site.phoneDisplay, ' ', '')}" th:text="${site.phoneDisplay}"></a><th:block th:if="${site.publicEmail()}">, ose në <a th:href="'mailto:' + ${site.publicEmail()}" th:text="${site.publicEmail()}"></a></th:block>.</p>

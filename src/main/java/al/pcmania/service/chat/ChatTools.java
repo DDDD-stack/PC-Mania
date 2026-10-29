@@ -8,6 +8,7 @@ import al.pcmania.domain.ProductSpec;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.FieldTemplateService;
 import al.pcmania.service.GpuCatalogService;
+import al.pcmania.service.SpecCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +16,9 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -42,6 +45,7 @@ public class ChatTools {
     private final ProductRepository products;
     private final GpuCatalogService catalog;
     private final FieldTemplateService templates;
+    private final SpecCatalogService specCatalog;
 
     public record StockItem(String slug, String title, int priceLek, String condition, Integer warrantyDays,
                             Integer vramGb, Integer tier, Integer psuMinWatts, String pcieConnectors, Integer lengthMm,
@@ -63,6 +67,11 @@ public class ChatTools {
                            int quantity, boolean transportIncluded, List<Spec> specs) {}
 
     public record PartSearch(List<PartItem> items, String note) {}
+
+    public record PartView(String slug, String name, String kind, String origin, List<Spec> specs) {}
+
+    public record CompatibilityReport(List<PartView> parts, List<Compatibility.Check> checks, String overall,
+                                      List<String> notUnderstood, String note) {}
 
     public record LeadFormSignal(String action, String wantedItem, Integer budgetLek, Integer psuWatts, String note) {}
 
@@ -143,6 +152,113 @@ public class ChatTools {
             if (out.size() >= MAX_RESULTS) break;
         }
         return out;
+    }
+
+    public CompatibilityReport checkCompatibility(String slugs, String customerParts) {
+        List<Compatibility.Part> parts = new ArrayList<>();
+        List<PartView> views = new ArrayList<>();
+        List<String> notUnderstood = new ArrayList<>();
+        if (StringUtils.hasText(slugs)) {
+            for (String slug : slugs.split("[,;\\s]+")) {
+                if (slug.isBlank()) continue;
+                Optional<Product> p = product(slug);
+                if (p.isEmpty()) {
+                    notUnderstood.add(slug + " (nuk ka produkt me këtë slug)");
+                    continue;
+                }
+                Compatibility.Part part = fromProduct(p.get());
+                parts.add(part);
+                views.add(view(p.get().getSlug(), part));
+            }
+        }
+        if (StringUtils.hasText(customerParts)) {
+            for (String raw : customerParts.split("[;\\n]+")) {
+                if (raw.isBlank()) continue;
+                Compatibility.Part part = fromName(raw.trim());
+                if (part == null) {
+                    notUnderstood.add(raw.trim());
+                    continue;
+                }
+                parts.add(part);
+                views.add(view(null, part));
+            }
+        }
+        List<Compatibility.Check> checks = Compatibility.check(parts);
+        String note;
+        if (parts.size() < 2) {
+            note = "Duhen të paktën dy pjesë për të kontrolluar përputhshmërinë. Pyet klientin për pjesën tjetër.";
+        } else if (checks.isEmpty()) {
+            note = "Këto pjesë nuk kanë kontroll të drejtpërdrejtë mes tyre (p.sh. RAM dhe kartë grafike). Thuaje këtë; mos shpik një verdikt.";
+        } else {
+            note = "Verdiktet vijnë nga specifikat. Pjesët me origin \"" + Compatibility.NAME + "\" janë njohur vetëm nga emri: thuaji klientit "
+                    + "të konfirmojë modelin e saktë. Për UNKNOWN thuaj çfarë mungon dhe mos e hamendëso.";
+        }
+        return new CompatibilityReport(views, checks, parts.size() < 2 || checks.isEmpty() ? null : Compatibility.worst(checks).name(),
+                notUnderstood, note);
+    }
+
+    private Compatibility.Part fromProduct(Product p) {
+        FieldTemplateService.Template t = templates.forCategory(p.getCategorySlug());
+        String kind = isGpu(p) ? GPU : t == null ? null : t.catalogKey();
+        Map<String, String> values = new LinkedHashMap<>();
+        for (ProductSpec s : p.getSpecs()) values.put(s.getSpecKey(), s.getSpecValue());
+        GpuCatalog g = p.getGpuModel();
+        if (g != null) {
+            if (g.getPsuMinWatts() != null) values.putIfAbsent("psu_min_watts", String.valueOf(g.getPsuMinWatts()));
+            if (g.getPcieConnectors() != null) values.putIfAbsent("pcie_connectors", g.getPcieConnectors());
+        }
+        Integer length = cardLength(p);
+        if (GPU.equals(kind) && length != null) values.put("length_mm", String.valueOf(length));
+        Compatibility.fromText(p.getTitle() + " " + (p.getModel() == null ? "" : p.getModel()), kind).values().forEach(values::putIfAbsent);
+        return new Compatibility.Part(p.getTitle(), kind, Compatibility.STOCK, values);
+    }
+
+    private Compatibility.Part fromName(String text) {
+        String kind = Compatibility.kindFromText(text);
+        if (kind == null || GPU.equals(kind)) {
+            Optional<GpuCatalog> g = catalog.resolve(text);
+            if (g.isPresent()) {
+                GpuCatalog gpu = g.get();
+                Map<String, String> v = new LinkedHashMap<>();
+                if (gpu.getLengthMm() != null) v.put("length_mm", String.valueOf(gpu.getLengthMm()));
+                if (gpu.getPsuMinWatts() != null) v.put("psu_min_watts", String.valueOf(gpu.getPsuMinWatts()));
+                if (gpu.getPcieConnectors() != null) v.put("pcie_connectors", gpu.getPcieConnectors());
+                return new Compatibility.Part(gpu.getName(), GPU, Compatibility.CATALOGUE, v);
+            }
+            if (GPU.equals(kind)) return new Compatibility.Part(text, GPU, Compatibility.NAME, new LinkedHashMap<>());
+        }
+        List<String> kinds = kind != null ? List.of(kind) : PART_CATEGORIES;
+        SpecCatalogService.Match best = null;
+        boolean tie = false;
+        for (String k : kinds) {
+            for (SpecCatalogService.Match m : specCatalog.search(k, text, 2)) {
+                if (best == null || m.score() > best.score()) {
+                    tie = false;
+                    best = m;
+                } else if (m.score() == best.score() && !m.entry().getId().equals(best.entry().getId())) {
+                    tie = true;
+                }
+            }
+        }
+        if (best != null && !tie && best.score() >= 600) {
+            Map<String, String> v = new LinkedHashMap<>(SpecCatalogService.values(best.entry()));
+            String k = best.entry().getCategorySlug();
+            Compatibility.fromText(text, k).values().forEach(v::putIfAbsent);
+            return new Compatibility.Part(best.entry().getName(), k, Compatibility.CATALOGUE, v);
+        }
+        if (kind == null) return null;
+        return Compatibility.fromText(text, kind);
+    }
+
+    private PartView view(String slug, Compatibility.Part part) {
+        FieldTemplateService.Template t = templates.all() == null ? null : templates.all().values().stream()
+                .filter(x -> part.kind() != null && part.kind().equals(x.catalogKey())).findFirst().orElse(null);
+        List<Spec> specs = new ArrayList<>();
+        part.values().forEach((k, v) -> {
+            if (k.equals("zen_plus_apu")) return;
+            specs.add(t == null ? new Spec(k, v) : new Spec(t.label(k), t.display(k, v)));
+        });
+        return new PartView(slug, part.name(), part.kind(), part.origin(), specs);
     }
 
     public Optional<ProductInfo> getProduct(String slug) {

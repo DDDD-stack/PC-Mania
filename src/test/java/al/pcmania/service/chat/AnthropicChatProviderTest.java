@@ -69,10 +69,10 @@ class AnthropicChatProviderTest {
         assertEquals(1024, body.path("max_tokens").asInt());
         assertEquals("ephemeral", body.path("system").get(0).path("cache_control").path("type").asText());
         JsonNode toolsNode = body.path("tools");
-        assertEquals(7, toolsNode.size());
+        assertEquals(8, toolsNode.size());
         assertEquals("object", toolsNode.get(0).path("input_schema").path("type").asText());
         assertEquals("integer", toolsNode.get(0).path("input_schema").path("properties").path("budgetMaxLek").path("type").asText());
-        assertEquals("ephemeral", toolsNode.get(6).path("cache_control").path("type").asText());
+        assertEquals("ephemeral", toolsNode.get(7).path("cache_control").path("type").asText());
         assertFalse(toolsNode.get(0).has("cache_control"));
 
         JsonNode second = json.readTree(http.sent.get(1).body()).path("messages");

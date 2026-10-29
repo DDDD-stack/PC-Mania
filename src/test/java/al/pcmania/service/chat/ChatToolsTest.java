@@ -28,7 +28,8 @@ class ChatToolsTest {
     private final ProductRepository products = mock(ProductRepository.class);
     private final GpuCatalogService catalog = mock(GpuCatalogService.class);
     private final FieldTemplateService templates = mock(FieldTemplateService.class);
-    private final ChatTools tools = new ChatTools(products, catalog, templates);
+    private final al.pcmania.service.SpecCatalogService specCatalog = mock(al.pcmania.service.SpecCatalogService.class);
+    private final ChatTools tools = new ChatTools(products, catalog, templates, specCatalog);
 
     private final GpuCatalog gtx1660s = gpu("gtx-1660-super", "GeForce GTX 1660 Super", GpuVendor.NVIDIA, 6, 6, 450, 229, 200, 58, 37);
     private final GpuCatalog rx6600 = gpu("rx-6600", "Radeon RX 6600", GpuVendor.AMD, 8, 8, 450, 200, 240, 68, 45);
@@ -212,6 +213,38 @@ class ChatToolsTest {
         assertEquals(List.of(new ChatTools.Spec("Soketi", "AM4"), new ChatTools.Spec("Bërthamat", "8"), new ChatTools.Spec("Me ftohës", "Jo")),
                 cpus.get(0).specs());
         assertTrue(tools.searchParts("cpu", null, 10_000).isEmpty());
+    }
+
+    @Test
+    void compatibilityMixesShopProductsWithTheCustomersOwnParts() {
+        when(templates.forCategory("procesore")).thenReturn(new FieldTemplateService.Template("procesore", "Procesorë", "cpu", false, List.of()));
+        when(templates.forCategory("karta-grafike")).thenReturn(new FieldTemplateService.Template("karta-grafike", "Karta grafike", "gpu", false, List.of()));
+        Product cpu = product(30L, "amd-ryzen-7-5700x", "AMD Ryzen 7 5700X", 18_900, 15_000, null);
+        cpu.setCategorySlug("procesore");
+        cpu.getSpecs().add(new ProductSpec(cpu, "socket", "AM4", 1));
+        cpu.getSpecs().add(new ProductSpec(cpu, "generation", "Ryzen 5000 (Zen 3)", 2));
+        when(products.findWithGpuModelBySlug("amd-ryzen-7-5700x")).thenReturn(Optional.of(cpu));
+
+        ChatTools.CompatibilityReport r = tools.checkCompatibility("amd-ryzen-7-5700x", "MSI B450 Tomahawk; Corsair CV550 550W");
+        assertEquals(3, r.parts().size());
+        assertEquals("amd-ryzen-7-5700x", r.parts().get(0).slug());
+        assertEquals(Compatibility.STOCK, r.parts().get(0).origin());
+        assertEquals(Compatibility.NAME, r.parts().get(1).origin());
+        assertEquals("motherboard", r.parts().get(1).kind());
+        assertEquals("TIGHT", r.overall(), r.toString());
+        assertTrue(r.checks().get(0).reason().contains("BIOS"));
+        assertEquals(List.of("amd-ryzen-7-5700x"), ToolRegistry.slugsOf(r));
+
+        ChatTools.CompatibilityReport card = tools.checkCompatibility("msi-rtx-3060-ti", "Corsair CV550 550W");
+        assertEquals("TIGHT", card.overall(), card.toString());
+
+        ChatTools.CompatibilityReport alone = tools.checkCompatibility("amd-ryzen-7-5700x", "qwerty; nuk-ekziston");
+        assertNull(alone.overall());
+        assertEquals(List.of("qwerty", "nuk-ekziston"), alone.notUnderstood());
+        assertTrue(alone.note().contains("dy pjesë"));
+
+        String json = assertDoesNotThrow(() -> new ObjectMapper().writeValueAsString(r));
+        assertFalse(json.contains("15000") || json.toLowerCase().contains("cost"), json);
     }
 
     @Test

@@ -62,6 +62,7 @@ class SeoTests {
     @Autowired ProductSlugHistoryRepository slugHistory;
     @Autowired TransactionTemplate tx;
     @Autowired ObjectMapper json;
+    @Autowired al.pcmania.service.chat.ChatPrompt chatPrompt;
 
     @Test
     void aCategoryPageHasItsNameAsTheHeadingAnIntroAndStructuredData() throws Exception {
@@ -349,6 +350,22 @@ class SeoTests {
                 .andExpect(status().isOk());
 
         mvc.perform(get("/kategori/karta-grafike")).andExpect(status().isOk());
+    }
+
+    @Test
+    void theAssistantReadsThePoliciesFromTheSamePagesCustomersSee() throws Exception {
+        String system = chatPrompt.system();
+        assertTrue(system.contains("SHOP POLICIES"));
+        for (String expected : List.of("### Kushtet e përdorimit (/kushtet-e-perdorimit)", "brenda 3 ditëve",
+                "Çfarë nuk mbulon:", "### Transporti dhe pagesa (/transporti-dhe-pagesa)", "1–3 ditë pune", "500 Lekë",
+                "### Rreth nesh (/rreth-nesh)", "### Nderro (këmbimi) (/nderro)", "Oferta vlen 7 ditë")) {
+            assertTrue(system.contains(expected), "missing: " + expected);
+        }
+        assertFalse(system.contains("th:") || system.contains("${"), "template code leaked into the prompt");
+
+        Document terms = page("/kushtet-e-perdorimit");
+        assertTrue(terms.text().contains("brenda 3 ditëve nga dita që e merrni"), terms.text());
+        assertEquals(1, terms.select("h1").size());
     }
 
     @Test
