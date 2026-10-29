@@ -358,7 +358,10 @@ class SeoTests {
         assertTrue(system.contains("SHOP POLICIES"));
         for (String expected : List.of("### Kushtet e përdorimit (/kushtet-e-perdorimit)", "brenda 3 ditëve",
                 "Çfarë nuk mbulon:", "### Transporti dhe pagesa (/transporti-dhe-pagesa)", "1–3 ditë pune", "500 Lekë",
-                "### Rreth nesh (/rreth-nesh)", "### Nderro (këmbimi) (/nderro)", "Oferta vlen 7 ditë")) {
+                "### Rreth nesh (/rreth-nesh)", "### Nderro (këmbimi) (/nderro)", "Oferta vlen 7 ditë",
+                "### PC me porosi (/pc-me-porosi)", "Montojmë dhe testojmë – Montim i pastër", "stress test para dorëzimit",
+                "Oferta është falas dhe pa detyrim", "### Kërko produkt (nuk e gjen në stok) (/kerko-produkt)",
+                "Kërkesa është falas", "### Së shpejti (produkte në rrugë) (/se-shpejti)", "Nuk marrim paradhënie")) {
             assertTrue(system.contains(expected), "missing: " + expected);
         }
         assertFalse(system.contains("th:") || system.contains("${"), "template code leaked into the prompt");

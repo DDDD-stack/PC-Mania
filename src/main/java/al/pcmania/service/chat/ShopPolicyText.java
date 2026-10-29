@@ -4,6 +4,7 @@ import al.pcmania.config.AppProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.ITemplateEngine;
@@ -23,7 +24,10 @@ public class ShopPolicyText {
             new Source("Kushtet e përdorimit", "/kushtet-e-perdorimit", "site/pages/terms", Set.of("div.prose")),
             new Source("Transporti dhe pagesa", "/transporti-dhe-pagesa", "site/pages/shipping", Set.of("div.prose")),
             new Source("Rreth nesh", "/rreth-nesh", "site/pages/about", Set.of("div.prose")),
-            new Source("Nderro (këmbimi)", "/nderro", "site/trade", Set.of("p.lead-sm", "ol.steps")));
+            new Source("Nderro (këmbimi)", "/nderro", "site/trade", Set.of("p.lead-sm", "ol.steps")),
+            new Source("PC me porosi", "/pc-me-porosi", "site/build", Set.of("p.lead-sm", "ol.steps", "div.alert")),
+            new Source("Kërko produkt (nuk e gjen në stok)", "/kerko-produkt", "site/wish", Set.of("p.lead-sm", "ol.steps", "div.alert")),
+            new Source("Së shpejti (produkte në rrugë)", "/se-shpejti", "site/upcoming", Set.of("p.lead-sm", "div.alert")));
 
     private final ITemplateEngine templates;
     private final ApplicationContext context;
@@ -64,7 +68,8 @@ public class ShopPolicyText {
 
     static String plain(String html) {
         StringBuilder b = new StringBuilder();
-        for (Element e : Jsoup.parseBodyFragment(html).select("h2, h3, p, li")) {
+        for (Element e : Jsoup.parseBodyFragment(html).select("h2, h3, p, li, div.alert")) {
+            e.select("br").forEach(br -> br.replaceWith(new TextNode(" – ")));
             String line = e.text().replaceAll("\\s+", " ").strip();
             if (line.isEmpty()) continue;
             if (e.is("h2, h3")) b.append("## ").append(line);
