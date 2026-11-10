@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration
@@ -37,11 +38,19 @@ public class SecurityConfig {
                 .addFilterBefore(attempts.filter(), UsernamePasswordAuthenticationFilter.class)
                 .logout(l -> l.logoutUrl("/admin/logout").logoutSuccessUrl("/admin/login?logout"))
 
-                .csrf(c -> c.ignoringRequestMatchers("/porosit/**", "/pc-me-porosi", "/kerko-produkt", "/nderro/**"))
+                .csrf(c -> c
+                        .csrfTokenRequestHandler(eagerCsrfTokenHandler())
+                        .ignoringRequestMatchers("/porosit/**", "/pc-me-porosi", "/kerko-produkt", "/nderro/**"))
                 .headers(h -> h
                         .frameOptions(f -> f.sameOrigin())
                         .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
                 .build();
+    }
+
+    private static CsrfTokenRequestAttributeHandler eagerCsrfTokenHandler() {
+        CsrfTokenRequestAttributeHandler handler = new CsrfTokenRequestAttributeHandler();
+        handler.setCsrfRequestAttributeName(null);
+        return handler;
     }
 
     @Bean
