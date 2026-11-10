@@ -377,6 +377,35 @@ class PostgresIntegrationTests {
         mvc.perform(get("/kerko").param("q", "%")).andExpect(status().isOk());
     }
 
+    @Test
+    void aUsedProductShowsWhetherItHasItsBoxAndCardsCarryEveryPhoto() throws Exception {
+        Product p = product(1);
+        tx.executeWithoutResult(s -> {
+            Product fresh = products.findById(p.getId()).orElseThrow();
+            fresh.setHasOriginalBox(true);
+            fresh.getImages().add(new al.pcmania.domain.ProductImage(fresh, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1.jpg", 1, true));
+            fresh.getImages().add(new al.pcmania.domain.ProductImage(fresh, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa2.jpg", 2, false));
+            products.save(fresh);
+        });
+
+        mvc.perform(get("/produkt/" + p.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Me kutinë origjinale")));
+
+        String token = p.getTitle().substring("Test GPU ".length(), "Test GPU ".length() + 13);
+        mvc.perform(get("/kerko").param("q", token))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("card-gallery")));
+
+        tx.executeWithoutResult(s -> {
+            Product fresh = products.findById(p.getId()).orElseThrow();
+            fresh.setHasOriginalBox(false);
+            products.save(fresh);
+        });
+        mvc.perform(get("/produkt/" + p.getSlug()))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Pa kuti")));
+    }
+
     private Product product(int quantity) {
         return tx.execute(s -> {
             Product p = new Product();

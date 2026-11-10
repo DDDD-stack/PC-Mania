@@ -65,3 +65,17 @@
       ?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
   });
 })();
+
+document.querySelectorAll('[data-card-gallery]').forEach((gallery) => {
+  const dots = gallery.parentElement.querySelector('.card-dots');
+  if (!dots) return;
+  let frame = 0;
+  gallery.addEventListener('scroll', () => {
+    if (frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      const index = Math.round(gallery.scrollLeft / Math.max(gallery.clientWidth, 1));
+      Array.from(dots.children).forEach((dot, i) => dot.classList.toggle('is-active', i === index));
+    });
+  }, { passive: true });
+});

@@ -52,6 +52,7 @@ public class ProductForm {
     private Integer warrantyDays;
     private String testNotes;
     private boolean miningFree;
+    private Boolean hasOriginalBox;
     private boolean transportIncluded;
 
     private boolean tradeEligible;
@@ -155,6 +156,7 @@ public class ProductForm {
         f.warrantyDays = p.getWarrantyDays();
         f.testNotes = p.getTestNotes();
         f.miningFree = p.isMiningFree();
+        f.hasOriginalBox = p.getHasOriginalBox();
         f.transportIncluded = p.isTransportIncluded();
         f.tradeEligible = p.isTradeEligible();
         f.maxTradeValueLek = p.getMaxTradeValueLek();

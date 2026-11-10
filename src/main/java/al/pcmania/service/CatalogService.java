@@ -224,10 +224,11 @@ public class CatalogService {
     public List<ProductCard> cards(List<Product> list) {
         if (list.isEmpty()) return List.of();
         List<Long> ids = list.stream().map(Product::getId).toList();
-        Map<Long, String> primary = images.findByProductIdInOrderBySortOrderAsc(ids)
-                .stream().collect(Collectors.toMap(i -> i.getProduct().getId(), ProductImage::getFilename, (a, b) -> a));
+        Map<Long, List<String>> byProduct = images.findByProductIdInOrderBySortOrderAsc(ids).stream()
+                .collect(Collectors.groupingBy(i -> i.getProduct().getId(), LinkedHashMap::new,
+                        Collectors.mapping(ProductImage::getFilename, Collectors.toList())));
         Map<Long, String> lines = specLines(list);
-        return list.stream().map(p -> ProductCard.of(p, primary.get(p.getId()), lines.get(p.getId()))).toList();
+        return list.stream().map(p -> ProductCard.of(p, byProduct.getOrDefault(p.getId(), List.of()), lines.get(p.getId()))).toList();
     }
 
     private Map<Long, String> specLines(List<Product> list) {

@@ -28,6 +28,7 @@ public record ProductDetail(
         Integer warrantyDays,
         String testNotes,
         boolean miningFree,
+        Boolean hasOriginalBox,
         boolean transportIncluded,
 
         boolean tradeEligible,
@@ -58,7 +59,7 @@ public record ProductDetail(
         return new ProductDetail(p.getId(), p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
                 p.getModel(), p.getGtin(), p.getCategorySlug(), p.getCondition(), p.getPriceLek(), p.getQuantity(), p.getStatus(),
                 p.getShortDescription(), p.getFullDescription(), p.getMetaDescription(), p.getWarrantyDays(), p.getTestNotes(),
-                p.isMiningFree(), p.isTransportIncluded(), p.isTradeEligible(), specs,
+                p.isMiningFree(), p.getHasOriginalBox(), p.isTransportIncluded(), p.isTradeEligible(), specs,
                 p.getImages().stream().map(ProductImage::getFilename).toList(), prebuilt, specLine);
     }
 

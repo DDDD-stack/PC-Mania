@@ -39,6 +39,7 @@ public class Product {
     private String testNotes;
     @Column(name = "is_mining_free")
     private boolean miningFree;
+    private Boolean hasOriginalBox;
     private boolean transportIncluded;
 
     private boolean tradeEligible;

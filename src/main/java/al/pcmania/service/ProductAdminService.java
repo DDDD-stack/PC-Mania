@@ -152,6 +152,7 @@ public class ProductAdminService {
         p.setWarrantyDays(form.getWarrantyDays());
         p.setTestNotes(trimToNull(form.getTestNotes()));
         p.setMiningFree(form.isMiningFree());
+        p.setHasOriginalBox(form.getCondition() == Condition.NEW ? null : form.getHasOriginalBox());
         p.setTransportIncluded(form.isTransportIncluded());
         p.setTradeEligible(form.isTradeEligible());
         p.setMaxTradeValueLek(form.isTradeEligible() ? form.getMaxTradeValueLek() : null);
@@ -226,6 +227,7 @@ public class ProductAdminService {
         p.setWarrantyDays(src.getWarrantyDays());
         p.setTestNotes(src.getTestNotes());
         p.setMiningFree(src.isMiningFree());
+        p.setHasOriginalBox(src.getHasOriginalBox());
         p.setTransportIncluded(src.isTransportIncluded());
         p.setTradeEligible(src.isTradeEligible());
         p.setMaxTradeValueLek(src.getMaxTradeValueLek());

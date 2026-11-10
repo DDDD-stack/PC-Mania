@@ -8,9 +8,17 @@
 
 <a th:fragment="cardLink(p)" class="product-card" th:href="@{/produkt/{s}(s=${p.slug})}">
     <div class="product-thumb">
-        <img data-fade th:src="${@img.medium(p.imageFilename)}" th:srcset="${@img.srcset(p.imageFilename)}"
+        <div th:if="${p.hasGallery()}" class="card-gallery" data-card-gallery>
+            <img th:each="f : ${p.imageFilenames}" data-fade th:src="${@img.medium(f)}" th:srcset="${@img.srcset(f)}"
+                 sizes="(min-width: 1200px) 270px, (min-width: 768px) 33vw, 50vw"
+                 th:alt="${p.title}" width="400" height="400" loading="lazy" decoding="async">
+        </div>
+        <img th:unless="${p.hasGallery()}" data-fade th:src="${@img.medium(p.imageFilename)}" th:srcset="${@img.srcset(p.imageFilename)}"
              sizes="(min-width: 1200px) 270px, (min-width: 768px) 33vw, 50vw"
              th:alt="${p.title}" width="400" height="400" loading="lazy" decoding="async">
+        <span th:if="${p.hasGallery()}" class="card-dots" aria-hidden="true">
+            <i th:each="f, st : ${p.imageFilenames}" th:classappend="${st.first} ? 'is-active'"></i>
+        </span>
         <span class="badge cond-badge" th:classappend="'cond-' + ${p.condition}" th:text="${p.condition.label}"></span>
         <span th:if="${p.tradeEligible && !p.reserved}" class="badge trade-badge" title="Pranon këmbim (Nderro)"><i class="bi bi-arrow-left-right me-1"></i>Nderrim</span>
         <span th:if="${p.reserved}" class="badge state-badge state-reserved">REZERVUAR</span>

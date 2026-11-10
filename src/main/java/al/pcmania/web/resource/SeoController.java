@@ -35,7 +35,6 @@ public class SeoController {
         String body = """
                 User-agent: *
                 Disallow: /admin
-                Disallow: /porosit/
                 Allow: /
 
                 Sitemap: %s
