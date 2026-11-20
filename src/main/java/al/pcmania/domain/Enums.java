@@ -162,7 +162,8 @@ public final class Enums {
     }
 
     public enum PromoTheme {
-        FIRE("Zjarr"), BLACK("Black Friday"), NEON("Neon"), OCEAN("Oqean");
+        FIRE("Zjarr"), BLACK("Black Friday"), NEON("Neon"), OCEAN("Oqean"),
+        CHRISTMAS("Krishtlindje"), NEW_YEAR("Viti i Ri"), INDEPENDENCE("Festat e Nëntorit");
         public final String label;
         PromoTheme(String label) { this.label = label; }
         public String getLabel() { return label; }

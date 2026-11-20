@@ -134,6 +134,18 @@ textarea ~ .from-catalog { top: .55rem; transform: none; }
 .promo-theme-BLACK { --promo-bg: linear-gradient(120deg, #050505 0%, #18181b 60%, #27272a 100%); --promo-ink: #fafafa; --promo-pop: #fbbf24; --promo-glow: rgba(251,191,36,.35); }
 .promo-theme-NEON { --promo-bg: linear-gradient(120deg, #6d28d9 0%, #c026d3 55%, #ec4899 100%); --promo-ink: #fff; --promo-pop: #fdf4ff; --promo-glow: rgba(217,70,239,.45); }
 .promo-theme-OCEAN { --promo-bg: linear-gradient(120deg, #1d4ed8 0%, #0284c7 55%, #06b6d4 100%); --promo-ink: #fff; --promo-pop: #ecfeff; --promo-glow: rgba(6,182,212,.4); }
+.promo-theme-CHRISTMAS { --promo-bg: linear-gradient(120deg, #052e16 0%, #14532d 55%, #166534 100%); --promo-ink: #fff; --promo-pop: #fde68a;
+    --promo-glow: rgba(220,38,38,.4); --promo-badge: linear-gradient(120deg, #b91c1c, #dc2626); --promo-badge-ink: #fff; }
+.promo-theme-NEW_YEAR { --promo-bg: linear-gradient(120deg, #0b1026 0%, #1e1b4b 55%, #3b2f8f 100%); --promo-ink: #fff; --promo-pop: #fcd34d;
+    --promo-glow: rgba(252,211,77,.35); --promo-badge: linear-gradient(120deg, #f59e0b, #fcd34d); --promo-badge-ink: #1e1b4b; }
+.promo-theme-INDEPENDENCE { --promo-bg: linear-gradient(120deg, #7f0a0c 0%, #c8102e 50%, #e41e20 100%); --promo-ink: #fff; --promo-pop: #fff;
+    --promo-glow: rgba(228,30,32,.45); --promo-badge: #0a0a0a; --promo-badge-ink: #fff; }
+.promo-theme-CHRISTMAS.promo-card-head, .theme-pick .promo-theme-CHRISTMAS span {
+    background-image: radial-gradient(circle, rgba(255,255,255,.75) 0 1.2px, transparent 1.8px), var(--promo-bg); background-size: 22px 22px, 100% 100%; }
+.promo-theme-NEW_YEAR.promo-card-head, .theme-pick .promo-theme-NEW_YEAR span {
+    background-image: radial-gradient(circle, rgba(252,211,77,.9) 0 1.1px, transparent 1.7px), var(--promo-bg); background-size: 26px 26px, 100% 100%; }
+.promo-theme-INDEPENDENCE.promo-card-head { box-shadow: inset 0 -5px 0 #0a0a0a; }
+.theme-pick .promo-theme-INDEPENDENCE span { box-shadow: inset 0 -5px 0 #0a0a0a; }
 
 .promo-hero { position: relative; overflow: hidden; border-radius: 1rem; padding: 1.4rem 1.5rem; margin-bottom: 1.25rem; color: #fff;
     background: radial-gradient(600px 220px at 100% 0%, rgba(249,115,22,.45), transparent 70%), radial-gradient(500px 200px at 0% 100%, rgba(225,29,72,.35), transparent 70%), #0f172a; }
@@ -266,15 +278,16 @@ textarea ~ .from-catalog { top: .55rem; transform: none; }
 .preview-product .pv-img { position: relative; flex: none; width: 92px; height: 92px; border-radius: .6rem; background: #f8fafc; display: grid; place-items: center; overflow: hidden; }
 .preview-product .pv-img img { width: 100%; height: 100%; object-fit: contain; }
 .preview-product .pv-img > i { font-size: 2rem; color: #cbd5e1; }
-.pv-badge { position: absolute; left: .3rem; bottom: .3rem; padding: .1rem .4rem; border-radius: .4rem; font-weight: 900; font-size: .85rem; color: var(--promo-ink); background: var(--promo-bg); }
+.pv-badge { position: absolute; left: .3rem; bottom: .3rem; padding: .1rem .4rem; border-radius: .4rem; font-weight: 900; font-size: .85rem;
+    color: var(--promo-badge-ink, var(--promo-ink)); background: var(--promo-badge, var(--promo-bg)); }
 .preview-product .pv-title { font-weight: 600; font-size: .9rem; line-height: 1.25; }
 .preview-product .pv-was { color: #94a3b8; text-decoration: line-through; font-size: .8rem; }
 .preview-product .pv-now { font-weight: 900; font-size: 1.25rem; color: #e11d48; line-height: 1.1; }
 .preview-product .pv-save { display: inline-block; margin-top: .2rem; padding: .05rem .4rem; border-radius: .35rem; background: #dcfce7; color: #166534; font-size: .72rem; font-weight: 700; }
 
-.theme-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+.theme-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.4rem, 1fr)); gap: .5rem; }
 .theme-pick input { position: absolute; opacity: 0; pointer-events: none; }
-.theme-pick label { display: block; border-radius: .7rem; padding: .25rem; border: 2px solid transparent; cursor: pointer; text-align: center; font-size: .72rem; font-weight: 700; color: #475569; }
+.theme-pick label { display: block; border-radius: .7rem; padding: .25rem; border: 2px solid transparent; cursor: pointer; text-align: center; font-size: .72rem; font-weight: 700; color: #475569; line-height: 1.2; }
 .theme-pick label span { display: block; height: 2.2rem; border-radius: .5rem; background: var(--promo-bg); margin-bottom: .25rem; }
 .theme-pick input:checked + label { border-color: #0f172a; }
 .theme-pick input:focus-visible + label { outline: 2px solid #f97316; outline-offset: 2px; }
