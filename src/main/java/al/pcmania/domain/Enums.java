@@ -153,4 +153,25 @@ public final class Enums {
         LeadStatus(String label) { this.label = label; }
         public String getLabel() { return label; }
     }
+
+    public enum DiscountType {
+        PERCENT("Përqindje"), AMOUNT("Lekë më pak");
+        public final String label;
+        DiscountType(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
+    public enum PromoTheme {
+        FIRE("Zjarr"), BLACK("Black Friday"), NEON("Neon"), OCEAN("Oqean");
+        public final String label;
+        PromoTheme(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
+
+    public enum PromoState {
+        LIVE("Live tani"), SCHEDULED("E planifikuar"), PAUSED("E ndalur"), ENDED("Mbaroi");
+        public final String label;
+        PromoState(String label) { this.label = label; }
+        public String getLabel() { return label; }
+    }
 }

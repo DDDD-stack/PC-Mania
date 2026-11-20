@@ -3,6 +3,7 @@ package al.pcmania.web.site;
 import al.pcmania.config.AppProperties;
 import al.pcmania.service.CatalogService;
 import al.pcmania.domain.Enums.UpcomingStatus;
+import al.pcmania.service.PricingService;
 import al.pcmania.service.SeoService;
 import al.pcmania.service.UpcomingService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class SiteAdvice {
     private final SeoService seo;
     private final AppProperties props;
     private final UpcomingService upcoming;
+    private final PricingService pricing;
 
     @ModelAttribute
     void common(Model model) {
@@ -26,5 +28,7 @@ public class SiteAdvice {
         model.addAttribute("whatsappGeneral", seo.whatsappLink("Përshëndetje PCMania! Kam një pyetje."));
 
         model.addAttribute("hasUpcoming", upcoming.countByStatus(UpcomingStatus.VISIBLE) > 0);
+        model.addAttribute("promoBar", pricing.banner().orElse(null));
+        model.addAttribute("hasDeals", !pricing.live().isEmpty());
     }
 }

@@ -5,9 +5,11 @@ import al.pcmania.domain.Enums.Condition;
 import al.pcmania.service.CatalogService;
 import al.pcmania.service.ComboService;
 import al.pcmania.service.NotFoundException;
+import al.pcmania.service.PricingService;
 import al.pcmania.service.SeoService;
 import al.pcmania.service.UpcomingService;
 import al.pcmania.web.view.CatalogFilter;
+import al.pcmania.web.view.ComboView;
 import al.pcmania.web.view.ProductDetail;
 import al.pcmania.web.view.Seo;
 import lombok.RequiredArgsConstructor;
@@ -36,15 +38,34 @@ public class CatalogController {
     private final UpcomingService upcoming;
     private final SeoService seo;
     private final ComboService combos;
+    private final PricingService pricing;
 
     @GetMapping("/")
     String home(Model model) {
+        List<ProductCard> deals = catalog.onSale(12);
         model.addAttribute("seo", seo.home());
         model.addAttribute("combos", combos.visible(4));
         model.addAttribute("newest", catalog.newest(8));
         model.addAttribute("tiles", catalog.categoryTiles());
         model.addAttribute("upcoming", upcoming.publicList().stream().limit(4).toList());
+        model.addAttribute("deals", deals);
+        model.addAttribute("dealPromo", deals.isEmpty() ? null : pricing.live().stream().findFirst().orElse(null));
         return "site/home";
+    }
+
+    @GetMapping("/oferta")
+    String deals(Model model) {
+        List<ProductCard> deals = catalog.onSale(200);
+        List<ComboView> bundles = combos.visible(50);
+        boolean empty = deals.isEmpty() && bundles.isEmpty();
+        Seo page = seo.page("Oferta: ulje çmimesh dhe paketa",
+                "Karta grafike dhe pjesë kompjuteri me çmim të ulur për një kohë të shkurtër, dhe paketa me çmim më të mirë se veç e veç. Pagesë në dorëzim në gjithë Shqipërinë.",
+                "/oferta");
+        model.addAttribute("seo", empty ? page.withNoindex() : page);
+        model.addAttribute("deals", deals);
+        model.addAttribute("bundles", bundles);
+        model.addAttribute("promos", pricing.live());
+        return "site/deals";
     }
 
     @GetMapping("/kategori/{slug}")

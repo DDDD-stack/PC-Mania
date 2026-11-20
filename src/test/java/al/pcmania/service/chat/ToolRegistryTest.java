@@ -35,7 +35,7 @@ class ToolRegistryTest {
 
     @Test
     void dispatchParsesArgumentsAndCollectsSlugs() throws Exception {
-        ChatTools.StockItem item = new ChatTools.StockItem("msi-3060-ti", "MSI RTX 3060 Ti", 38_000, "E përdorur", 90, 8, 11, 600,
+        ChatTools.StockItem item = new ChatTools.StockItem("msi-3060-ti", "MSI RTX 3060 Ti", 38_000, null, "E përdorur", 90, 8, 11, 600,
                 "1x 8-pin", 242, "FurMark ok", true, false, "GeForce RTX 3060 Ti", 300, 92, 64);
         when(tools.searchStock(isNull(), eq(40000), eq(ChatTools.UseCase.AAA_1080P), isNull(), eq(650), eq(GpuVendor.NVIDIA)))
                 .thenReturn(List.of(item));

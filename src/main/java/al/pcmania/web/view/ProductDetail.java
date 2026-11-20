@@ -2,11 +2,14 @@ package al.pcmania.web.view;
 
 import al.pcmania.domain.Enums.Condition;
 import al.pcmania.domain.Enums.ProductStatus;
+import al.pcmania.domain.Enums.PromoTheme;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductImage;
 import al.pcmania.domain.ProductSpec;
 import al.pcmania.service.FieldTemplateService;
+import al.pcmania.service.PricingService;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,15 +38,20 @@ public record ProductDetail(
         List<Spec> specs,
         List<String> images,
         PrebuiltView prebuilt,
-        String specLine) {
+        String specLine,
+        Integer regularPriceLek,
+        LocalDateTime saleEndsAt,
+        PromoTheme saleTheme,
+        String promotionName) {
 
     public record Spec(String key, String value) {}
 
     public static ProductDetail of(Product p) {
-        return of(p, null, null);
+        return of(p, null, null, null);
     }
 
-    public static ProductDetail of(Product p, FieldTemplateService.Template template, PrebuiltView prebuilt) {
+    public static ProductDetail of(Product p, FieldTemplateService.Template template, PrebuiltView prebuilt,
+                                   PricingService.Sale sale) {
         List<Spec> specs = new ArrayList<>();
         List<String> listing = new ArrayList<>();
         for (ProductSpec s : p.getSpecs()) {
@@ -57,10 +65,33 @@ public record ProductDetail(
         }
         String specLine = prebuilt != null ? prebuilt.specLine() : listing.isEmpty() ? null : String.join(" · ", listing);
         return new ProductDetail(p.getId(), p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
-                p.getModel(), p.getGtin(), p.getCategorySlug(), p.getCondition(), p.getPriceLek(), p.getQuantity(), p.getStatus(),
+                p.getModel(), p.getGtin(), p.getCategorySlug(), p.getCondition(),
+                sale == null ? p.getPriceLek() : sale.priceLek(), p.getQuantity(), p.getStatus(),
                 p.getShortDescription(), p.getFullDescription(), p.getMetaDescription(), p.getWarrantyDays(), p.getTestNotes(),
                 p.isMiningFree(), p.getHasOriginalBox(), p.isTransportIncluded(), p.isTradeEligible(), specs,
-                p.getImages().stream().map(ProductImage::getFilename).toList(), prebuilt, specLine);
+                p.getImages().stream().map(ProductImage::getFilename).toList(), prebuilt, specLine,
+                sale == null ? null : sale.regularPriceLek(), sale == null ? null : sale.endsAt(),
+                sale == null ? null : sale.theme(), sale == null ? null : sale.promotionName());
+    }
+
+    public boolean isOnSale() {
+        return regularPriceLek != null && regularPriceLek > priceLek;
+    }
+
+    public int getSavingsLek() {
+        return isOnSale() ? regularPriceLek - priceLek : 0;
+    }
+
+    public int getDiscountPercent() {
+        return isOnSale() ? Deals.percent(regularPriceLek, priceLek) : 0;
+    }
+
+    public long getSaleEndsAtMillis() {
+        return Deals.epochMillis(saleEndsAt);
+    }
+
+    public String getSaleThemeClass() {
+        return "sale-theme-" + (saleTheme == null ? PromoTheme.FIRE : saleTheme).name();
     }
 
     public boolean isTradeable() {

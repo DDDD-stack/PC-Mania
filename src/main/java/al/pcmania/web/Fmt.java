@@ -1,5 +1,6 @@
 package al.pcmania.web;
 
+import al.pcmania.web.view.Deals;
 import org.springframework.stereotype.Component;
 
 import java.text.DecimalFormat;
@@ -47,6 +48,14 @@ public class Fmt {
 
     public long daysSince(LocalDateTime t) {
         return t == null ? 0 : ChronoUnit.DAYS.between(t, LocalDateTime.now());
+    }
+
+    public long epoch(LocalDateTime t) {
+        return Deals.epochMillis(t);
+    }
+
+    public String urgency(LocalDateTime t) {
+        return Deals.urgency(t);
     }
 
     public static String thousands(int amount) {

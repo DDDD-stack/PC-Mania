@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${promotion == null} ? 'Ofertë e re' : ${promotion.name})}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('promotions')}"></nav>
+<main class="container-xl py-3 pb-5">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <a href="/admin/promotions" class="btn btn-sm btn-outline-secondary" aria-label="Kthehu te promocionet"><i class="bi bi-arrow-left"></i></a>
+        <h1 class="h4 mb-0 me-auto" th:text="${promotion == null} ? 'Ulje çmimi e re' : ${promotion.name}"></h1>
+        <th:block th:if="${row != null}">
+            <span class="badge rounded-pill text-bg-dark px-3 py-2" th:text="${row.state.label}"></span>
+            <a class="btn btn-sm btn-outline-primary" href="/oferta" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Shiko në faqe</a>
+        </th:block>
+    </div>
+
+    <form th:action="${promotion == null} ? @{/admin/promotions} : @{/admin/promotions/{id}(id=${promotion.id})}" method="post" id="promoForm" novalidate>
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <section class="card card-body mb-3 step-card">
+                    <div class="step-head"><span class="step-n">1</span><h2>Oferta</h2></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="name">Emri *</label>
+                        <input class="form-control form-control-lg" id="name" name="name" th:value="${form.name}" required maxlength="120"
+                               placeholder="p.sh. Black Friday" autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="form-label fw-semibold" for="headline">Mesazhi në banner</label>
+                        <input class="form-control" id="headline" name="headline" th:value="${form.headline}" maxlength="200"
+                               placeholder="p.sh. Deri -30% në kartat grafike – vetëm këtë fundjavë!" autocomplete="off">
+                        <div class="form-text">Ky është rreshti që lexon klienti në krye të çdo faqeje. Bosh = emri + zbritja më e madhe.</div>
+                    </div>
+                </section>
+
+                <section class="card card-body mb-3 step-card">
+                    <div class="step-head"><span class="step-n">2</span><h2>Zbritja</h2></div>
+                    <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+                        <div class="seg" role="radiogroup" aria-label="Lloji i zbritjes">
+                            <input type="radio" name="discountType" id="dtPercent" value="PERCENT" th:checked="${form.discountType == null or form.discountType.name() == 'PERCENT'}">
+                            <label for="dtPercent"><i class="bi bi-percent me-1"></i>Përqindje</label>
+                            <input type="radio" name="discountType" id="dtAmount" value="AMOUNT" th:checked="${form.discountType != null and form.discountType.name() == 'AMOUNT'}">
+                            <label for="dtAmount"><i class="bi bi-cash me-1"></i>Lekë më pak</label>
+                        </div>
+                        <div class="discount-input">
+                            <input class="form-control" type="number" min="0" step="1" id="discountValue" name="discountValue" th:value="${form.discountValue}" aria-label="Sa është zbritja">
+                            <span id="discountUnit">%</span>
+                        </div>
+                    </div>
+                    <div class="chip-row" id="valueChips"></div>
+                    <div class="form-text mt-2">Çmimi i ri rrumbullakohet poshtë në 100 Lekë, që të duket i pastër. Për një çmim të saktë, shkruajeni te produkti më poshtë.</div>
+                </section>
+
+                <section class="card card-body mb-3 step-card">
+                    <div class="step-head"><span class="step-n">3</span><h2>Kur</h2></div>
+                    <div class="chip-row mb-3">
+                        <button type="button" class="chip" data-preset="tonight"><i class="bi bi-moon-stars me-1"></i>Sot deri në mesnatë</button>
+                        <button type="button" class="chip" data-preset="weekend"><i class="bi bi-calendar-week me-1"></i>Fundjava</button>
+                        <button type="button" class="chip" data-preset="week"><i class="bi bi-calendar3 me-1"></i>7 ditë</button>
+                        <button type="button" class="chip chip-hot" data-preset="blackfriday"><i class="bi bi-lightning-charge-fill me-1"></i>Black Friday → Cyber Monday</button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold mb-1" for="startsAt">Fillon *</label>
+                            <input class="form-control" type="datetime-local" id="startsAt" name="startsAt" required
+                                   th:value="${form.startsAt != null} ? ${#temporals.format(form.startsAt, 'yyyy-MM-dd''T''HH:mm')} : ''">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold mb-1" for="endsAt">Mbaron *</label>
+                            <input class="form-control" type="datetime-local" id="endsAt" name="endsAt" required
+                                   th:value="${form.endsAt != null} ? ${#temporals.format(form.endsAt, 'yyyy-MM-dd''T''HH:mm')} : ''">
+                        </div>
+                    </div>
+                    <div class="form-text">Ora e Tiranës. Oferta ndizet dhe fiket vetë në minutën e saktë; çmimet kthehen si më parë pa bërë asgjë.</div>
+                </section>
+
+                <section class="card card-body mb-3 step-card">
+                    <div class="step-head"><span class="step-n">4</span><h2>Produktet</h2><span class="ms-auto small text-body-secondary" id="pickCount"></span></div>
+                    <div class="pick-tools">
+                        <div class="input-group input-group-sm" style="max-width: 18rem">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="search" class="form-control" id="pickSearch" placeholder="Kërko produkt…" aria-label="Kërko produkt" autocomplete="off">
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-dark" id="pickVisible"><i class="bi bi-check2-all me-1"></i>Zgjidh të dukshmet</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="pickNone">Hiq të gjitha</button>
+                    </div>
+                    <div class="chip-row mb-2" id="catChips">
+                        <button type="button" class="chip is-on" data-cat="">Të gjitha</button>
+                        <button type="button" class="chip" th:each="e : ${categoryNames}" th:attr="data-cat=${e.key}" th:text="${e.value}"></button>
+                    </div>
+                    <div class="pick-list" id="pickList">
+                        <label class="pick-row" th:each="p : ${products}"
+                               th:attr="data-price=${p.priceLek},data-cost=${p.costLek},data-cat=${p.categorySlug},data-title=${#strings.toLowerCase(p.title)},data-img=${p.primaryImage != null} ? ${@img.thumb(p.primaryImage.filename)} : ''">
+                            <input type="checkbox" name="productId" th:value="${p.id}" th:checked="${form.includes(p.id)}" th:attr="aria-label=${p.title}">
+                            <img th:if="${p.primaryImage != null}" th:src="${@img.thumb(p.primaryImage.filename)}" alt="" width="44" height="44" loading="lazy">
+                            <span th:unless="${p.primaryImage != null}" class="noimg"><i class="bi bi-image"></i></span>
+                            <span class="pick-main">
+                                <span class="pick-title" th:text="${p.title}"></span>
+                                <span class="pick-sub">
+                                    <span th:text="${categoryNames[p.categorySlug]}"></span>
+                                    <span th:if="${p.status.name() != 'ACTIVE'}" class="badge text-bg-secondary ms-1" th:text="${p.status.label}"></span>
+                                    <span th:if="${p.status.name() == 'ACTIVE' and p.quantity == 0}" class="badge text-bg-warning ms-1">pa stok</span>
+                                    <span class="pick-warn" hidden></span>
+                                </span>
+                            </span>
+                            <span class="pick-prices">
+                                <s class="pick-was" th:text="${@fmt.price(p.priceLek)}"></s>
+                                <strong class="pick-now" th:text="${@fmt.price(p.priceLek)}"></strong>
+                                <span class="pick-pct"></span>
+                            </span>
+                            <input class="form-control form-control-sm pick-fixed" type="text" inputmode="numeric" th:name="'fixed_' + ${p.id}"
+                                   th:value="${form.fixedPriceFor(p.id)}" placeholder="Çmim fiks" title="Opsionale: një çmim i saktë për këtë produkt" th:attr="aria-label='Çmim fiks për ' + ${p.title}">
+                        </label>
+                        <div th:if="${products.empty}" class="p-4 text-center text-body-secondary">Nuk ka produkte për ofertë. Shtoni një produkt fillimisht.</div>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="sticky-col">
+                    <section class="card card-body mb-3 step-card">
+                        <div class="step-head"><i class="bi bi-eye text-danger fs-5"></i><h2>Si e sheh klienti</h2></div>
+                        <div class="preview-stage">
+                            <div class="preview-bar promo-theme-FIRE" id="previewBar">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                                <strong id="pvHeadline">Oferta</strong>
+                                <span class="pv-clock" id="pvClock"></span>
+                                <span class="pv-cta d-none d-sm-inline">Shiko <i class="bi bi-arrow-right"></i></span>
+                            </div>
+                            <div class="preview-product" id="previewProduct">
+                                <div class="pv-img promo-theme-FIRE" id="pvImgWrap"><i class="bi bi-gpu-card" id="pvNoImg"></i><img id="pvImg" alt="" hidden><span class="pv-badge" id="pvBadge">-0%</span></div>
+                                <div class="min-w-0">
+                                    <div class="pv-title text-truncate" id="pvTitle">Zgjidhni një produkt</div>
+                                    <div class="pv-was" id="pvWas"></div>
+                                    <div class="pv-now" id="pvNow">—</div>
+                                    <span class="pv-save" id="pvSave" hidden></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fw-semibold small mt-3 mb-2">Ngjyra</div>
+                        <div class="theme-pick" role="radiogroup" aria-label="Ngjyra e ofertës">
+                            <th:block th:each="t : ${themes}">
+                                <input type="radio" name="theme" th:id="'theme' + ${t}" th:value="${t}" th:checked="${form.theme == t or (form.theme == null and t.name() == 'FIRE')}">
+                                <label th:for="'theme' + ${t}" th:classappend="'promo-theme-' + ${t}"><span></span><th:block th:text="${t.label}"></th:block></label>
+                            </th:block>
+                        </div>
+
+                        <div class="form-check form-switch mt-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="showBanner" name="showBanner" value="true" th:checked="${form.showBanner}">
+                            <label class="form-check-label" for="showBanner">Shfaq banerin në krye të çdo faqeje</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="active" name="active" value="true" th:checked="${form.active}">
+                            <label class="form-check-label" for="active">Aktive <span class="text-body-secondary small">(fikeni për ta ndalur pa e fshirë)</span></label>
+                        </div>
+                    </section>
+
+                    <section class="card card-body step-card">
+                        <div class="summary-line"><span>Produkte në ofertë</span><strong id="sumCount">0</strong></div>
+                        <div class="summary-line"><span>Zbritja më e madhe</span><strong id="sumPct">—</strong></div>
+                        <div class="summary-line"><span>Kursimi më i madh për klientin</span><strong id="sumSave">—</strong></div>
+                        <div class="warn-box" id="sumWarn" hidden></div>
+                        <div class="form-text mb-0 mt-2"><i class="bi bi-lock me-1"></i>Kostoja përdoret vetëm këtu për paralajmërimin; klienti nuk e sheh kurrë.</div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <div class="save-bar">
+            <div class="container-xl d-flex gap-2 justify-content-end align-items-center">
+                <span class="small text-body-secondary me-auto d-none d-md-inline" id="saveHint"></span>
+                <a href="/admin/promotions" class="btn btn-outline-secondary">Anulo</a>
+                <button class="btn btn-danger px-4 fw-semibold" type="submit"><i class="bi bi-lightning-charge-fill me-1"></i><span th:text="${promotion == null} ? 'Ndiz ofertën' : 'Ruaj'"></span></button>
+            </div>
+        </div>
+    </form>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+<script>
+    (() => {
+        const form = document.getElementById('promoForm');
+        const rows = [...form.querySelectorAll('.pick-row')];
+        const value = document.getElementById('discountValue');
+        const unit = document.getElementById('discountUnit');
+        const start = document.getElementById('startsAt');
+        const end = document.getElementById('endsAt');
+        const name = document.getElementById('name');
+        const headline = document.getElementById('headline');
+        const bar = document.getElementById('previewBar');
+        const imgWrap = document.getElementById('pvImgWrap');
+        const lek = (n) => n.toLocaleString('de-DE') + ' Lekë';
+        const roundDown = (v) => v <= 0 ? 0 : (v >= 1000 ? v - v % 100 : v - v % 10);
+        const type = () => form.querySelector('input[name=discountType]:checked')?.value || 'PERCENT';
+        const theme = () => form.querySelector('input[name=theme]:checked')?.value || 'FIRE';
+        const digits = (s) => +(String(s || '').replace(/[^0-9]/g, '')) || 0;
+        const sale = (price, fixed) => {
+            if (fixed > 0) return fixed;
+            const v = +value.value || 0;
+            return roundDown(type() === 'PERCENT' ? Math.floor(price * (100 - v) / 100) : price - v);
+        };
+        const pad = (n) => String(n).padStart(2, '0');
+        const local = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        const at = (d, h, m) => { const x = new Date(d); x.setHours(h, m, 0, 0); return x; };
+
+        const chipsFor = { PERCENT: [10, 15, 20, 25, 30, 40], AMOUNT: [1000, 2000, 3000, 5000, 10000] };
+        const drawChips = () => {
+            const box = document.getElementById('valueChips');
+            box.replaceChildren(...chipsFor[type()].map((v) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'chip' + (+value.value === v ? ' is-on' : '');
+                b.textContent = type() === 'PERCENT' ? '-' + v + '%' : '-' + v.toLocaleString('de-DE') + ' L';
+                b.addEventListener('click', () => { value.value = v; update(); });
+                return b;
+            }));
+            unit.textContent = type() === 'PERCENT' ? '%' : 'Lekë';
+            value.max = type() === 'PERCENT' ? 90 : '';
+        };
+
+        const update = () => {
+            let count = 0, maxPct = 0, maxSave = 0, first = null;
+            const warnings = [];
+            rows.forEach((r) => {
+                const on = r.querySelector('input[type=checkbox]').checked;
+                r.classList.toggle('is-on', on);
+                const price = +r.dataset.price;
+                const cost = +r.dataset.cost;
+                const s = sale(price, digits(r.querySelector('.pick-fixed').value));
+                const ok = s > 0 && s < price;
+                const pct = ok ? Math.round((price - s) * 100 / price) : 0;
+                r.querySelector('.pick-now').textContent = on ? (ok ? lek(s) : 'pa ulje') : lek(price);
+                r.querySelector('.pick-pct').textContent = ok ? '-' + pct + '%' : '!';
+                const warn = r.querySelector('.pick-warn');
+                const below = on && ok && cost > 0 && s < cost;
+                warn.hidden = !(on && (!ok || below));
+                warn.textContent = !ok ? 'Çmimi i ri duhet të jetë më i ulët se ' + lek(price) : 'Nën kosto me ' + lek(cost - s);
+                if (!on) return;
+                count++;
+                if (ok) {
+                    maxPct = Math.max(maxPct, pct);
+                    maxSave = Math.max(maxSave, price - s);
+                    if (!first) first = { r, price, s, pct };
+                }
+                if (below) warnings.push(r.querySelector('.pick-title').textContent + ': ' + lek(cost - s) + ' nën kosto');
+            });
+
+            document.getElementById('pickCount').textContent = count ? count + ' të zgjedhura' : 'asnjë e zgjedhur';
+            document.getElementById('sumCount').textContent = count;
+            document.getElementById('sumPct').textContent = maxPct ? '-' + maxPct + '%' : '—';
+            document.getElementById('sumSave').textContent = maxSave ? lek(maxSave) : '—';
+            const w = document.getElementById('sumWarn');
+            w.hidden = !warnings.length;
+            w.innerHTML = '';
+            if (warnings.length) {
+                const head = document.createElement('strong');
+                head.textContent = 'Kujdes, nën kosto:';
+                w.append(head);
+                warnings.forEach((t) => { const d = document.createElement('div'); d.textContent = t; w.append(d); });
+            }
+
+            const t = 'promo-theme-' + theme();
+            bar.className = 'preview-bar ' + t + (document.getElementById('showBanner').checked ? '' : ' is-off');
+            imgWrap.className = 'pv-img ' + t;
+            const title = (name.value || 'Oferta').trim();
+            document.getElementById('pvHeadline').textContent = headline.value.trim() || (maxPct ? title + ' · deri -' + maxPct + '%' : title);
+
+            const img = document.getElementById('pvImg');
+            if (first) {
+                document.getElementById('pvTitle').textContent = first.r.querySelector('.pick-title').textContent;
+                document.getElementById('pvWas').textContent = lek(first.price);
+                document.getElementById('pvNow').textContent = lek(first.s);
+                document.getElementById('pvBadge').textContent = '-' + first.pct + '%';
+                const save = document.getElementById('pvSave');
+                save.hidden = false;
+                save.textContent = 'Kurseni ' + lek(first.price - first.s);
+                img.hidden = !first.r.dataset.img;
+                if (first.r.dataset.img) img.src = first.r.dataset.img;
+                document.getElementById('pvNoImg').hidden = !!first.r.dataset.img;
+            } else {
+                document.getElementById('pvTitle').textContent = 'Zgjidhni një produkt';
+                document.getElementById('pvWas').textContent = '';
+                document.getElementById('pvNow').textContent = '—';
+                document.getElementById('pvBadge').textContent = '-0%';
+                document.getElementById('pvSave').hidden = true;
+                img.hidden = true;
+                document.getElementById('pvNoImg').hidden = false;
+            }
+            document.querySelectorAll('#valueChips .chip').forEach((c) => c.classList.toggle('is-on', c.textContent.replace(/[^0-9]/g, '') === String(+value.value)));
+            document.getElementById('saveHint').textContent = count ? count + ' produkte · deri -' + maxPct + '%' : 'Zgjidhni të paktën një produkt';
+        };
+
+        const clock = () => {
+            const s = new Date(start.value), e = new Date(end.value), now = new Date();
+            const out = document.getElementById('pvClock');
+            if (isNaN(e)) { out.textContent = ''; return; }
+            const target = !isNaN(s) && s > now ? s : e;
+            const left = Math.max(0, target - now);
+            const sec = Math.floor(left / 1000), d = Math.floor(sec / 86400);
+            const hms = pad(Math.floor((sec % 86400) / 3600)) + ':' + pad(Math.floor((sec % 3600) / 60)) + ':' + pad(sec % 60);
+            out.textContent = (target === s ? 'Fillon për ' : 'Mbaron për ') + (d ? d + 'd ' : '') + hms;
+        };
+
+        const presets = {
+            tonight: () => { const n = new Date(); return [n, at(n, 23, 59)]; },
+            week: () => { const n = new Date(); const e = new Date(n); e.setDate(e.getDate() + 7); return [n, at(e, 23, 59)]; },
+            weekend: () => {
+                const n = new Date();
+                const day = n.getDay();
+                const sunday = new Date(n);
+                sunday.setDate(n.getDate() + ((7 - day) % 7));
+                if (day === 6 || day === 0 || (day === 5 && n.getHours() >= 18)) return [n, at(sunday, 23, 59)];
+                const friday = new Date(sunday);
+                friday.setDate(sunday.getDate() - 2);
+                return [at(friday, 18, 0), at(sunday, 23, 59)];
+            },
+            blackfriday: () => {
+                const n = new Date();
+                const bf = (y) => { const d = new Date(y, 10, 1); while (d.getDay() !== 4) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 22); return d; };
+                let f = bf(n.getFullYear());
+                const mon = (d) => { const m = new Date(d); m.setDate(d.getDate() + 3); return at(m, 23, 59); };
+                if (mon(f) < n) f = bf(n.getFullYear() + 1);
+                const s = at(f, 0, 0) < n ? n : at(f, 0, 0);
+                if (!name.value.trim()) name.value = 'Black Friday';
+                const black = document.getElementById('themeBLACK');
+                if (black) black.checked = true;
+                return [s, mon(f)];
+            }
+        };
+        form.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => {
+            const [s, e] = presets[b.dataset.preset]();
+            start.value = local(s);
+            end.value = local(e);
+            form.querySelectorAll('[data-preset]').forEach((x) => x.classList.toggle('is-on', x === b));
+            update();
+            clock();
+        }));
+
+        let cat = '';
+        const filter = () => {
+            const q = document.getElementById('pickSearch').value.trim().toLowerCase();
+            rows.forEach((r) => { r.hidden = (cat && r.dataset.cat !== cat) || (q && !r.dataset.title.includes(q)); });
+        };
+        document.getElementById('catChips').addEventListener('click', (e) => {
+            const b = e.target.closest('.chip');
+            if (!b) return;
+            cat = b.dataset.cat;
+            document.querySelectorAll('#catChips .chip').forEach((x) => x.classList.toggle('is-on', x === b));
+            filter();
+        });
+        document.getElementById('pickSearch').addEventListener('input', filter);
+        document.getElementById('pickVisible').addEventListener('click', () => { rows.filter((r) => !r.hidden).forEach((r) => { r.querySelector('input[type=checkbox]').checked = true; }); update(); });
+        document.getElementById('pickNone').addEventListener('click', () => { rows.forEach((r) => { r.querySelector('input[type=checkbox]').checked = false; }); update(); });
+        document.getElementById('pickList').addEventListener('input', (e) => {
+            if (e.target.classList.contains('pick-fixed') && e.target.value) e.target.closest('.pick-row').querySelector('input[type=checkbox]').checked = true;
+            update();
+        });
+        document.getElementById('pickList').addEventListener('change', update);
+        form.querySelectorAll('input[name=discountType]').forEach((i) => i.addEventListener('change', () => { drawChips(); update(); }));
+        form.querySelectorAll('input[name=theme], #showBanner').forEach((i) => i.addEventListener('change', update));
+        [value, name, headline].forEach((i) => i.addEventListener('input', update));
+        [start, end].forEach((i) => i.addEventListener('change', () => { form.querySelectorAll('[data-preset]').forEach((x) => x.classList.remove('is-on')); clock(); }));
+
+        drawChips();
+        update();
+        clock();
+        setInterval(clock, 1000);
+    })();
+</script>
+</body>
+</html>

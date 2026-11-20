@@ -36,7 +36,7 @@ class GuidedFinderTest {
 
     @Test
     void searchesWithTheAnswersAndOffersTheFormWhenNothingFits() {
-        ChatTools.StockItem item = new ChatTools.StockItem("rx-6600", "Sapphire RX 6600", 24_000, "E përdorur", 90, 8, 8, 450,
+        ChatTools.StockItem item = new ChatTools.StockItem("rx-6600", "Sapphire RX 6600", 24_000, null, "E përdorur", 90, 8, 8, 450,
                 "1x 8-pin", 200, null, false, false, "Radeon RX 6600", 240, 68, 45);
         when(tools.searchStock(isNull(), eq(150_000), eq(ChatTools.UseCase.AAA_1440P), isNull(), eq(550), isNull())).thenReturn(List.of(item));
         GuidedFinder.Step done = finder.step(Map.of("use", "aaa", "res", "1440p", "budget", "150", "psu", "550"));

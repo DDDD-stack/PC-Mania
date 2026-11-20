@@ -43,7 +43,7 @@ class GeminiChatProviderTest {
 
     @Test
     void sendsTheDocumentedShapeAndRunsTheFunctionCallLoop() throws Exception {
-        ChatTools.StockItem item = new ChatTools.StockItem("msi-3060-ti", "MSI RTX 3060 Ti", 38_000, "E përdorur", 90, 8, 11, 600,
+        ChatTools.StockItem item = new ChatTools.StockItem("msi-3060-ti", "MSI RTX 3060 Ti", 38_000, null, "E përdorur", 90, 8, 11, 600,
                 "1x 8-pin", 242, null, false, false, "GeForce RTX 3060 Ti", 300, 92, 64);
         when(tools.searchStock(any(), any(), any(), any(), any(), any())).thenReturn(List.of(item));
         http.stream("data: {\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"searchStock\",\"args\":{\"budgetMaxLek\":40000}},\"thoughtSignature\":\"sig-1\"}],\"role\":\"model\"},\"index\":0}],\"usageMetadata\":{\"promptTokenCount\":700,\"candidatesTokenCount\":20}}")

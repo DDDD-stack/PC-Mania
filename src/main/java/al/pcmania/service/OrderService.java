@@ -49,6 +49,7 @@ public class OrderService {
     private final AppProperties props;
     private final ApplicationEventPublisher events;
     private final EntityManager em;
+    private final PricingService pricing;
 
     public int shippingFor(DeliveryMethod method, boolean transportIncluded) {
         return method == DeliveryMethod.COURIER && !transportIncluded ? props.courierShippingLek() : 0;
@@ -66,7 +67,7 @@ public class OrderService {
         o.setOrderNumber(nextOrderNumber());
         fillCustomer(o, form);
         o.setStatus(OrderStatus.NEW);
-        addItem(o, p, qty, p.getPriceLek());
+        addItem(o, p, qty, pricing.priceNow(p));
         o.setShippingLek(shippingFor(form.getDeliveryMethod(), p.isTransportIncluded()));
         o.setTotalLek(o.getSubtotalLek() + o.getShippingLek());
 
@@ -172,7 +173,7 @@ public class OrderService {
         o.setPaymentMethod(details.payment());
         o.setStatus(OrderStatus.CONFIRMED);
         o.setAdminNotes("Nga këmbimi " + t.getRequestNumber() + ": " + t.getItemType().label + " " + t.getManufacturer() + " " + t.getModel() + ".");
-        addItem(o, p, 1, p.getPriceLek());
+        addItem(o, p, 1, pricing.priceNow(p));
         o.setShippingLek(shippingFor(details.delivery(), p.isTransportIncluded()));
         int credit = t.getQuotedValueLek();
         if (credit > o.getSubtotalLek() + o.getShippingLek()) {

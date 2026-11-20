@@ -7,7 +7,7 @@
     <div th:replace="~{admin/fragments :: flash}"></div>
 
     <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-        <a href="/admin/combos" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+        <a href="/admin/promotions#paketat" class="btn btn-sm btn-outline-secondary" aria-label="Kthehu te promocionet"><i class="bi bi-arrow-left"></i></a>
         <h1 class="h4 mb-0 me-auto" th:text="${combo == null} ? 'Paketë e re' : ${combo.titleSq}"></h1>
         <th:block th:if="${combo != null}">
             <a class="btn btn-sm btn-outline-primary" th:href="@{/paketa/{s}(s=${combo.slug})}" target="_blank" rel="noopener"><i class="bi bi-eye"></i> Shiko</a>
@@ -90,7 +90,7 @@
 
         <div class="save-bar">
             <div class="container-xl d-flex gap-2 justify-content-end">
-                <a href="/admin/combos" class="btn btn-outline-secondary">Anulo</a>
+                <a href="/admin/promotions#paketat" class="btn btn-outline-secondary">Anulo</a>
                 <button class="btn btn-primary px-4" type="submit"><i class="bi bi-check-lg"></i> Ruaj</button>
             </div>
         </div>

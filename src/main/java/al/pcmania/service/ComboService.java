@@ -44,9 +44,15 @@ public class ComboService {
     private final ProductRepository products;
     private final CatalogService catalog;
     private final FieldTemplateService templates;
+    private final PricingService pricing;
 
     public List<ComboView> visible(int limit) {
-        return combos.findVisible(LocalDateTime.now(), PageRequest.of(0, limit)).stream().map(c -> view(c, true)).toList();
+        return combos.findVisible(LocalDateTime.now(), PageRequest.of(0, limit)).stream()
+                .map(c -> view(c, true)).filter(ComboView::visible).toList();
+    }
+
+    int currentTotalLek(Combo c) {
+        return c.getItems().stream().mapToInt(i -> pricing.priceNow(i.getProduct()) * i.getQuantity()).sum();
     }
 
     public List<Combo> visibleEntities() {
@@ -58,7 +64,11 @@ public class ComboService {
     }
 
     public boolean isVisible(Long id) {
-        return combos.isVisible(id, LocalDateTime.now());
+        return combos.isVisible(id, LocalDateTime.now()) && isDeal(get(id));
+    }
+
+    private boolean isDeal(Combo c) {
+        return currentTotalLek(c) > c.getComboPriceLek();
     }
 
     private ComboView view(Combo c, boolean visible) {
@@ -74,8 +84,9 @@ public class ComboService {
             for (ProductSpec s : p.getSpecs()) specs.add(new ProductDetail.Spec(t.label(s.getSpecKey()), t.display(s.getSpecKey(), s.getSpecValue())));
             out.add(new ComboView.Member(cards.get(p.getId()), item.getQuantity(), specs, p.getShortDescription()));
         }
+        int original = out.stream().mapToInt(ComboView.Member::lineTotalLek).sum();
         return new ComboView(c.getId(), c.getSlug(), c.getTitleSq(), c.getSubtitleSq(), c.getComboPriceLek(),
-                c.originalTotalLek(), visible, out);
+                original, visible && original > c.getComboPriceLek(), out);
     }
 
     public List<AdminRow> adminRows() {
@@ -83,7 +94,7 @@ public class ComboService {
         Set<Long> visibleIds = new HashSet<>();
         combos.findVisible(now, PageRequest.of(0, 500)).forEach(c -> visibleIds.add(c.getId()));
         return combos.findAllByOrderBySortOrderAscIdAsc().stream()
-                .map(c -> new AdminRow(c, visibleIds.contains(c.getId()), reasons(c, now), c.originalTotalLek()))
+                .map(c -> new AdminRow(c, visibleIds.contains(c.getId()) && isDeal(c), reasons(c), currentTotalLek(c)))
                 .toList();
     }
 
@@ -92,7 +103,9 @@ public class ComboService {
     }
 
     public List<String> reasons(Combo c) {
-        return reasons(c, LocalDateTime.now());
+        List<String> r = new ArrayList<>(reasons(c, LocalDateTime.now()));
+        if (!c.getItems().isEmpty() && !isDeal(c)) r.add("me çmimet e ofertave aktuale, pjesët veç e veç kushtojnë më pak se paketa");
+        return r;
     }
 
     static List<String> reasons(Combo c, LocalDateTime now) {
@@ -140,7 +153,7 @@ public class ComboService {
         Map<Long, Product> found = new HashMap<>();
         products.findAllById(wanted.keySet()).forEach(p -> found.put(p.getId(), p));
         if (found.size() != wanted.size()) throw new IllegalArgumentException("Një nga produktet nuk ekziston më.");
-        int original = wanted.entrySet().stream().mapToInt(e -> found.get(e.getKey()).getPriceLek() * e.getValue()).sum();
+        int original = wanted.entrySet().stream().mapToInt(e -> pricing.priceNow(found.get(e.getKey())) * e.getValue()).sum();
         if (form.comboPriceLek() >= original) {
             throw new IllegalArgumentException("Çmimi i paketës (" + Fmt.lek(form.comboPriceLek()) + ") duhet të jetë më i ulët se totali i produkteve veç e veç ("
                     + Fmt.lek(original) + "), përndryshe nuk është ofertë.");

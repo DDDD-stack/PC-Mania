@@ -79,3 +79,46 @@ document.querySelectorAll('[data-card-gallery]').forEach((gallery) => {
     });
   }, { passive: true });
 });
+
+(() => {
+  const bar = document.querySelector('[data-promo-bar]');
+  bar?.querySelector('[data-promo-close]')?.addEventListener('click', () => {
+    bar.hidden = true;
+    try { localStorage.setItem('pm-promo-closed', bar.dataset.promoBar); } catch (e) {}
+  });
+
+  const texts = document.querySelectorAll('[data-countdown]');
+  const boxes = document.querySelectorAll('[data-countdown-boxes]');
+  if (!texts.length && !boxes.length) return;
+  const pad = (n) => String(n).padStart(2, '0');
+  const parts = (ms) => {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
+  };
+  const tick = () => {
+    const now = Date.now();
+    texts.forEach((el) => {
+      const left = Number(el.dataset.countdown) - now;
+      if (left <= 0) {
+        el.textContent = el.dataset.countdownDone || '';
+        el.closest('[data-promo-bar]')?.setAttribute('hidden', '');
+        return;
+      }
+      const p = parts(left);
+      el.textContent = (p.d ? p.d + 'd ' : '') + pad(p.h) + ':' + pad(p.m) + ':' + pad(p.s);
+    });
+    boxes.forEach((el) => {
+      const p = parts(Number(el.dataset.countdownBoxes) - now);
+      el.querySelectorAll('[data-unit]').forEach((b) => {
+        const next = pad(p[b.dataset.unit]);
+        if (b.textContent === next) return;
+        b.textContent = next;
+        b.classList.remove('tick');
+        void b.offsetWidth;
+        b.classList.add('tick');
+      });
+    });
+  };
+  tick();
+  setInterval(tick, 1000);
+})();

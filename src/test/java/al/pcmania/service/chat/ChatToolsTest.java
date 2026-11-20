@@ -9,8 +9,10 @@ import al.pcmania.domain.GpuCatalog;
 import al.pcmania.domain.Product;
 import al.pcmania.domain.ProductSpec;
 import al.pcmania.repo.ProductRepository;
+import al.pcmania.repo.PromotionRepository;
 import al.pcmania.service.FieldTemplateService;
 import al.pcmania.service.GpuCatalogService;
+import al.pcmania.service.PricingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +30,7 @@ class ChatToolsTest {
     private final ProductRepository products = mock(ProductRepository.class);
     private final GpuCatalogService catalog = mock(GpuCatalogService.class);
     private final FieldTemplateService templates = mock(FieldTemplateService.class);
-    private final ChatTools tools = new ChatTools(products, catalog, templates);
+    private final ChatTools tools = new ChatTools(products, catalog, templates, new PricingService(mock(PromotionRepository.class)));
 
     private final GpuCatalog gtx1660s = gpu("gtx-1660-super", "GeForce GTX 1660 Super", GpuVendor.NVIDIA, 6, 6, 450, 229, 200, 58, 37);
     private final GpuCatalog rx6600 = gpu("rx-6600", "Radeon RX 6600", GpuVendor.AMD, 8, 8, 450, 200, 240, 68, 45);

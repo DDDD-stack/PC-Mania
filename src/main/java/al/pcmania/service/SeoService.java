@@ -158,6 +158,14 @@ public class SeoService {
         offer.put("url", url);
         offer.put("priceCurrency", "ALL");
         offer.put("price", p.priceLek());
+        if (p.isOnSale()) {
+            offer.put("priceValidUntil", p.saleEndsAt().minusSeconds(1).toLocalDate().toString());
+            offer.put("priceSpecification", Map.of(
+                    "@type", "UnitPriceSpecification",
+                    "priceType", "https://schema.org/StrikethroughPrice",
+                    "price", p.regularPriceLek(),
+                    "priceCurrency", "ALL"));
+        }
         offer.put("availability", switch (p.status()) {
             case ACTIVE -> p.quantity() > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
             case SOLD -> "https://schema.org/SoldOut";

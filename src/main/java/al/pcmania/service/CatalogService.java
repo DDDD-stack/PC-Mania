@@ -36,6 +36,7 @@ public class CatalogService {
     private final PrebuiltSpecRepository prebuilts;
     private final FieldTemplateService templates;
     private final ProductSlugHistoryRepository slugHistory;
+    private final PricingService pricing;
 
     public record CategoryTile(Category category, long count) {
 
@@ -156,7 +157,18 @@ public class CatalogService {
         FieldTemplateService.Template template = templates.forCategory(p.getCategorySlug());
         PrebuiltView prebuilt = template.prebuilt()
                 ? prebuilts.findByProductId(p.getId()).map(PrebuiltView::of).orElse(null) : null;
-        return ProductDetail.of(p, template, prebuilt);
+        return ProductDetail.of(p, template, prebuilt, pricing.saleFor(p).orElse(null));
+    }
+
+    public List<ProductCard> onSale(int limit) {
+        Set<Long> ids = pricing.productIdsInLivePromotions();
+        if (ids.isEmpty()) return List.of();
+        List<Product> available = products.findAllById(ids).stream()
+                .filter(p -> p.getStatus() == ProductStatus.ACTIVE && p.getQuantity() > 0).toList();
+        return cards(available).stream().filter(ProductCard::isOnSale)
+                .sorted(Comparator.comparingInt(ProductCard::getDiscountPercent).reversed()
+                        .thenComparing(ProductCard::getSavingsLek, Comparator.reverseOrder()))
+                .limit(limit).toList();
     }
 
     public List<ProductCard> related(ProductDetail p, int limit) {
@@ -228,7 +240,8 @@ public class CatalogService {
                 .collect(Collectors.groupingBy(i -> i.getProduct().getId(), LinkedHashMap::new,
                         Collectors.mapping(ProductImage::getFilename, Collectors.toList())));
         Map<Long, String> lines = specLines(list);
-        return list.stream().map(p -> ProductCard.of(p, byProduct.getOrDefault(p.getId(), List.of()), lines.get(p.getId()))).toList();
+        return list.stream().map(p -> ProductCard.of(p, byProduct.getOrDefault(p.getId(), List.of()), lines.get(p.getId()),
+                pricing.saleFor(p).orElse(null))).toList();
     }
 
     private Map<Long, String> specLines(List<Product> list) {

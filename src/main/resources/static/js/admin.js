@@ -96,3 +96,24 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
   }
 })();
+
+(() => {
+  const clocks = document.querySelectorAll('[data-countdown]');
+  if (!clocks.length) return;
+  const pad = (n) => String(n).padStart(2, '0');
+  const render = (ms) => {
+    const s = Math.floor(ms / 1000);
+    const d = Math.floor(s / 86400);
+    const hms = pad(Math.floor((s % 86400) / 3600)) + ':' + pad(Math.floor((s % 3600) / 60)) + ':' + pad(s % 60);
+    return d > 0 ? d + 'd ' + hms : hms;
+  };
+  const tick = () => {
+    const now = Date.now();
+    clocks.forEach((el) => {
+      const left = Number(el.dataset.countdown) - now;
+      el.textContent = left > 0 ? render(left) : (el.dataset.countdownDone || '0');
+    });
+  };
+  tick();
+  setInterval(tick, 1000);
+})();

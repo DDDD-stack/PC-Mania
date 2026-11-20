@@ -8,11 +8,13 @@ import al.pcmania.domain.ProductSpec;
 import al.pcmania.repo.ProductRepository;
 import al.pcmania.service.FieldTemplateService;
 import al.pcmania.service.GpuCatalogService;
+import al.pcmania.service.PricingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -37,19 +39,23 @@ public class ChatTools {
 
     private static final String GPU = "gpu";
 
+    private static final DateTimeFormatter SALE_END = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
     public static final List<String> PART_CATEGORIES = List.of("cpu", "motherboard", "ram", "storage", "psu", "case", "cooling", "monitor", "prebuilt");
 
     private final ProductRepository products;
     private final GpuCatalogService catalog;
     private final FieldTemplateService templates;
+    private final PricingService pricing;
 
-    public record StockItem(String slug, String title, int priceLek, String condition, Integer warrantyDays,
+    public record StockItem(String slug, String title, int priceLek, Integer wasPriceLek, String condition, Integer warrantyDays,
                             Integer vramGb, Integer tier, Integer psuMinWatts, String pcieConnectors, Integer lengthMm,
                             String testNotes, boolean isMiningFree, boolean transportIncluded, String gpuModel,
                             Integer fpsEsports1080p, Integer fpsAaa1080p, Integer fpsAaa1440p) {
-        static StockItem of(Product p) {
+        static StockItem of(Product p, Optional<PricingService.Sale> sale) {
             GpuCatalog g = p.getGpuModel();
-            return new StockItem(p.getSlug(), p.getTitle(), p.getPriceLek(), p.getCondition().label, p.getWarrantyDays(),
+            return new StockItem(p.getSlug(), p.getTitle(), sale.map(PricingService.Sale::priceLek).orElse(p.getPriceLek()),
+                    sale.map(PricingService.Sale::regularPriceLek).orElse(null), p.getCondition().label, p.getWarrantyDays(),
                     g == null ? null : g.getVramGb(), g == null ? null : g.getTier(), g == null ? null : g.getPsuMinWatts(),
                     g == null ? null : g.getPcieConnectors(), cardLength(p), p.getTestNotes(), p.isMiningFree(), p.isTransportIncluded(),
                     g == null ? null : g.getName(), g == null ? null : g.getFpsEsports1080p(),
@@ -59,8 +65,8 @@ public class ChatTools {
 
     public record StockSearch(List<StockItem> items, String note) {}
 
-    public record PartItem(String slug, String title, String category, int priceLek, String condition, Integer warrantyDays,
-                           int quantity, boolean transportIncluded, List<Spec> specs) {}
+    public record PartItem(String slug, String title, String category, int priceLek, Integer wasPriceLek, String condition,
+                           Integer warrantyDays, int quantity, boolean transportIncluded, List<Spec> specs) {}
 
     public record PartSearch(List<PartItem> items, String note) {}
 
@@ -86,13 +92,17 @@ public class ChatTools {
 
     public record Spec(String key, String value) {}
 
-    public record ProductInfo(String slug, String title, String brand, int priceLek, String condition, String status,
+    public record ProductInfo(String slug, String title, String brand, int priceLek, Integer wasPriceLek, String saleEndsAt,
+                              String condition, String status,
                               boolean inStock, int quantity, Integer warrantyDays, String shortDescription,
                               String testNotes, boolean isMiningFree, boolean transportIncluded, boolean tradeEligible,
                               List<Spec> specs, GpuInfo gpu, String url) {
-        static ProductInfo of(Product p, List<Spec> specs) {
+        static ProductInfo of(Product p, List<Spec> specs, Optional<PricingService.Sale> sale) {
             return new ProductInfo(p.getSlug(), p.getTitle(), p.getBrand() == null ? null : p.getBrand().getName(),
-                    p.getPriceLek(), p.getCondition().label, p.getStatus().name(), ChatTools.inStock(p), p.getQuantity(),
+                    sale.map(PricingService.Sale::priceLek).orElse(p.getPriceLek()),
+                    sale.map(PricingService.Sale::regularPriceLek).orElse(null),
+                    sale.map(s -> SALE_END.format(s.endsAt())).orElse(null),
+                    p.getCondition().label, p.getStatus().name(), ChatTools.inStock(p), p.getQuantity(),
                     p.getWarrantyDays(), p.getShortDescription(), p.getTestNotes(), p.isMiningFree(),
                     p.isTransportIncluded(), p.isTradeEligible(), specs,
                     GpuInfo.of(p.getGpuModel()), "/produkt/" + p.getSlug());
@@ -116,15 +126,17 @@ public class ChatTools {
         for (Product p : products.findInStock(ProductStatus.ACTIVE)) {
             GpuCatalog g = p.getGpuModel();
             if (!isGpu(p)) continue;
-            if (budgetMinLek != null && p.getPriceLek() < budgetMinLek) continue;
-            if (budgetMaxLek != null && p.getPriceLek() > budgetMaxLek) continue;
+            Optional<PricingService.Sale> sale = pricing.saleFor(p);
+            int price = sale.map(PricingService.Sale::priceLek).orElse(p.getPriceLek());
+            if (budgetMinLek != null && price < budgetMinLek) continue;
+            if (budgetMaxLek != null && price > budgetMaxLek) continue;
             if (g != null) {
                 if (minVramGb != null && (g.getVramGb() == null || g.getVramGb() < minVramGb)) continue;
                 if (maxPsuWatts != null && g.getPsuMinWatts() != null && g.getPsuMinWatts() > maxPsuWatts) continue;
                 if (vendor != null && g.getVendor() != vendor) continue;
                 if (useCase == UseCase.AAA_1440P && g.getFpsAaa1440p() != null && g.getFpsAaa1440p() < 40) continue;
             }
-            out.add(StockItem.of(p));
+            out.add(StockItem.of(p, sale));
             if (out.size() >= MAX_RESULTS) break;
         }
         return out;
@@ -136,9 +148,12 @@ public class ChatTools {
             if (isGpu(p)) continue;
             FieldTemplateService.Template t = templates.forCategory(p.getCategorySlug());
             if (category != null && (t == null || !category.equals(t.catalogKey()))) continue;
-            if (budgetMinLek != null && p.getPriceLek() < budgetMinLek) continue;
-            if (budgetMaxLek != null && p.getPriceLek() > budgetMaxLek) continue;
-            out.add(new PartItem(p.getSlug(), p.getTitle(), t == null ? p.getCategorySlug() : t.categoryName(), p.getPriceLek(),
+            Optional<PricingService.Sale> sale = pricing.saleFor(p);
+            int price = sale.map(PricingService.Sale::priceLek).orElse(p.getPriceLek());
+            if (budgetMinLek != null && price < budgetMinLek) continue;
+            if (budgetMaxLek != null && price > budgetMaxLek) continue;
+            out.add(new PartItem(p.getSlug(), p.getTitle(), t == null ? p.getCategorySlug() : t.categoryName(), price,
+                    sale.map(PricingService.Sale::regularPriceLek).orElse(null),
                     p.getCondition().label, p.getWarrantyDays(), p.getQuantity(), p.isTransportIncluded(), specs(p)));
             if (out.size() >= MAX_RESULTS) break;
         }
@@ -146,7 +161,11 @@ public class ChatTools {
     }
 
     public Optional<ProductInfo> getProduct(String slug) {
-        return product(slug).map(p -> ProductInfo.of(p, specs(p)));
+        return product(slug).map(this::info);
+    }
+
+    private ProductInfo info(Product p) {
+        return ProductInfo.of(p, specs(p), pricing.saleFor(p));
     }
 
     public Optional<Comparison> compareProducts(String slugA, String slugB) {
@@ -159,7 +178,7 @@ public class ChatTools {
                 : gap > 0 ? b.get().getTitle() + " është afërsisht " + gap + "% më e shpejtë se " + a.get().getTitle() + "."
                 : gap < 0 ? a.get().getTitle() + " është afërsisht " + (-gap) + "% më e shpejtë se " + b.get().getTitle() + "."
                 : "Të dyja kartat janë afërsisht në të njëjtin nivel.";
-        return Optional.of(new Comparison(ProductInfo.of(a.get(), specs(a.get())), ProductInfo.of(b.get(), specs(b.get())), tierDelta, gap, note));
+        return Optional.of(new Comparison(info(a.get()), info(b.get()), tierDelta, gap, note));
     }
 
     public UpgradeAdvice recommendUpgrade(String currentCardQuery, Integer psuWatts, Integer budgetLek) {
@@ -175,8 +194,9 @@ public class ChatTools {
             GpuCatalog g = p.getGpuModel();
             if (g == null || g.getTier() == null || cur.getTier() == null || g.getTier() <= cur.getTier()) continue;
             if (psuWatts != null && g.getPsuMinWatts() != null && g.getPsuMinWatts() > psuWatts) continue;
-            if (budgetLek != null && p.getPriceLek() > budgetLek) continue;
-            options.add(new UpgradeOption(StockItem.of(p), g.getTier() - cur.getTier(), performanceGap(cur, g)));
+            Optional<PricingService.Sale> sale = pricing.saleFor(p);
+            if (budgetLek != null && sale.map(PricingService.Sale::priceLek).orElse(p.getPriceLek()) > budgetLek) continue;
+            options.add(new UpgradeOption(StockItem.of(p, sale), g.getTier() - cur.getTier(), performanceGap(cur, g)));
             bestTier = Math.max(bestTier, g.getTier());
         }
         String note;

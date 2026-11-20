@@ -55,6 +55,7 @@ public class SeoController {
         }
 
         if (upcoming.countByStatus(UpcomingStatus.VISIBLE) > 0) url(xml, "/se-shpejti", null);
+        if (!catalog.onSale(1).isEmpty() || !combos.visible(1).isEmpty()) url(xml, "/oferta", null);
         xml.append("</urlset>\n");
         return ResponseEntity.ok().cacheControl(CacheControl.maxAge(Duration.ofHours(1))).body(xml.toString());
     }

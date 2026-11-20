@@ -2,6 +2,30 @@
 <html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
 <body>
 <main>
+    <section th:if="${dealPromo != null and !deals.empty}" class="promo-stage" th:classappend="${dealPromo.themeClass}" aria-labelledby="promoStageTitle">
+        <div class="container py-4">
+            <div class="promo-stage-head">
+                <div class="promo-stage-copy">
+                    <span class="promo-kicker"><span class="live-dot" aria-hidden="true"></span>Ofertë me afat</span>
+                    <h2 class="promo-stage-title" id="promoStageTitle" th:text="${dealPromo.name}">Oferta</h2>
+                    <p class="promo-stage-sub" th:text="${dealPromo.bannerText != dealPromo.name} ? ${dealPromo.bannerText} : 'Çmime të ulura për pak kohë. Kur mbaron numëruesi, kthehen si më parë.'"></p>
+                </div>
+                <div class="promo-countdown" role="timer" aria-label="Koha e mbetur e ofertës" th:attr="data-countdown-boxes=${dealPromo.endsAtMillis}">
+                    <div><b data-unit="d">00</b><small>ditë</small></div>
+                    <div><b data-unit="h">00</b><small>orë</small></div>
+                    <div><b data-unit="m">00</b><small>min</small></div>
+                    <div><b data-unit="s">00</b><small>sek</small></div>
+                </div>
+            </div>
+            <div class="deal-strip">
+                <div class="deal-strip-item" th:each="d : ${deals}"><a th:replace="~{site/fragments :: cardLink(${d})}"></a></div>
+            </div>
+            <div class="text-center mt-3">
+                <a class="btn btn-promo btn-lg" href="/oferta"><i class="bi bi-lightning-charge-fill me-1"></i>Shiko të gjitha ofertat <i class="bi bi-arrow-right ms-1"></i></a>
+            </div>
+        </div>
+    </section>
+
     <section class="hero">
         <div class="container py-4 py-md-5">
             <div class="row align-items-center">

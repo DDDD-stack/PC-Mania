@@ -42,7 +42,12 @@ public class CheckoutController {
     private final PaymentProvider payments;
 
     public record Item(String title, String subtitle, String image, List<String> thumbs, int priceLek, int maxQuantity,
-                       String backUrl, String backLabel, String action, int courierShipping) {}
+                       String backUrl, String backLabel, String action, int courierShipping, Integer regularPriceLek) {
+
+        public boolean isDiscounted() {
+            return regularPriceLek != null && regularPriceLek > priceLek;
+        }
+    }
 
     @GetMapping("/paketa/{slug}")
     String comboForm(@PathVariable String slug, Model model, RedirectAttributes flash) {
@@ -90,7 +95,7 @@ public class CheckoutController {
         int courier = orders.shippingFor(DeliveryMethod.COURIER, freeTransport);
         String subtitle = c.members().size() + " produkte · kurseni " + al.pcmania.web.Fmt.lek(c.savingsLek());
         model.addAttribute("item", new Item(c.title(), subtitle, c.primaryImage(), c.thumbs(), c.comboPriceLek(), 1,
-                "/paketa/" + c.slug(), "Kthehu te paketa", "/porosit/paketa/" + c.slug(), courier));
+                "/paketa/" + c.slug(), "Kthehu te paketa", "/porosit/paketa/" + c.slug(), courier, c.originalTotalLek()));
         return renderCommon(form, model);
     }
 
@@ -146,7 +151,8 @@ public class CheckoutController {
         model.addAttribute("seo", seo.page("Porosit " + p.title(), "Porosit " + p.title() + " me pagesë në dorëzim.", "/porosit/" + p.slug()).withNoindex());
         int courier = orders.shippingFor(DeliveryMethod.COURIER, p.transportIncluded());
         model.addAttribute("item", new Item(p.title(), p.condition().label, p.getPrimaryImage(), List.of(), p.priceLek(),
-                Math.min(p.quantity(), 10), "/produkt/" + p.slug(), "Kthehu te produkti", "/porosit/" + p.slug(), courier));
+                Math.min(p.quantity(), 10), "/produkt/" + p.slug(), "Kthehu te produkti", "/porosit/" + p.slug(), courier,
+                p.isOnSale() ? p.regularPriceLek() : null));
         return renderCommon(form, model);
     }
 

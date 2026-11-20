@@ -6,7 +6,7 @@
     <a th:replace="~{site/fragments :: cardLink(${p})}"></a>
 </div>
 
-<a th:fragment="cardLink(p)" class="product-card" th:href="@{/produkt/{s}(s=${p.slug})}">
+<a th:fragment="cardLink(p)" class="product-card" th:classappend="${p.onSale} ? 'is-on-sale ' + ${p.saleThemeClass}" th:href="@{/produkt/{s}(s=${p.slug})}">
     <div class="product-thumb">
         <div th:if="${p.hasGallery()}" class="card-gallery" data-card-gallery>
             <img th:each="f : ${p.imageFilenames}" data-fade th:src="${@img.medium(f)}" th:srcset="${@img.srcset(f)}"
@@ -23,6 +23,7 @@
         <span th:if="${p.tradeEligible && !p.reserved}" class="badge trade-badge" title="Pranon këmbim (Nderro)"><i class="bi bi-arrow-left-right me-1"></i>Nderrim</span>
         <span th:if="${p.reserved}" class="badge state-badge state-reserved">REZERVUAR</span>
         <span th:if="${p.sold}" class="badge state-badge state-sold">SHITUR</span>
+        <span th:if="${p.onSale}" class="sale-sticker" th:text="'-' + ${p.discountPercent} + '%'"></span>
     </div>
     <div class="product-body">
         <div class="product-brand" th:if="${p.brandName}" th:text="${p.brandName}"></div>
@@ -32,7 +33,12 @@
             <span th:if="${p.miningFree}" title="Pa minim"><i class="bi bi-shield-check"></i></span>
             <span th:if="${p.warrantyDays != null && p.warrantyDays > 0}" th:text="${@fmt.warranty(p.warrantyDays)}"></span>
         </div>
-        <div class="product-price" th:text="${@fmt.price(p.priceLek)}"></div>
+        <div th:unless="${p.onSale}" class="product-price" th:text="${@fmt.price(p.priceLek)}"></div>
+        <div th:if="${p.onSale}" class="product-price sale-price">
+            <span class="sale-now" th:text="${@fmt.price(p.priceLek)}"></span>
+            <s class="sale-was" th:text="${@fmt.price(p.regularPriceLek)}"></s>
+            <span th:if="${p.saleUrgency}" class="sale-urgency"><i class="bi bi-alarm"></i><span th:text="${p.saleUrgency}"></span></span>
+        </div>
     </div>
 </a>
 

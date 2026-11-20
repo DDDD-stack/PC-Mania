@@ -22,9 +22,8 @@ public class AdminComboController {
     private final ComboService service;
 
     @GetMapping
-    String list(Model model) {
-        model.addAttribute("rows", service.adminRows());
-        return "admin/combos/list";
+    String list() {
+        return "redirect:/admin/promotions#paketat";
     }
 
     @GetMapping("/new")
@@ -77,7 +76,7 @@ public class AdminComboController {
     String delete(@PathVariable Long id, RedirectAttributes flash) {
         service.delete(id);
         flash.addFlashAttribute("success", "Paketa u fshi. Porositë e vjetra mbeten siç ishin.");
-        return "redirect:/admin/combos";
+        return "redirect:/admin/promotions#paketat";
     }
 
     private String form(Combo combo, ComboService.ComboForm form, Model model) {

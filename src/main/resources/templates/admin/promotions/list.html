@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head('Promocionet')}"></head>
+<body>
+<nav th:replace="~{admin/fragments :: nav('promotions')}"></nav>
+<main class="container-xl py-3 pb-5">
+    <div th:replace="~{admin/fragments :: flash}"></div>
+
+    <section class="promo-hero">
+        <div class="d-flex flex-wrap gap-3 align-items-end">
+            <div class="me-auto">
+                <div class="promo-kicker"><i class="bi bi-lightning-charge-fill me-1"></i>Marketing</div>
+                <h1 class="h3">Promocionet</h1>
+                <p>Uljet e çmimeve dhe paketat shfaqen kudo ku shikon klienti: banner në krye të çdo faqeje, numërim mbrapsht,
+                    çmim i prerë në çdo kartë dhe një faqe e veçantë me të gjitha ofertat. Ndizen dhe fiken vetë sipas orës së Tiranës.</p>
+            </div>
+            <a class="btn btn-light fw-semibold" href="/oferta" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right me-1"></i>Faqja e ofertave</a>
+        </div>
+    </section>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <a class="create-tile promo-theme-FIRE" href="/admin/promotions/new">
+                <span class="create-icon"><i class="bi bi-lightning-charge-fill"></i></span>
+                <span><strong>Ulje çmimi</strong><small>Ul çmimin e një ose disa produkteve, me përqindje ose me shumë fikse, për një kohë të caktuar.</small></span>
+                <i class="bi bi-plus-circle-fill create-plus"></i>
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a class="create-tile promo-theme-OCEAN" href="/admin/combos/new">
+                <span class="create-icon"><i class="bi bi-boxes"></i></span>
+                <span><strong>Paketë</strong><small>Bashko dy ose më shumë produkte me një çmim më të ulët se veç e veç.</small></span>
+                <i class="bi bi-plus-circle-fill create-plus"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="row row-cols-2 row-cols-md-4 g-2 g-md-3">
+        <div class="col"><div class="kpi kpi-live"><div class="kpi-value" th:text="${stats.live}">0</div><div class="kpi-label"><i class="bi bi-broadcast me-1"></i>Oferta live tani</div></div></div>
+        <div class="col"><div class="kpi"><div class="kpi-value" th:text="${stats.scheduled}">0</div><div class="kpi-label"><i class="bi bi-calendar-event me-1"></i>Të planifikuara</div></div></div>
+        <div class="col"><div class="kpi kpi-hot"><div class="kpi-value" th:text="${stats.productsOnSale}">0</div><div class="kpi-label"><i class="bi bi-tags me-1"></i>Produkte me çmim të ulur</div></div></div>
+        <div class="col"><div class="kpi"><div class="kpi-value" th:text="${visibleCombos}">0</div><div class="kpi-label"><i class="bi bi-boxes me-1"></i>Paketa të dukshme</div></div></div>
+    </div>
+
+    <div class="section-head">
+        <h2><i class="bi bi-lightning-charge-fill text-danger me-1"></i>Uljet e çmimeve</h2>
+        <span class="text-body-secondary small" th:text="${rows.size()} + ' gjithsej'"></span>
+        <a class="btn btn-sm btn-danger ms-auto fw-semibold" href="/admin/promotions/new"><i class="bi bi-plus-lg"></i> Ulje e re</a>
+    </div>
+
+    <div th:if="${rows.empty}" class="promo-empty">
+        <i class="bi bi-lightning-charge-fill"></i>
+        <div class="fw-bold text-body">Ende nuk keni bërë asnjë ofertë</div>
+        <div class="small mb-3">Zgjidhni produktet, zbritjen dhe datat. Oferta ndizet dhe fiket vetë.</div>
+        <a class="btn btn-danger fw-semibold" href="/admin/promotions/new"><i class="bi bi-lightning-charge-fill me-1"></i>Krijo ofertën e parë</a>
+    </div>
+
+    <div class="row row-cols-1 row-cols-lg-2 g-3" th:unless="${rows.empty}">
+        <div class="col" th:each="r : ${rows}">
+            <article class="promo-card" th:classappend="${r.state.name() == 'ENDED'} ? 'is-ended' : (${r.state.name() == 'PAUSED'} ? 'is-paused' : '')">
+                <header class="promo-card-head" th:classappend="'promo-theme-' + ${r.promotion.theme}">
+                    <div class="min-w-0">
+                        <span class="state-pill" th:classappend="'state-' + ${r.state}" th:text="${r.state.label}"></span>
+                        <h3 th:text="${r.promotion.name}"></h3>
+                        <p th:if="${r.promotion.headline}" th:text="${r.promotion.headline}"></p>
+                    </div>
+                    <div class="promo-big" th:if="${r.maxPercent > 0}"><small>deri në</small><span th:text="'-' + ${r.maxPercent} + '%'"></span></div>
+                </header>
+                <div class="promo-card-body">
+                    <div class="promo-thumbs" th:unless="${r.items.empty}">
+                        <th:block th:each="i, st : ${r.items}" th:if="${st.index < 6}">
+                            <img th:if="${i.product.primaryImage != null}" th:src="${@img.thumb(i.product.primaryImage.filename)}" th:alt="${i.product.title}" th:title="${i.product.title}" width="42" height="42" loading="lazy">
+                            <span th:unless="${i.product.primaryImage != null}" class="more" th:title="${i.product.title}"><i class="bi bi-image"></i></span>
+                        </th:block>
+                        <span th:if="${r.items.size() > 6}" class="more" th:text="'+' + ${r.items.size() - 6}"></span>
+                    </div>
+                    <div class="promo-meta">
+                        <span><i class="bi bi-calendar-range me-1"></i><span th:text="${r.windowLabel}"></span></span>
+                        <span><i class="bi bi-tags me-1"></i><span th:text="${r.items.size() == 1} ? '1 produkt' : ${r.items.size()} + ' produkte'"></span></span>
+                        <span th:if="${r.state.name() == 'LIVE'}"><i class="bi bi-hourglass-split me-1"></i>mbaron për <span class="clock" th:attr="data-countdown=${@fmt.epoch(r.promotion.endsAt)}" data-countdown-done="tani"></span></span>
+                        <span th:if="${r.state.name() == 'SCHEDULED'}"><i class="bi bi-alarm me-1"></i>fillon për <span class="clock" th:attr="data-countdown=${@fmt.epoch(r.promotion.startsAt)}" data-countdown-done="tani"></span></span>
+                        <span th:if="${!r.promotion.showBanner}"><i class="bi bi-megaphone me-1"></i>pa banner</span>
+                    </div>
+                    <th:block th:with="below=${r.items.?[belowCost].size()}">
+                        <div class="small fw-semibold text-danger" th:if="${below > 0}">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i><span th:text="${below == 1} ? '1 produkt shitet nën kosto' : ${below} + ' produkte shiten nën kosto'"></span>
+                        </div>
+                    </th:block>
+                    <div class="promo-progress" th:if="${r.state.name() == 'LIVE'}" role="progressbar" th:attr="aria-valuenow=${r.progressPercent}" aria-valuemin="0" aria-valuemax="100" aria-label="Sa ka kaluar nga oferta">
+                        <span th:style="'width:' + ${r.progressPercent} + '%'"></span>
+                    </div>
+                    <div class="promo-actions">
+                        <a class="btn btn-sm btn-dark" th:href="@{/admin/promotions/{id}(id=${r.promotion.id})}"><i class="bi bi-pencil me-1"></i>Ndrysho</a>
+                        <form th:unless="${r.state.name() == 'ENDED'}" th:action="@{/admin/promotions/{id}/toggle(id=${r.promotion.id})}" method="post">
+                            <button class="btn btn-sm btn-outline-secondary" type="submit" th:if="${r.promotion.active}"><i class="bi bi-pause-fill me-1"></i>Ndalo</button>
+                            <button class="btn btn-sm btn-outline-success" type="submit" th:unless="${r.promotion.active}"><i class="bi bi-play-fill me-1"></i>Rifillo</button>
+                        </form>
+                        <form th:unless="${r.state.name() == 'ENDED'}" th:action="@{/admin/promotions/{id}/end(id=${r.promotion.id})}" method="post"
+                              data-confirm="Të përfundojë oferta tani? Çmimet kthehen menjëherë si më parë.">
+                            <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-stop-fill me-1"></i>Përfundo tani</button>
+                        </form>
+                        <form class="ms-auto" th:action="@{/admin/promotions/{id}/delete(id=${r.promotion.id})}" method="post"
+                              data-confirm="Të fshihet kjo ofertë? Porositë e vjetra nuk preken.">
+                            <button class="btn btn-sm btn-link text-danger" type="submit" aria-label="Fshi ofertën"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div class="section-head" id="paketat">
+        <h2><i class="bi bi-boxes text-primary me-1"></i>Paketat</h2>
+        <span class="text-body-secondary small" th:text="${combos.size()} + ' gjithsej'"></span>
+        <a class="btn btn-sm btn-primary ms-auto fw-semibold" href="/admin/combos/new"><i class="bi bi-plus-lg"></i> Paketë e re</a>
+    </div>
+    <p class="text-body-secondary small">Një paketë shfaqet vetëm kur është aktive, brenda datave dhe <strong>çdo</strong> produkt i saj është në shitje.
+        Kur një pjesë shitet ose rezervohet, paketa fshihet vetë dhe këtu shkruhet pse.</p>
+
+    <div th:if="${combos.empty}" class="promo-empty">
+        <i class="bi bi-boxes text-primary"></i>
+        <div class="fw-bold text-body">Ende nuk keni paketa</div>
+        <div class="small mb-3">P.sh. kartë grafike + furnizues, ose procesor + pllakë amë me një çmim të vetëm.</div>
+        <a class="btn btn-primary fw-semibold" href="/admin/combos/new"><i class="bi bi-plus-lg me-1"></i>Krijo paketën e parë</a>
+    </div>
+
+    <div class="row row-cols-1 row-cols-lg-2 g-3" th:unless="${combos.empty}">
+        <div class="col" th:each="c : ${combos}">
+            <a class="combo-row-card" th:href="@{/admin/combos/{id}(id=${c.combo.id})}">
+                <span class="promo-thumbs">
+                    <th:block th:each="i, st : ${c.combo.items}" th:if="${st.index < 3}">
+                        <img th:if="${i.product.primaryImage != null}" th:src="${@img.thumb(i.product.primaryImage.filename)}" th:alt="${i.product.title}" width="42" height="42" loading="lazy">
+                        <span th:unless="${i.product.primaryImage != null}" class="more"><i class="bi bi-image"></i></span>
+                    </th:block>
+                </span>
+                <span class="flex-grow-1 min-w-0">
+                    <span class="d-block fw-bold text-truncate" th:text="${c.combo.titleSq}"></span>
+                    <span class="d-block small text-body-secondary">
+                        <s th:text="${@fmt.price(c.originalTotalLek)}"></s> → <strong class="text-body" th:text="${@fmt.price(c.combo.comboPriceLek)}"></strong>
+                    </span>
+                    <span th:if="${c.visible}" class="d-block small text-success fw-semibold"><i class="bi bi-eye me-1"></i>I dukshëm në faqe</span>
+                    <span th:unless="${c.visible}" class="d-block small text-danger"><i class="bi bi-eye-slash me-1"></i><span th:text="${c.state()}"></span></span>
+                </span>
+                <span class="combo-save-pill" th:classappend="${c.originalTotalLek <= c.combo.comboPriceLek} ? 'is-off'"
+                      th:text="${c.originalTotalLek > c.combo.comboPriceLek} ? '-' + ${@fmt.price(c.originalTotalLek - c.combo.comboPriceLek)} : 'pa kursim'"></span>
+            </a>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{admin/fragments :: scripts}"></th:block>
+</body>
+</html>

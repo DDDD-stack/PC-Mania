@@ -106,7 +106,9 @@ class ReleaseTests {
                 al.pcmania.web.view.ComboView.class, al.pcmania.web.view.ComboView.Member.class,
                 al.pcmania.web.view.Seo.class, al.pcmania.service.chat.ChatService.Card.class,
                 al.pcmania.service.chat.ChatTools.StockItem.class, al.pcmania.web.chat.FinderApiController.Response.class,
-                al.pcmania.web.site.CheckoutController.Item.class);
+                al.pcmania.web.site.CheckoutController.Item.class, al.pcmania.service.PricingService.Sale.class,
+                al.pcmania.service.PricingService.LivePromotion.class, al.pcmania.service.chat.ChatTools.PartItem.class,
+                al.pcmania.service.chat.ChatTools.ProductInfo.class);
         for (Class<?> c : exposed) {
             assertTrue(c.isRecord(), c + " should be a record");
             for (var component : c.getRecordComponents()) {
@@ -220,7 +222,8 @@ class ReleaseTests {
                 .andExpect(status().is3xxRedirection());
 
         mvc.perform(get("/")).andExpect(content().string(not(containsString(title))));
-        mvc.perform(get("/admin/combos")).andExpect(status().isOk())
+        mvc.perform(get("/admin/combos")).andExpect(redirectedUrl("/admin/promotions#paketat"));
+        mvc.perform(get("/admin/promotions")).andExpect(status().isOk())
                 .andExpect(content().string(containsString("I fshehur: " + gpu.getTitle() + " është SHITUR")));
         mvc.perform(get("/paketa/" + combo.getSlug())).andExpect(status().isOk())
                 .andExpect(content().string(containsString("nuk është më e disponueshme")))

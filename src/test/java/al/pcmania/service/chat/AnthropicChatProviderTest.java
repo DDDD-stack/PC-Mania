@@ -36,7 +36,7 @@ class AnthropicChatProviderTest {
 
     @Test
     void sendsTheMessagesApiShapeAndRunsTheToolLoop() throws Exception {
-        ChatTools.ProductInfo info = new ChatTools.ProductInfo("msi-3060-ti", "MSI RTX 3060 Ti", "MSI", 38_000, "E përdorur", "ACTIVE",
+        ChatTools.ProductInfo info = new ChatTools.ProductInfo("msi-3060-ti", "MSI RTX 3060 Ti", "MSI", 38_000, null, null, "E përdorur", "ACTIVE",
                 true, 1, 90, null, null, false, false, false, List.of(), null, "/produkt/msi-3060-ti");
         when(tools.getProduct("msi-3060-ti")).thenReturn(Optional.of(info));
         http.stream("event: message_start",

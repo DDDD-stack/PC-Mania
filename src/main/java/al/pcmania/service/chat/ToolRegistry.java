@@ -106,7 +106,8 @@ public class ToolRegistry {
         return List.of(
                 new ToolDef("searchStock",
                         "Graphics cards in stock right now, fastest first, at most 6. Every filter is optional. Returns slug, title, "
-                                + "priceLek, condition, warrantyDays, vramGb, tier (1-20 performance rank), psuMinWatts, pcieConnectors, "
+                                + "priceLek (what the customer pays today), wasPriceLek (set only while the card is on sale: its regular price, "
+                                + "so say how much they save), condition, warrantyDays, vramGb, tier (1-20 performance rank), psuMinWatts, pcieConnectors, "
                                 + "lengthMm, testNotes, isMiningFree and typical fps. Call it before saying anything about availability.",
                         search, in -> {
                             List<StockItem> items = tools.searchStock(intOf(in, "budgetMinLek"), intOf(in, "budgetMaxLek"),
@@ -120,7 +121,8 @@ public class ToolRegistry {
                 new ToolDef("searchParts",
                         "Other parts in stock right now: processors (cpu), motherboards, RAM, storage, power supplies (psu), cases, "
                                 + "coolers (cooling), monitors and ready-built PCs (prebuilt). Cheapest first, at most 6. Returns slug, title, "
-                                + "category, priceLek, condition, warrantyDays, quantity and specs (label and value, e.g. Soketi: AM4). "
+                                + "category, priceLek (today's price), wasPriceLek (regular price, only while on sale), condition, warrantyDays, "
+                                + "quantity and specs (label and value, e.g. Soketi: AM4). "
                                 + "Call it before saying anything about a part that is not a graphics card.",
                         parts, in -> {
                             String category = str(in, "category");
@@ -132,7 +134,8 @@ public class ToolRegistry {
                             return new PartSearch(items, items.isEmpty() ? "Asnjë pjesë e këtij lloji në stok me këto kritere." : null);
                         }),
                 new ToolDef("getProduct",
-                        "One product by slug, in full: price, condition, stock, warranty, specs, test notes and its catalogue data.",
+                        "One product by slug, in full: price, condition, stock, warranty, specs, test notes and its catalogue data. "
+                                + "While it is on sale, wasPriceLek is its regular price and saleEndsAt is when the offer ends.",
                         product, in -> tools.getProduct(str(in, "slug")).<Object>map(p -> p).orElse(new Error("Nuk ka produkt me këtë slug."))),
                 new ToolDef("compareProducts",
                         "Two products side by side with tierDelta (B minus A) and the approximate performance gap in percent, positive when B is faster.",

@@ -45,6 +45,16 @@
 <body class="has-chat">
 
 <header class="site-header sticky-top">
+    <div th:if="${promoBar}" class="promo-bar" th:classappend="${promoBar.themeClass}" th:attr="data-promo-bar=${promoBar.id}">
+        <a class="promo-bar-link container" href="/oferta">
+            <span class="promo-bar-bolt" aria-hidden="true"><i class="bi bi-lightning-charge-fill"></i></span>
+            <span class="promo-bar-text" th:text="${promoBar.bannerText}"></span>
+            <span class="promo-bar-clock"><span class="d-none d-sm-inline">Mbaron për </span><span th:attr="data-countdown=${promoBar.endsAtMillis}" data-countdown-done="tani"></span></span>
+            <span class="promo-bar-cta d-none d-md-inline-flex">Shiko ofertat <i class="bi bi-arrow-right"></i></span>
+        </a>
+        <button type="button" class="promo-bar-close" aria-label="Mbyll njoftimin" data-promo-close><i class="bi bi-x-lg"></i></button>
+    </div>
+    <script th:if="${promoBar}">try { const b = document.querySelector('[data-promo-bar]'); if (localStorage.getItem('pm-promo-closed') === b.dataset.promoBar) b.hidden = true; } catch (e) {}</script>
     <nav class="navbar navbar-dark">
         <div class="container gap-2">
             <button class="navbar-toggler border-0 px-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#mainMenu" aria-controls="mainMenu" aria-label="Menyja">
@@ -52,6 +62,7 @@
             </button>
             <a class="navbar-brand brand me-auto fw-bold" href="/"><img class="brand-mark" th:src="@{/images/logo-mark.svg}" alt="" aria-hidden="true" width="30" height="30"><span translate="no">PC<span class="text-accent">Mania</span></span></a>
             <nav class="d-none d-lg-flex gap-3 me-3 header-links">
+                <a th:if="${hasDeals}" class="nav-deals" href="/oferta"><i class="bi bi-lightning-charge-fill"></i>Oferta</a>
                 <a th:each="c, st : ${navCategories}" th:if="${st.index < 5}" th:href="@{/kategori/{s}(s=${c.slug})}" th:text="${c.nameSq}"></a>
                 <a th:if="${hasUpcoming}" href="/se-shpejti">Së shpejti</a>
                 <a href="/nderro">Nderro</a>
@@ -85,6 +96,7 @@
     <div class="offcanvas-body pt-0">
         <div class="list-group list-group-flush">
             <a class="list-group-item list-group-item-action" href="/"><i class="bi bi-house me-2"></i>Kryefaqja</a>
+            <a th:if="${hasDeals}" class="list-group-item list-group-item-action menu-deals" href="/oferta"><i class="bi bi-lightning-charge-fill me-2"></i>Oferta <span class="badge rounded-pill ms-1">LIVE</span></a>
             <a th:each="c : ${navCategories}" class="list-group-item list-group-item-action" th:href="@{/kategori/{s}(s=${c.slug})}">
                 <i class="bi me-2" th:classappend="${c.iconClass}"></i><span th:text="${c.nameSq}"></span>
             </a>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="sq" xmlns:th="http://www.thymeleaf.org" th:replace="~{site/layout :: page(~{::main}, ~{})}">
+<body>
+<main>
+    <section class="promo-stage deals-hero" th:classappend="${promos.empty} ? 'promo-theme-FIRE' : ${promos[0].themeClass}">
+        <div class="container py-4 py-md-5">
+            <div class="promo-stage-head">
+                <div class="promo-stage-copy">
+                    <span class="promo-kicker" th:unless="${promos.empty}"><span class="live-dot" aria-hidden="true"></span>Live tani</span>
+                    <h1 class="promo-stage-title">Oferta</h1>
+                    <p class="promo-stage-sub" th:unless="${promos.empty}" th:text="${promos[0].bannerText}"></p>
+                    <p class="promo-stage-sub" th:if="${promos.empty}">Uljet e çmimeve dhe paketat tona, të gjitha në një vend.</p>
+                </div>
+                <div th:unless="${promos.empty}" class="promo-countdown" role="timer" aria-label="Koha e mbetur e ofertës" th:attr="data-countdown-boxes=${promos[0].endsAtMillis}">
+                    <div><b data-unit="d">00</b><small>ditë</small></div>
+                    <div><b data-unit="h">00</b><small>orë</small></div>
+                    <div><b data-unit="m">00</b><small>min</small></div>
+                    <div><b data-unit="s">00</b><small>sek</small></div>
+                </div>
+            </div>
+            <div class="promo-others" th:if="${promos.size() > 1}">
+                <span class="promo-other" th:each="o, st : ${promos}" th:if="${st.index > 0}" th:classappend="${o.themeClass}">
+                    <i class="bi bi-lightning-charge-fill"></i><strong th:text="${o.name}"></strong>
+                    <span>mbaron për <span th:attr="data-countdown=${o.endsAtMillis}" data-countdown-done="tani"></span></span>
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mt-4" th:unless="${deals.empty}">
+        <div class="d-flex align-items-baseline mb-3 gap-2">
+            <h2 class="section-title mb-0 me-auto">Çmime të ulura</h2>
+            <span class="small text-body-secondary" th:text="${deals.size() == 1} ? '1 produkt' : ${deals.size()} + ' produkte'"></span>
+        </div>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-2 g-md-3">
+            <th:block th:each="p : ${deals}"><div th:replace="~{site/fragments :: card(${p})}"></div></th:block>
+        </div>
+    </section>
+
+    <section class="container mt-5" th:unless="${bundles.empty}">
+        <div class="mb-3">
+            <h2 class="section-title mb-0">Paketa</h2>
+            <p class="small text-body-secondary mb-0">Pjesë që shkojnë bashkë, me një çmim më të ulët se veç e veç.</p>
+        </div>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-2 g-md-3">
+            <div class="col" th:each="c : ${bundles}"><a th:replace="~{site/fragments :: comboCard(${c})}"></a></div>
+        </div>
+    </section>
+
+    <section class="container mt-4" th:if="${deals.empty and bundles.empty}">
+        <div class="deals-empty">
+            <i class="bi bi-lightning-charge"></i>
+            <h2 class="h4 fw-bold">Tani nuk ka oferta aktive</h2>
+            <p class="text-body-secondary mb-3">Ofertat tona zgjasin pak. Na ndiqni në Facebook që të mos humbni të radhës, ose shikoni çfarë kemi në stok.</p>
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
+                <a class="btn btn-accent" href="/kategori/karta-grafike"><i class="bi bi-gpu-card me-1"></i>Kartat grafike</a>
+                <a th:if="${!#strings.isEmpty(site.facebookUrl)}" class="btn btn-outline-dark" th:href="${site.facebookUrl}" target="_blank" rel="noopener"><i class="bi bi-facebook me-1"></i>Na ndiqni</a>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>

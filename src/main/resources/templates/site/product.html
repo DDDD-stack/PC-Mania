@@ -76,8 +76,18 @@
                 <span>Ky produkt është i rezervuar për një klient. Nëse porosia anulohet, del sërish në shitje.</span>
             </div>
 
-            <div class="price-box">
-                <div class="price" th:classappend="${p.sold} ? 'text-decoration-line-through opacity-50'" th:text="${@fmt.price(p.priceLek)}"></div>
+            <div class="price-box" th:classappend="${p.onSale} ? 'is-on-sale ' + ${p.saleThemeClass}">
+                <div th:if="${p.onSale}" class="sale-ribbon">
+                    <span class="sale-ribbon-name"><i class="bi bi-lightning-charge-fill"></i><span th:text="${p.promotionName}"></span></span>
+                    <span class="sale-ribbon-clock"><i class="bi bi-hourglass-split"></i>Mbaron për <span th:attr="data-countdown=${p.saleEndsAtMillis}" data-countdown-done="tani"></span></span>
+                </div>
+                <div th:unless="${p.onSale}" class="price" th:classappend="${p.sold} ? 'text-decoration-line-through opacity-50'" th:text="${@fmt.price(p.priceLek)}"></div>
+                <div th:if="${p.onSale}" class="price-row">
+                    <div class="price sale-now" th:text="${@fmt.price(p.priceLek)}"></div>
+                    <s class="price-was" th:text="${@fmt.price(p.regularPriceLek)}"></s>
+                    <span class="price-off" th:text="'-' + ${p.discountPercent} + '%'"></span>
+                </div>
+                <div th:if="${p.onSale}" class="price-save"><i class="bi bi-piggy-bank-fill"></i>Kurseni <strong th:text="${@fmt.price(p.savingsLek)}"></strong></div>
                 <div class="availability">
                     <span th:if="${p.available}" class="text-success">
                         <i class="bi bi-check-circle-fill"></i>
@@ -176,7 +186,10 @@
     </section>
 
     <div class="buy-bar d-lg-none">
-        <div class="buy-bar-price" th:text="${@fmt.price(p.priceLek)}"></div>
+        <div class="buy-bar-price" th:classappend="${p.onSale} ? 'is-on-sale'">
+            <span th:text="${@fmt.price(p.priceLek)}"></span>
+            <s th:if="${p.onSale}" th:text="${@fmt.price(p.regularPriceLek)}"></s>
+        </div>
         <a class="btn btn-whatsapp" th:href="${whatsappLink}" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
         <a th:if="${p.available}" class="btn btn-accent flex-grow-1" th:href="@{/porosit/{s}(s=${p.slug})}">Porosit</a>
         <span th:unless="${p.available}" class="btn btn-secondary disabled flex-grow-1" th:text="${p.status.name() == 'SOLD'} ? 'E shitur' : 'E rezervuar'"></span>

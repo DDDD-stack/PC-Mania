@@ -16,7 +16,10 @@
                     <div class="fw-semibold lh-sm" th:text="${item.title}"></div>
                     <div class="small text-body-secondary" th:text="${item.subtitle}"></div>
                 </div>
-                <div class="fw-bold text-nowrap" th:text="${@fmt.price(item.priceLek)}"></div>
+                <div class="text-end text-nowrap">
+                    <div class="fw-bold" th:classappend="${item.discounted} ? 'text-danger'" th:text="${@fmt.price(item.priceLek)}"></div>
+                    <s th:if="${item.discounted}" class="small text-body-secondary" th:text="${@fmt.price(item.regularPriceLek)}"></s>
+                </div>
             </div>
             <div class="d-flex gap-1 mt-2" th:if="${item.thumbs.size() > 1}">
                 <img class="order-summary-mini" th:each="t : ${item.thumbs}" th:src="${@img.thumb(t)}" th:alt="${item.title} + ' – pjesë e paketës'" width="40" height="40" loading="lazy">
@@ -111,8 +114,9 @@
             </div>
         </div>
 
-        <div class="form-card mb-3" id="totals" th:attr="data-price=${item.priceLek}">
+        <div class="form-card mb-3" id="totals" th:attr="data-price=${item.priceLek},data-saving=${item.discounted} ? ${item.regularPriceLek - item.priceLek} : 0">
             <div class="d-flex justify-content-between"><span th:text="${item.thumbs.size() > 1} ? 'Paketa' : 'Produkti'">Produkti</span><span id="subtotal" th:text="${@fmt.price(item.priceLek * form.quantity)}"></span></div>
+            <div th:if="${item.discounted}" class="d-flex justify-content-between text-success fw-semibold"><span><i class="bi bi-piggy-bank-fill me-1"></i>Kurseni</span><span id="saving" th:text="${@fmt.price((item.regularPriceLek - item.priceLek) * form.quantity)}"></span></div>
             <div class="d-flex justify-content-between"><span>Transporti</span><span id="shipping"></span></div>
             <hr class="my-2">
             <div class="d-flex justify-content-between fs-5 fw-bold"><span>Totali</span><span id="total"></span></div>
@@ -135,6 +139,8 @@
                 const delivery = form.querySelector('[name=deliveryMethod]:checked');
                 const shipping = delivery ? +delivery.dataset.shipping : 0;
                 document.getElementById('subtotal').textContent = fmt(price * qty);
+                const saving = document.getElementById('saving');
+                if (saving) saving.textContent = (+document.getElementById('totals').dataset.saving * qty).toLocaleString('de-DE') + ' Lekë';
                 document.getElementById('shipping').textContent = fmt(shipping);
                 document.getElementById('total').textContent = (price * qty + shipping).toLocaleString('de-DE') + ' Lekë';
                 document.getElementById('addressGroup').hidden = delivery && delivery.value === 'PICKUP_TIRANA';
